@@ -508,9 +508,11 @@ function buildBrowser(p) {
   const reload = h('button', { title: t('Yenile'), textContent: '⟳' });
   const addr = h('input', { class: 'br-addr', spellcheck: false, placeholder: t('Adres yaz veya ara') });
   const prof = h('button', { class: 'br-prof', title: t('Profil') });
-  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, addr, prof);
+  const star = h('button', { class: 'br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, star), prof);
+  const bmBar = h('div', { class: 'br-bm' });
   const views = h('div', { class: 'br-views' });
-  p.body.append(strip, bar, views);
+  p.body.append(strip, bar, bmBar, views);
   p.body.classList.add('browser');
   const wvs = new Map(); // sekme id -> webview
   p.ownsWc = (id) => [...wvs.values()].some((wv) => { try { return wv.getWebContentsId() === id; } catch { return false; } });
@@ -525,12 +527,16 @@ function buildBrowser(p) {
     watchNotifications(p, wv, () => show(tab.id));
     const sync = () => {
       tab.url = wv.getURL(); save();
-      if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); }
+      if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); updateStar(); }
     };
     wv.addEventListener('did-navigate', sync);
     wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && sync());
     wv.addEventListener('page-title-updated', (e) => { tab.title = e.title; renderStrip(); if (tab.id === L.activeTab) setTitle(p, L.title + ' · ' + e.title); save(); });
-    wv.addEventListener('page-favicon-updated', (e) => { tab.icon = e.favicons[0]; renderStrip(); });
+    wv.addEventListener('page-favicon-updated', (e) => {
+      tab.icon = e.favicons[0]; renderStrip();
+      const bm = bmFind(bmKey(L.profile), tab.url); // yer iminin simgesi yoksa sayfanınkini al
+      if (bm && !bm.icon && tab.icon) { bm.icon = tab.icon; bmChanged(); }
+    });
     wv.addEventListener('did-start-loading', () => { tab.loading = true; renderStrip(); });
     wv.addEventListener('did-stop-loading', () => { tab.loading = false; renderStrip(); updateNav(); });
     wv.addEventListener('did-fail-load', (e) => {
@@ -553,7 +559,7 @@ function buildBrowser(p) {
     for (const [tid, wv] of wvs) wv.classList.toggle('on', tid === id);
     addr.value = tab.url === 'about:blank' ? '' : tab.url || '';
     setTitle(p, L.title + (tab.title ? ' · ' + tab.title : ''));
-    renderStrip(); updateNav(); save(); renderTabs();
+    renderStrip(); updateNav(); updateStar(); save(); renderTabs();
   }
   function closeTab(id) {
     const i = L.tabs.findIndex((x) => x.id === id);
@@ -582,6 +588,104 @@ function buildBrowser(p) {
       return el;
     }), h('button', { class: 'br-new', textContent: '＋', title: t('Yeni sekme'), onclick: () => p.newTab(HOME_URL, true) }));
   }
+  // --- Yer imleri: seçili profile ait liste, adres çubuğunun altında ---
+  const curTab = () => L.tabs.find((x) => x.id === L.activeTab);
+  const openUrl = (url, newTab) => {
+    if (newTab) { p.newTab(url); return; }
+    const wv = cur(); wv.loadURL(url).catch(() => {}); wv.focus();
+  };
+  function updateStar() {
+    const on = !!bmFind(bmKey(L.profile), curTab()?.url);
+    star.textContent = on ? '★' : '☆';
+    star.classList.toggle('on', on);
+    star.title = on ? t('Yer imini düzenle') : t('Bu sayfayı yer imlerine ekle');
+  }
+  star.onclick = async () => {
+    const tab = curTab();
+    if (!tab?.url || tab.url === 'about:blank') return;
+    const key = bmKey(L.profile);
+    let bm = bmFind(key, tab.url);
+    if (!bm) {
+      bm = { id: uid(), title: tab.title || tab.url, url: tab.url, icon: tab.icon || '' };
+      bmList(key).push(bm); bmChanged();
+    }
+    await bmEdit(key, bm, true);
+  };
+  function bmItemEl(key, bm, list) {
+    const folder = !!bm.items;
+    const el = h('button', { class: 'br-bmi' + (folder ? ' folder' : ''), draggable: true, title: folder ? bm.title : bm.title + '\n' + bm.url },
+      folder ? h('span', { class: 'ic', textContent: '📁' }) : bmIcon(bm), h('span', { class: 'n', textContent: bm.title || bm.url }));
+    if (folder) el.onclick = (e) => folderMenu(e, key, bm);
+    else {
+      el.onclick = (e) => openUrl(bm.url, e.ctrlKey || e.shiftKey);
+      el.onauxclick = (e) => { if (e.button === 1) openUrl(bm.url, true); };
+    }
+    el.addEventListener('mousedown', (e) => { if (e.button === 1) e.preventDefault(); });
+    el.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); bmCtx(e, key, bm, list); });
+    el.addEventListener('dragstart', (e) => { bmDrag = { key, bm, list }; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    el.addEventListener('dragend', () => { bmDrag = null; el.classList.remove('dragging'); });
+    el.addEventListener('dragover', (e) => { if (bmDrag?.key === key && bmDrag.bm !== bm) { e.preventDefault(); el.classList.add('drop'); } });
+    el.addEventListener('dragleave', () => el.classList.remove('drop'));
+    el.addEventListener('drop', (e) => {
+      e.preventDefault(); el.classList.remove('drop');
+      const d = bmDrag; if (!d || d.bm === bm) return;
+      d.list.splice(d.list.indexOf(d.bm), 1);
+      if (folder && !d.bm.items) bm.items.push(d.bm); // klasörün üstüne bırakılan yer imi klasöre girer
+      else { const r = el.getBoundingClientRect(); list.splice(list.indexOf(bm) + (e.clientX > r.left + r.width / 2 ? 1 : 0), 0, d.bm); }
+      bmChanged();
+    });
+    return el;
+  }
+  function folderMenu(e, key, f) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const at = { clientX: r.left, clientY: r.bottom + 2 };
+    contextMenu(at, p.body, f.items.length ? [
+      ...f.items.map((bm) => ({ label: bm.title || bm.url, title: bm.url, icon: bmIcon(bm),
+        action: (ev) => openUrl(bm.url, ev.ctrlKey || ev.shiftKey), middle: () => openUrl(bm.url, true), ctx: (ev) => bmCtx(ev, key, bm, f.items) })),
+      '-',
+      { label: t('Tümünü yeni sekmelerde aç'), action: () => f.items.forEach((bm) => p.newTab(bm.url)) },
+    ] : [{ label: t('(Boş klasör)'), disabled: true }]);
+  }
+  function bmCtx(e, key, bm, list) {
+    const folder = !!bm.items;
+    contextMenu(e, p.body, [
+      folder ? null : { label: t('Aç'), bold: true, action: () => openUrl(bm.url) },
+      folder ? null : { label: t('Yeni sekmede aç'), action: () => openUrl(bm.url, true) },
+      folder ? null : { label: t('Bağlantıyı kopyala'), action: () => window.desk.copyText(bm.url) },
+      folder ? null : '-',
+      { label: t('Düzenle…'), action: () => (folder ? bmRenameFolder(bm) : bmEdit(key, bm)) },
+      { label: t('Sil'), action: async () => {
+        if (folder && bm.items.length && !(await modal({ title: t('Klasörü sil'), text: t('"{name}" klasörü ve içindeki {n} yer imi silinsin mi?', { name: bm.title, n: bm.items.length }), okText: t('Sil') }))) return;
+        list.splice(list.indexOf(bm), 1); bmChanged();
+      } },
+      '-',
+      ...bmBarItems(key),
+    ]);
+  }
+  const bmBarItems = (key) => [
+    { label: t('Bu sayfayı ekle'), action: () => star.click() },
+    { label: t('Yeni klasör…'), action: async () => {
+      const r = await modal({ title: t('Yeni klasör'), fields: [{ name: 'name', label: t('Klasör adı'), value: '' }] });
+      if (r?.name?.trim()) { bmList(key).push({ id: uid(), title: r.name.trim(), items: [] }); bmChanged(); }
+    } },
+    { label: t('Chrome yer imlerini içe aktar (HTML)…'), action: () => bmImport(key) },
+  ];
+  p.renderBm = () => {
+    const key = bmKey(L.profile);
+    const list = bmList(key);
+    bmBar.replaceChildren(...(list.length ? list.map((bm) => bmItemEl(key, bm, list))
+      : [h('span', { class: 'br-bm-hint', textContent: t('{profile} için yer imi yok. Adres çubuğundaki ☆ ile sayfa ekle.', { profile: profileLabel(bmKey(L.profile)) }) })]));
+    updateStar();
+  };
+  bmBar.addEventListener('contextmenu', (e) => { e.preventDefault(); contextMenu(e, p.body, bmBarItems(bmKey(L.profile))); });
+  bmBar.addEventListener('dragover', (e) => { if (bmDrag && e.target === bmBar) e.preventDefault(); });
+  bmBar.addEventListener('drop', (e) => { // boş alana bırakınca en sona taşı (klasörden çıkarmak için de)
+    if (!bmDrag || e.target !== bmBar) return;
+    e.preventDefault();
+    const d = bmDrag; d.list.splice(d.list.indexOf(d.bm), 1); bmList(d.key).push(d.bm); bmChanged();
+  });
+  bmBar.addEventListener('wheel', (e) => { if (e.deltaY) { bmBar.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+
   function setProfile(pr) {
     if (pr === L.profile) return;
     L.profile = pr;
@@ -590,8 +694,10 @@ function buildBrowser(p) {
     if (pr === '__private') L.tabs = [{ id: uid(), url: HOME_URL, title: '' }];
     prof.textContent = profileLabel(pr);
     p.el.classList.toggle('private', pr === '__private');
+    p.renderBm();
     show(L.tabs.find((x) => x.id === L.activeTab)?.id || L.tabs[0].id);
   }
+  p.setProfile = setProfile;
   prof.onclick = (e) => {
     state.browserProfiles ||= ['default'];
     contextMenu(e, document.body, [
@@ -605,6 +711,7 @@ function buildBrowser(p) {
         if (!state.browserProfiles.includes(name)) state.browserProfiles.push(name);
         save(); setProfile(name);
       } },
+      L.profile !== 'default' && L.profile !== '__private' ? { label: t('Bu profili sil…'), action: () => deleteProfile(L.profile) } : null,
     ]);
   };
   back.onclick = () => { try { cur().goBack(); } catch {} };
@@ -617,16 +724,115 @@ function buildBrowser(p) {
   });
   prof.textContent = profileLabel(L.profile);
   p.el.classList.toggle('private', L.profile === '__private');
+  p.renderBm();
   p.tools.append(h('button', { title: t('Tarayıcıda aç'), textContent: '↗', onclick: () => { try { window.desk.openExternal(cur().getURL()); } catch {} } }));
   for (const tab of L.tabs) tab.loading = false;
   show(L.activeTab);
+}
+
+// --- Yer imleri (profil başına) ---
+// state.bookmarks[profil] = [{ id, title, url, icon } | { id, title, items: [...] }]  (klasörler tek seviye)
+// Gizli pencere varsayılan profilin yer imlerini kullanır.
+let bmDrag = null;
+const bmKey = (pr) => (!pr || pr === '__private' ? 'default' : pr);
+const bmList = (key) => ((state.bookmarks ||= {})[key] ||= []);
+function bmFind(key, url) {
+  if (!url) return null;
+  for (const x of bmList(key)) {
+    if (x.url === url) return x;
+    const y = x.items?.find((z) => z.url === url);
+    if (y) return y;
+  }
+  return null;
+}
+function bmParent(key, bm) { const l = bmList(key); return l.includes(bm) ? l : l.find((f) => f.items?.includes(bm))?.items; }
+function bmChanged() { save(); for (const p of panels.values()) p.renderBm?.(); }
+function bmIcon(bm) {
+  const src = bm.icon || siteIcon(bm.url);
+  const fb = () => h('span', { class: 'ic', textContent: '🌐' });
+  if (!src) return fb();
+  const img = h('img', { class: 'ic', src, alt: '' });
+  img.onerror = () => img.replaceWith(fb());
+  return img;
+}
+async function bmEdit(key, bm, isNew = false) {
+  const folders = bmList(key).filter((f) => f.items);
+  const parent = bmParent(key, bm);
+  const curFolder = parent === bmList(key) ? '' : bmList(key).find((f) => f.items === parent)?.id || '';
+  const r = await modal({
+    title: isNew ? t('Yer imi eklendi') : t('Yer imini düzenle'),
+    fields: [
+      { name: 'title', label: t('Ad'), value: bm.title },
+      { name: 'url', label: t('Adres'), value: bm.url },
+      { name: 'folder', label: t('Klasör'), value: curFolder, options: [['', t('Yer imi çubuğu')], ...folders.map((f) => [f.id, '📁 ' + f.title]), ['__new', t('＋ Yeni klasör…')]] },
+    ],
+    okText: t('Bitti'), danger: t('Kaldır'),
+  });
+  if (r === 'danger') { parent?.splice(parent.indexOf(bm), 1); bmChanged(); return; }
+  if (!r || typeof r !== 'object') { bmChanged(); return; }
+  bm.title = r.title.trim() || bm.title;
+  const url = normalizeUrl(r.url || bm.url);
+  if (url !== bm.url) { bm.url = url; bm.icon = ''; }
+  let target = r.folder ? bmList(key).find((f) => f.id === r.folder)?.items : bmList(key);
+  if (r.folder === '__new') {
+    const n = await modal({ title: t('Yeni klasör'), fields: [{ name: 'name', label: t('Klasör adı'), value: '' }] });
+    if (n?.name?.trim()) { const f = { id: uid(), title: n.name.trim(), items: [] }; bmList(key).push(f); target = f.items; } else target = parent;
+  }
+  if (target && target !== parent) { parent.splice(parent.indexOf(bm), 1); target.push(bm); }
+  bmChanged();
+}
+async function bmRenameFolder(f) {
+  const r = await modal({ title: t('Klasörü yeniden adlandır'), fields: [{ name: 'name', label: t('Klasör adı'), value: f.title }] });
+  if (r?.name?.trim()) { f.title = r.name.trim(); bmChanged(); }
+}
+// Chrome: Yer işaretleri yöneticisi > ⋮ > Yer işaretlerini dışa aktar ile alınan HTML dosyası.
+function bmImport(key) {
+  const inp = h('input', { type: 'file', accept: '.html,.htm' });
+  inp.onchange = async () => {
+    const file = inp.files[0];
+    if (!file) return;
+    const doc = new DOMParser().parseFromString(await file.text(), 'text/html');
+    const list = bmList(key);
+    let added = 0;
+    const folderFor = (path) => {
+      if (!path.length) return list;
+      const name = path.join(' / ');
+      let f = list.find((x) => x.items && x.title === name);
+      if (!f) list.push(f = { id: uid(), title: name, items: [] });
+      return f.items;
+    };
+    const walk = (dl, path) => {
+      for (const dt of dl.querySelectorAll(':scope > dt, :scope > p > dt')) {
+        const a = dt.querySelector(':scope > a'), h3 = dt.querySelector(':scope > h3'), sub = dt.querySelector(':scope > dl');
+        if (a && /^https?:|^file:/i.test(a.href) && !bmFind(key, a.href)) {
+          folderFor(path).push({ id: uid(), title: a.textContent.trim() || a.href, url: a.href, icon: (a.getAttribute('icon') || '').startsWith('data:') ? a.getAttribute('icon') : '' });
+          added++;
+        } else if (h3 && sub) walk(sub, h3.hasAttribute('personal_toolbar_folder') ? path : [...path, h3.textContent.trim()]);
+      }
+    };
+    const root = doc.querySelector('dl');
+    if (root) walk(root, []);
+    bmChanged();
+    modal({ title: t('İçe aktarma tamam'), text: t('{n} yer imi eklendi.', { n: added }), noCancel: true });
+  };
+  inp.click();
+}
+async function deleteProfile(name) {
+  const n = bmList(name).length;
+  const ok = await modal({ title: t('Profili sil'), text: t('"{name}" profili, yer imleri ({n}) ve bu profildeki girişler/çerezler silinsin mi?', { name, n }), okText: t('Sil') });
+  if (!ok) return;
+  state.browserProfiles = (state.browserProfiles || []).filter((x) => x !== name);
+  delete (state.bookmarks ||= {})[name];
+  for (const p of panels.values()) if (p.leaf.kind === 'browser' && p.leaf.profile === name) p.setProfile?.('default');
+  save();
+  window.desk.clearBrowserProfile(name).catch(() => {});
 }
 
 // Web panelindeki bildirime tıklandı: Desk Helper'ı öne getir, panelin sekmesine geç ve paneli seç.
 function watchNotifications(p, wv, onClick) {
   wv.addEventListener('ipc-message', (e) => {
     if (e.channel !== 'desk-notif-click') return;
-    window.desk.reveal();
+    window.desk.showWindow();
     if (state.activeWs !== p.ws.id) switchWs(p.ws.id);
     setActive(p.ws, p.leaf.id);
     onClick?.();
@@ -876,8 +1082,11 @@ function contextMenu(e, bounds, items) {
   document.querySelector('.ctx')?.remove();
   const menu = h('div', { class: 'ctx' }, ...items.filter(Boolean).map((it) => it === '-'
     ? h('div', { class: 'sep' })
-    : h('div', { class: 'item' + (it.disabled ? ' disabled' : '') + (it.bold ? ' bold' : ''), onclick: () => { if (it.disabled) return; close(); it.action(); } },
-      h('span', { textContent: it.label }), h('span', { class: 'key', textContent: it.key || '' }))));
+    : h('div', { class: 'item' + (it.disabled ? ' disabled' : '') + (it.bold ? ' bold' : ''), title: it.title || '',
+        onclick: (ev) => { if (it.disabled) return; close(); it.action(ev); },
+        onauxclick: (ev) => { if (ev.button === 1 && it.middle) { close(); it.middle(); } },
+        oncontextmenu: (ev) => { ev.preventDefault(); if (it.ctx) { close(); it.ctx(ev); } } },
+      it.icon || null, h('span', { class: 'lbl', textContent: it.label }), h('span', { class: 'key', textContent: it.key || '' }))));
   document.body.append(menu);
   const b = bounds.getBoundingClientRect(), m = menu.getBoundingClientRect();
   const x = Math.max(b.left, Math.min(e.clientX, b.right - m.width - 2));
@@ -1585,6 +1794,7 @@ async function init() {
   state = saved?.workspaces?.length ? migrate(saved) : defaultState();
   state.favorites ||= [];
   state.appbar ||= [];
+  state.bookmarks ||= {};
   state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) };
   applySettings();
   translateStatic();

@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.5 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.2.6 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -35,6 +35,11 @@ geri / ileri / yenile, adres çubuğu (`localhost:3000` yazınca doğrudan açı
 Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık > "Yeni panelde aç" yanına ayrı panel açar.
 👤 düğmesinden profil seçilir: her profilin girişleri ve çerezleri ayrıdır, "Yeni profil…" ile eklenir;
 🕶 Gizli seçilirse hiçbir şey kaydedilmez. Sekmeler ve açık sayfalar uygulama kapanınca hatırlanır.
+**Yer imleri profile bağlıdır:** adres çubuğunun altındaki çubukta yalnızca seçili profilin yer imleri görünür.
+☆ ile açık sayfa eklenir (★ ise düzenle / kaldır), tek tıkla açılır, Ctrl+tık veya orta tık yeni sekmede açar.
+Çubuğa sağ tıklayınca yeni klasör ve Chrome'dan içe aktarma (Chrome'da Yer işaretleri yöneticisi > ⋮ > Dışa aktar ile
+alınan HTML dosyası) çıkar. Sürükle-bırak ile sıralanır, klasörün üstüne bırakılan yer imi klasöre girer.
+Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 > "Bu profili sil…" profili, yer imlerini ve girişlerini siler.
 Gerçek Opera / Chrome profilini panele yerleştirmek için **Harici tarayıcı** kısayolu duruyor.
 
 ## Harici tarayıcı ve diğer programlar panelde

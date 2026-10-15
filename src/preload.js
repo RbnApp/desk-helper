@@ -25,7 +25,8 @@ contextBridge.exposeInMainWorld('desk', {
   copyText: (text) => ipcRenderer.invoke('clip:write', text),
   notePath: (id) => ipcRenderer.invoke('notes:path', id),
   notesList: () => ipcRenderer.invoke('notes:list'),
-  reveal: () => ipcRenderer.invoke('win:reveal'),
+  clearBrowserProfile: (name) => ipcRenderer.invoke('br:clear-profile', name),
+  showWindow: () => ipcRenderer.invoke('win:reveal'),
   dock: (where) => ipcRenderer.invoke('win:dock', where),
   native: {
     browsers: () => ipcRenderer.invoke('native:browsers'),

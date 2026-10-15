@@ -168,6 +168,14 @@ ipcMain.handle('win:reveal', () => {
   if (process.platform === 'win32') { win.setAlwaysOnTop(true); win.setAlwaysOnTop(!!settings.alwaysOnTop); }
 });
 
+// Tarayıcı profili silinince o profilin çerez ve girişlerini de temizle.
+ipcMain.handle('br:clear-profile', async (_e, name) => {
+  if (!name || name === 'default') return false;
+  const ses = session.fromPartition('persist:br-' + encodeURIComponent(name));
+  await ses.clearStorageData(); await ses.clearCache();
+  return true;
+});
+
 ipcMain.handle('app:info', () => ({
   name: 'Desk Helper',
   version: app.getVersion(),
