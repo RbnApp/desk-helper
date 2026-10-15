@@ -1,0 +1,66 @@
+# Desk Helper · Sürüm notları
+
+Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
+GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
+
+## 0.3.4 · 2026-10-15
+
+**Yeni**
+- Tema rengi: Ayarlar'da tek bir renk seçilir (hazır renkler ya da özel renk); çerçeveler, düğmeler, seçili sekme, menü
+  işaretleri ve odak çizgileri hep bu renge döner. Açık renk seçilince düğme yazısı okunaklı kalacak şekilde koyulaşır.
+- Otomatik güncelleme: açılışta yeni sürüm denetlenir; varsa sürüm notlarıyla birlikte "Şimdi güncelle / Sonra / Bu sürümü
+  atla" diye sorulur. Onaylanınca indirilir, Desk Helper kapanıp aynı klasöre kurulur ve yeniden açılır (aynı kısayol, ayarlar
+  ve veriler korunur). Ayarlar > Hakkında'da "Güncellemeleri denetle" düğmesi; Ayarlar'da açılışta denetlemeyi kapatma seçeneği.
+- Üstteki sekmeler sürükle-bırak ile sıralanır; bırakılacak yer çizgiyle gösterilir, iki satırlı çubukta da çalışır.
+- Şifre yöneticisi şifresiz hesapları da kaydeder (ör. yerel phpMyAdmin'de yalnızca kullanıcı adı); listede "(şifre yok)".
+
+**Düzeltmeler**
+- Şifre kayıtlı olduğu hâlde her girişte "kaydedilsin mi?" soruluyordu. Artık aynı site, kullanıcı adı ve şifrede sorulmuyor;
+  şifre değişince "güncellensin mi?" soruluyor; kullanıcı adı boş kaydedilmiş eski kayıtlar sormadan tamamlanıyor.
+- cPanel'de yalnızca şifre kaydediliyor, kullanıcı adı kaydedilmiyordu.
+- cPanel "Güvenlik belirteci isteğinizde yok": oturuma özel `/cpsess…/` adresleri geri yüklenen sekmelerde ve yer imlerinde
+  artık sitenin giriş sayfasından açılıyor.
+
+## 0.3.3
+- Tek menü bileşeni: bütün sağ tık ve açılır menüler aynı görünümde; web sayfalarındaki sağ tık menüsü yenilendi.
+- Sade profil menüsü; adres çubuğunda 🔑 düğmesi (kayıtlı hesabı doldur, elle şifre ekle).
+
+## 0.3.2
+- Tek pencere (modal) motoru: bütün açılır pencereler aynı tasarım ve klavye davranışıyla.
+
+## 0.3.1
+- Chrome'dan bağımsız şifre yöneticisi: kaydet / güncelle sorusu, otomatik doldurma, ana parola, Chrome CSV içe aktarma.
+
+## 0.2.9
+- Açılışta boş ekran hatası düzeltildi; açılış hatasında kurtarma penceresi ve otomatik yedek.
+- Site simgeleri (favicon) yükleniyor. 🍪 Açık sekmenin çerezlerini onaylı temizleme.
+
+## 0.2.8
+- WhatsApp, Telegram gibi tek sitelik paneller başka siteye gitmez; linkler tarayıcı panelinde açılır.
+
+## 0.2.7
+- Harici tarayıcılar (Chrome/Opera) kaldırıldı; bütün linkler ve site kısayolları Desk Helper tarayıcısında açılır.
+
+## 0.2.6
+- Profile bağlı yer imleri çubuğu, ☆ ile ekleme, klasörler, sürükleyerek sıralama, Chrome yer imi içe aktarma; profil silme.
+
+## 0.2.5
+- Tarayıcı panelinde sekme çakışması düzeltildi; site bildirimine tıklayınca ilgili panele geçiş.
+
+## 0.2.4
+- Kurulu Windows uygulamalarını (Microsoft Store dahil) favorilere ekleme.
+
+## 0.2.3
+- Desk Helper'ın kendi tarayıcı paneli: sekmeler ve profiller, gizli pencere.
+
+## 0.2.2
+- Kısayol ve favorilerde gerçek uygulama ve site simgeleri.
+
+## 0.2.1
+- Alt uygulama çubuğu (ana ekrana ekle mantığı), sağ tık menüleri, sürükleyerek sıralama.
+
+## 0.2.0
+- Kurulum dosyası (NSIS), rbnbilisim markası, Ayarlar, Favoriler, adlandırılabilir sekmeler.
+
+## 0.1.1 – 0.1.9
+- İlk sürümler: WhatsApp, Telegram, Instagram ve YouTube panelleri, dosya gezgini, not defteri, programları panele yerleştirme.

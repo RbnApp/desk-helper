@@ -197,7 +197,7 @@ const pw = () => (pwStore ||= require('./passwords')(dataDir()));
 ipcMain.handle('pw:accounts', (_e, profile, url) => pw().accounts(profile, url));
 ipcMain.handle('pw:fill', (_e, profile, url, id) => pw().fill(profile, url, id));
 ipcMain.handle('pw:check', (_e, profile, url, user, pass) => pw().check(profile, url, user, pass));
-ipcMain.handle('pw:save', (_e, profile, url, user, pass) => pw().save(profile, url, user, pass));
+ipcMain.handle('pw:save', (_e, profile, url, user, pass, id) => pw().save(profile, url, user, pass, id));
 ipcMain.handle('pw:never', (_e, profile, url) => pw().never(profile, url));
 ipcMain.handle('pw:unnever', (_e, profile, origin) => pw().unNever(profile, origin));
 ipcMain.handle('pw:list', (_e, profile) => pw().list(profile));
@@ -222,6 +222,41 @@ ipcMain.handle('app:info', () => ({
   notesDir: notesDir(),
   defaultNotesDir: path.join(dataDir(), 'notes'),
 }));
+// --- Otomatik güncelleme (GitHub Releases, electron-updater) ---
+// Açılışta ve Ayarlar > Hakkında'dan denetlenir; kullanıcı onaylarsa indirilir, uygulama kapanıp yeni sürüm aynı
+// klasöre sessizce kurulur ve yeniden açılır (aynı exe ve kısayollar). Kaynak: package.json > build.publish.
+// Test için DESK_UPDATE_URL ile (latest.yml içeren) başka bir adres verilebilir.
+let updater = null;
+function getUpdater() {
+  if (updater) return updater;
+  const eu = require('electron-updater');
+  // Test adresi verilince Windows'taki güncelleyicinin (NSIS) kendisi kullanılır; normalde platformunki.
+  const autoUpdater = process.env.DESK_UPDATE_URL ? new eu.NsisUpdater({ provider: 'generic', url: process.env.DESK_UPDATE_URL }) : eu.autoUpdater;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.logger = null;
+  if (process.env.DESK_UPDATE_URL) autoUpdater.forceDevUpdateConfig = true;
+  autoUpdater.on('download-progress', (p) => win?.webContents.send('upd:progress', Math.round(p.percent || 0)));
+  updater = autoUpdater;
+  return updater;
+}
+const notesText = (n) => (Array.isArray(n) ? n.map((x) => `${x.version}\n${x.note || ''}`).join('\n\n') : n || '')
+  .replace(/<\/(p|li|h\d|div)>|<br\s*\/?>/gi, '\n').replace(/<li[^>]*>/gi, '• ').replace(/<[^>]+>/g, '')
+  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\n{3,}/g, '\n\n').trim();
+ipcMain.handle('upd:check', async () => {
+  if (!app.isPackaged && !process.env.DESK_UPDATE_URL) return { dev: true };
+  try {
+    const r = await getUpdater().checkForUpdates();
+    const v = r?.updateInfo?.version;
+    if (!v || !r.isUpdateAvailable) return { latest: true, version: app.getVersion() };
+    return { available: true, version: v, current: app.getVersion(), notes: notesText(r.updateInfo.releaseNotes), date: r.updateInfo.releaseDate };
+  } catch (e) { return { error: String(e?.message || e).split('\n')[0] }; }
+});
+ipcMain.handle('upd:download', async () => {
+  try { await getUpdater().downloadUpdate(); return true; } catch (e) { return { error: String(e?.message || e).split('\n')[0] }; }
+});
+ipcMain.handle('upd:install', () => { setImmediate(() => getUpdater().quitAndInstall(true, true)); return true; });
+
 ipcMain.handle('settings:apply', (_e, s) => { applySettings(s); return true; });
 
 // --- Durum (sekmeler, düzen, kısayollar, favoriler, ayarlar) ---

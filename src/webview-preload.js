@@ -23,7 +23,7 @@ webFrame.executeJavaScript(`(() => {
 // Giriş formunu bulur, kayıtlı hesap varsa doldurur (birden çoksa alanın altında seçtirir), form gönderilince
 // kullanıcı adı ve şifreyi panele iletir; panel "kaydedilsin mi / güncellensin mi" diye sorar.
 // Bu kod sayfanın kendi betiklerinden ayrı (izole) çalışır; sayfa ona ulaşamaz.
-let pwOn = false, pwAccounts = [], pwAsked = false, pwLastSent = '';
+let pwOn = false, pwAccounts = [], pwAsked = false;
 const visible = (el) => el && el.isConnected && !el.disabled && el.type !== 'hidden' && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
 const passFields = () => [...document.querySelectorAll('input[type=password]')].filter(visible);
 function userFieldFor(pass) {
@@ -45,7 +45,8 @@ ipcRenderer.on('pw-fill', (_e, cred) => {
   const pass = passFields()[0];
   if (!pass || !cred) return;
   setVal(userFieldFor(pass), cred.username);
-  setVal(pass, cred.password);
+  lastUser = cred.username || '';
+  if (cred.password) setVal(pass, cred.password); // şifresiz hesapta şifre alanına dokunma
   pass.blur();
   closeMenu();
 });
@@ -99,29 +100,47 @@ ipcRenderer.on('pw-accounts', (_e, list) => {
   else if (pwAccounts.length > 1 && pass && (document.activeElement === pass || document.activeElement === userFieldFor(pass))) showMenu(document.activeElement);
 });
 
-// Gönderim: form submit, şifre alanında Enter, ya da giriş düğmesine tıklama
-let lastPass = null;
-function capture() {
+// Gönderim: form submit, şifre alanında Enter, ya da giriş düğmesine tıklama.
+// Kullanıcı adı yazılırken hatırlanır: cPanel gibi siteler girişten sonra formu gizler/siler, o anda alan bulunamasa da
+// kullanıcı adı kaybolmaz. Aynı şifre ikinci kez (ör. sayfa kapanırken) kullanıcı adı boş gelirse yok sayılır.
+let lastPass = null, lastUser = '', sentPass = '', sentUser = '';
+// explicit: kullanıcı formu gönderdi (submit / Enter / düğme). Şifre boşsa yalnızca o zaman, kullanıcı adı doluysa
+// "şifresiz hesap" olarak bildirilir (ör. yerel phpMyAdmin'de şifresiz root).
+function capture(explicit) {
   if (!pwOn) return;
-  const pass = passFields().find((p) => p.value) || (lastPass?.value ? lastPass : null);
+  let pass = passFields().find((p) => p.value) || (lastPass?.value ? lastPass : null);
+  if (!pass && explicit === true) pass = passFields()[0];
   if (!pass) return;
-  const user = userFieldFor(pass)?.value?.trim() || '';
-  const key = user + '\n' + pass.value;
-  if (key === pwLastSent) return;
-  pwLastSent = key;
-  ipcRenderer.sendToHost('pw-submit', { url: location.href, username: user, password: pass.value });
+  const pwd = pass.value || '';
+  const user = userFieldFor(pass)?.value?.trim() || lastUser;
+  if (!pwd && !user) return;
+  if (pwd === sentPass && (user === sentUser || !user)) return;
+  sentPass = pwd; sentUser = user;
+  ipcRenderer.sendToHost('pw-submit', { url: location.href, username: user, password: pwd });
 }
-document.addEventListener('input', (e) => { if (e.target?.type === 'password') lastPass = e.target; }, true);
-document.addEventListener('submit', capture, true);
-document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target?.type === 'password') capture(); }, true);
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el?.type === 'password') { lastPass = el; return; }
+  if (el?.tagName === 'INPUT' && /^(text|email|tel|)$/i.test(el.getAttribute('type') || '')) {
+    const pass = passFields()[0];
+    if (pass && userFieldFor(pass) === el) lastUser = el.value.trim();
+  }
+}, true);
+const loginForm = () => { const p = passFields()[0]; return p && (p.value || userFieldFor(p)?.value); };
+document.addEventListener('submit', (e) => { if (!e.target?.querySelector || e.target.querySelector('input[type=password]')) capture(true); }, true);
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const p = passFields()[0];
+  if (p && (e.target === p || e.target === userFieldFor(p))) capture(true);
+}, true);
 document.addEventListener('click', (e) => {
   const b = e.target?.closest?.('button, input[type=submit], input[type=button], [role=button]');
-  if (b && passFields().some((p) => p.value)) capture();
+  if (b && loginForm()) capture(true);
 }, true);
-window.addEventListener('pagehide', capture);
+window.addEventListener('pagehide', () => capture(false));
 
 ipcRenderer.on('pw-enable', () => {
-  pwOn = true; pwAsked = false; pwLastSent = '';
+  pwOn = true; pwAsked = false;
   const obs = new MutationObserver(() => { clearTimeout(obs.t); obs.t = setTimeout(scan, 300); });
   const go = () => { scan(); obs.observe(document.documentElement, { childList: true, subtree: true }); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true }); else go();

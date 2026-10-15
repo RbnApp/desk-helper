@@ -23,11 +23,12 @@ module.exports = function createPasswordStore(dir) {
     fs.writeFileSync(file + '.tmp', JSON.stringify(db, null, 1));
     fs.renameSync(file + '.tmp', file);
   };
-  const enc = (s) => (safeStorage.isEncryptionAvailable() ? 'dp:' + safeStorage.encryptString(s).toString('base64') : 'b64:' + Buffer.from(s).toString('base64'));
-  const dec = (s) => (s.startsWith('dp:') ? safeStorage.decryptString(Buffer.from(s.slice(3), 'base64')) : Buffer.from(s.slice(4), 'base64').toString());
+  const enc = (s) => (!s ? '' : safeStorage.isEncryptionAvailable() ? 'dp:' + safeStorage.encryptString(s).toString('base64') : 'b64:' + Buffer.from(s).toString('base64'));
+  const dec = (s) => (!s ? '' : s.startsWith('dp:') ? safeStorage.decryptString(Buffer.from(s.slice(3), 'base64')) : Buffer.from(s.slice(4), 'base64').toString());
   const originOf = (url) => { try { const u = new URL(url); return /^https?:$/.test(u.protocol) ? u.origin : ''; } catch { return ''; } };
-  const pub = (e) => ({ id: e.id, profile: e.profile, origin: e.origin, username: e.username, created: e.created, used: e.used });
+  const pub = (e) => ({ id: e.id, profile: e.profile, origin: e.origin, username: e.username, noPw: !e.pw, created: e.created, used: e.used });
   const find = (profile, origin, username) => load().entries.find((e) => e.profile === profile && e.origin === origin && e.username === username);
+  const norm = (u) => (u || '').trim().toLowerCase();
   const hash = (pw, salt) => crypto.scryptSync(pw, Buffer.from(salt, 'base64'), 32).toString('base64');
 
   return {
@@ -44,18 +45,40 @@ module.exports = function createPasswordStore(dir) {
       return { username: e.username, password: dec(e.pw) };
     },
     // Form gönderildi: ne sorulmalı? 'save' | 'update' | 'none'
+    //  - aynı site + aynı kullanıcı adı + aynı şifre → sorma
+    //  - aynı kullanıcı adı, farklı şifre → "güncellensin mi?"
+    //  - kayıtta kullanıcı adı boş ve şifre aynı → kullanıcı adını sormadan tamamla
+    //  - kullanıcı adı gelmediyse (iki adımlı girişler) bu sitedeki kayıtlı şifrelerden biriyle eşleşiyorsa → sorma
     check(profile, url, username, password) {
       const origin = originOf(url);
-      if (!origin || !password || load().never.some((n) => n.profile === profile && n.origin === origin)) return { action: 'none' };
-      const e = find(profile, origin, username);
-      if (!e) return { action: 'save', origin };
-      return dec(e.pw) === password ? { action: 'none' } : { action: 'update', origin, id: e.id };
+      // Şifresiz hesaplar (ör. yerel phpMyAdmin'de yalnızca kullanıcı adı) de kaydedilir
+      if (!origin || (!password && !(username || '').trim()) || load().never.some((n) => n.profile === profile && n.origin === origin)) return { action: 'none' };
+      const all = db.entries.filter((e) => e.profile === profile && e.origin === origin);
+      const user = (username || '').trim();
+      const same = (e) => { try { return dec(e.pw) === password; } catch { return false; } };
+      if (user) {
+        const e = all.find((x) => norm(x.username) === norm(user));
+        if (e) return same(e) ? { action: 'none' } : { action: 'update', origin, id: e.id, username: e.username };
+        const blank = all.find((x) => !x.username);
+        if (blank) {
+          if (same(blank)) { blank.username = user; blank.changed = Date.now(); write(); return { action: 'none', completed: true }; }
+          return { action: 'update', origin, id: blank.id, username: user };
+        }
+        return { action: 'save', origin };
+      }
+      if (all.some(same)) return { action: 'none' };
+      if (all.length === 1) return { action: 'update', origin, id: all[0].id, username: all[0].username };
+      return { action: 'save', origin };
     },
-    save(profile, url, username, password) {
+    // id: check()'in güncellenmesini önerdiği kayıt
+    save(profile, url, username, password, id) {
       const origin = originOf(url);
-      if (!origin || !password) return false;
-      const e = find(profile, origin, username);
-      if (e) { e.pw = enc(password); e.changed = Date.now(); } else load().entries.push({ id: crypto.randomUUID(), profile, origin, username, pw: enc(password), created: Date.now() });
+      const user = (username || '').trim();
+      if (!origin || (!password && !user)) return false;
+      const all = load().entries.filter((e) => e.profile === profile && e.origin === origin);
+      const e = (id && all.find((x) => x.id === id)) || all.find((x) => norm(x.username) === norm(user)) || (user ? all.find((x) => !x.username) : null);
+      if (e) { if (user) e.username = user; e.pw = enc(password); e.changed = Date.now(); }
+      else db.entries.push({ id: crypto.randomUUID(), profile, origin, username: user, pw: enc(password), created: Date.now() });
       write(); return true;
     },
     never(profile, url) {
@@ -111,7 +134,7 @@ module.exports = function createPasswordStore(dir) {
       let added = 0, updated = 0;
       for (const r of rows) {
         const origin = originOf(r[iu] || ''), username = in_ >= 0 ? r[in_] || '' : '', password = r[ip] || '';
-        if (!origin || !password) continue;
+        if (!origin || (!password && !username)) continue;
         const e = find(profile, origin, username);
         if (e) { e.pw = enc(password); updated++; } else { load().entries.push({ id: crypto.randomUUID(), profile, origin, username, pw: enc(password), created: Date.now() }); added++; }
       }

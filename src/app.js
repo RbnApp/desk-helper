@@ -100,7 +100,9 @@ function defaultState() {
   return { schema: STATE_SCHEMA, shortcuts: defaultShortcuts(), workspaces: [ws], activeWs: ws.id, favorites: [], settings: { ...DEFAULT_SETTINGS } };
 }
 
-const DEFAULT_SETTINGS = { lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true };
+const DEFAULT_SETTINGS = { lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
+// Tema rengi: tek renk seçilir; çerçeveler, düğmeler, seçili öğeler, odak çizgileri hep bu renkten gelir (style.css --accent).
+const ACCENTS = ['#4f8cff', '#7c5cff', '#e0559a', '#e5534b', '#f08c2e', '#d4a72c', '#2fb36b', '#17a2b8', '#8a8f9c'];
 
 // Önceki sürümlerden gelen durum: WhatsApp/Telegram web panellerini kurulu uygulamalara çevir.
 function migrate(s) {
@@ -562,11 +564,18 @@ function normalizeUrl(text) {
   return 'https://www.google.com/search?q=' + encodeURIComponent(v);
 }
 const HOME_URL = 'https://www.google.com/';
+// cPanel / WHM / Webmail adresleri oturuma özel belirteç taşır (/cpsess1234567890/). Eski belirteçli adres
+// (uygulama yeniden açılınca geri yüklenen sekme, yer imi) "Güvenlik belirteci isteğinizde yok" hatası verir;
+// bu yüzden böyle adresler giriş sayfası (sitenin kökü) olarak saklanır.
+function stableUrl(u) {
+  try { const x = new URL(u); return /\/cpsess\d+(\/|$)/.test(x.pathname) ? x.origin + '/' : u; } catch { return u; }
+}
 
 function buildBrowser(p) {
   const L = p.leaf;
   if (L.profile === '__private') L.tabs = []; // gizli pencere yeniden açılınca boş başlar
   if (!L.tabs?.length) L.tabs = [{ id: uid(), url: L.url || HOME_URL, title: '' }];
+  for (const tab of L.tabs) tab.url = stableUrl(tab.url);
   if (!L.tabs.some((x) => x.id === L.activeTab)) L.activeTab = L.tabs[0].id;
   L.profile ||= 'default';
   const strip = h('div', { class: 'br-tabs' });
@@ -669,7 +678,7 @@ function buildBrowser(p) {
     const wv = cur(); wv.loadURL(url).catch(() => {}); wv.focus();
   };
   function updateStar() {
-    const on = !!bmFind(bmKey(L.profile), curTab()?.url);
+    const on = !!bmFind(bmKey(L.profile), stableUrl(curTab()?.url || ''));
     star.textContent = on ? '★' : '☆';
     star.classList.toggle('on', on);
     star.title = on ? t('Yer imini düzenle') : t('Bu sayfayı yer imlerine ekle');
@@ -679,9 +688,9 @@ function buildBrowser(p) {
     const tab = curTab();
     if (!tab?.url || tab.url === 'about:blank') return;
     const key = bmKey(L.profile);
-    let bm = bmFind(key, tab.url);
+    let bm = bmFind(key, stableUrl(tab.url));
     if (!bm) {
-      bm = { id: uid(), title: tab.title || tab.url, url: tab.url, icon: tab.icon || '' };
+      bm = { id: uid(), title: tab.title || tab.url, url: stableUrl(tab.url), icon: tab.icon || '' };
       bmList(key).push(bm); bmChanged();
     }
     await bmEdit(key, bm, true);
@@ -817,20 +826,23 @@ function buildBrowser(p) {
       wv.send('pw-accounts', list.map((a) => ({ id: a.id, username: a.username })));
     } else if (ch === 'pw-request') {
       wv.send('pw-fill', await window.desk.pw.fill(pf, wv.getURL(), arg));
-    } else if (ch === 'pw-submit' && arg?.password) {
+    } else if (ch === 'pw-submit' && (arg?.password || arg?.username)) {
       const r = await window.desk.pw.check(pf, arg.url, arg.username, arg.password);
       if (r.action !== 'none') askSavePw(pf, arg, r);
     }
   }
   function askSavePw(pf, d, r) {
+    // Aynı şifre için kullanıcı adlı soru açıksa, kullanıcı adı boş ikinci bildirim onu ezmesin
+    if (!pwBar.hidden && pwBar.pending && pwBar.pending.password === d.password && pwBar.pending.username && !d.username) return;
+    pwBar.pending = d;
     const host = (() => { try { return new URL(d.url).host; } catch { return d.url; } })();
-    const done = () => { pwBar.hidden = true; pwBar.replaceChildren(); };
+    const done = () => { pwBar.hidden = true; pwBar.replaceChildren(); pwBar.pending = null; };
     const upd = r.action === 'update';
     pwBar.replaceChildren(...[
       h('span', { class: 'k', textContent: '🔑' }),
       h('span', { class: 'q' }, h('b', { textContent: upd ? t('Şifre güncellensin mi?') : t('Şifre kaydedilsin mi?') }),
-        ' ' + host + ' · ' + (d.username || t('(kullanıcı adı yok)'))),
-      h('button', { class: 'primary', textContent: upd ? t('Güncelle') : t('Kaydet'), onclick: async () => { await window.desk.pw.save(pf, d.url, d.username, d.password); done(); updateKey(); } }),
+        ' ' + host + ' · ' + (d.username || r.username || t('(kullanıcı adı yok)'))),
+      h('button', { class: 'primary', textContent: upd ? t('Güncelle') : t('Kaydet'), onclick: async () => { await window.desk.pw.save(pf, d.url, d.username, d.password, r.id); done(); updateKey(); } }),
       upd ? null : h('button', { textContent: t('Bu sitede asla'), onclick: async () => { await window.desk.pw.never(pf, d.url); done(); } }),
       h('button', { textContent: t('Şimdi değil'), onclick: done })].filter(Boolean));
     pwBar.hidden = false;
@@ -1010,7 +1022,7 @@ async function pwAddDialog(profile, url = '') {
     fields: [{ name: 'site', label: t('Site'), value: origin, placeholder: 'http://localhost' }, { name: 'u', label: t('Kullanıcı adı'), value: '' }, { name: 'p', label: t('Şifre'), type: 'password', value: '' }],
     okText: t('Kaydet') });
   if (!r) return false;
-  if (!r.site.trim() || !r.p) { await alertBox(t('Şifre ekle'), t('Site ve şifre boş olamaz.')); return false; }
+  if (!r.site.trim() || (!r.p && !r.u.trim())) { await alertBox(t('Şifre ekle'), t('Site boş olamaz; kullanıcı adı ya da şifreden en az biri girilmeli.')); return false; }
   return window.desk.pw.save(profile, normalizeUrl(r.site), r.u.trim(), r.p);
 }
 function openPasswords(profile) {
@@ -1024,9 +1036,10 @@ function openPasswords(profile) {
       body.replaceChildren(...[
         entries.length ? null : h('div', { class: 'hint', textContent: t('Bu profilde kayıtlı şifre yok. Bir sitede giriş yapınca Desk Helper kaydetmeyi önerir.') }),
         ...entries.map((e) => {
-          const pwEl = h('span', { class: 'pw-val', textContent: '••••••••' });
+          const pwEl = h('span', { class: 'pw-val' + (e.noPw ? ' none' : ''), textContent: e.noPw ? t('(şifre yok)') : '••••••••' });
           const showBtn = h('button', { textContent: '👁', title: t('Göster') });
           showBtn.onclick = async () => {
+            if (e.noPw) return;
             if (pwEl.dataset.shown) { pwEl.textContent = '••••••••'; delete pwEl.dataset.shown; return; }
             if (!(await pwUnlock())) return;
             pwEl.textContent = (await window.desk.pw.reveal(e.id)) ?? '?'; pwEl.dataset.shown = '1';
@@ -1428,7 +1441,8 @@ function renderTabs() {
     const tab = h('div', { class: 'tab' + (ws.id === state.activeWs ? ' active' : ''), title: tip },
       ls.length ? icons : null, name, unread ? h('span', { class: 'badge', textContent: unread }) : null,
       h('button', { class: 'x', textContent: '✕', title: t('Sekmeyi kapat'), onclick: (e) => { e.stopPropagation(); closeWs(ws); } }));
-    tab.addEventListener('click', () => switchWs(ws.id));
+    tab.addEventListener('click', () => { if (!tabDragJustEnded) switchWs(ws.id); });
+    tab.addEventListener('pointerdown', (e) => tabDragStart(e, ws, tab));
     tab.addEventListener('auxclick', (e) => { if (e.button === 1) closeWs(ws); });
     const rename = () => {
       const inp = h('input', { value: ws.name });
@@ -1442,6 +1456,54 @@ function renderTabs() {
     return tab;
   }));
   $('#tabs .tab.active')?.scrollIntoView({ block: 'nearest' }); // 2 sırayı aşınca aktif sekme görünür kalsın
+}
+
+// Sekmeyi sürükleyerek sırala: 5px'ten az hareket tıklama sayılır; 2 sıraya sarılmış çubukta da çalışır.
+let tabDragJustEnded = false;
+function tabDragStart(e, ws, tab) {
+  if (e.button !== 0 || e.target.closest('button, input')) return;
+  const box = $('#tabs'), x0 = e.clientX, y0 = e.clientY;
+  let on = false, mark = null, target = -1;
+  const place = (ev) => {
+    const others = [...box.querySelectorAll('.tab')].filter((t) => t !== tab);
+    // İmlecin bulunduğu satırdaki sekmeler; imlecin solunda kalanların sayısı = bırakma yeri
+    const rects = others.map((t) => t.getBoundingClientRect());
+    let row = rects.filter((r) => ev.clientY >= r.top && ev.clientY <= r.bottom);
+    if (!row.length) { const near = rects.reduce((a, r) => (!a || Math.abs(r.top + r.height / 2 - ev.clientY) < Math.abs(a.top + a.height / 2 - ev.clientY) ? r : a), null); row = near ? rects.filter((r) => r.top === near.top) : []; }
+    let idx, ref;
+    const before = row.find((r) => ev.clientX < r.left + r.width / 2);
+    if (before) { ref = before; idx = rects.indexOf(before); mark.style.left = (before.left - 2) + 'px'; }
+    else if (row.length) { ref = row.at(-1); idx = rects.indexOf(ref) + 1; mark.style.left = (ref.right) + 'px'; }
+    else { idx = others.length; ref = tab.getBoundingClientRect(); mark.style.left = ref.left + 'px'; }
+    Object.assign(mark.style, { top: ref.top + 'px', height: ref.height + 'px' });
+    target = idx;
+  };
+  const move = (ev) => {
+    if (!on) {
+      if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 5) return;
+      on = true;
+      tab.classList.add('dragging'); document.body.classList.add('tab-dragging');
+      mark = h('div', { class: 'tab-drop' }); document.body.append(mark);
+    }
+    place(ev);
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+    if (!on) return;
+    mark.remove(); tab.classList.remove('dragging'); document.body.classList.remove('tab-dragging');
+    tabDragJustEnded = true; setTimeout(() => { tabDragJustEnded = false; });
+    const from = state.workspaces.indexOf(ws);
+    if (target >= 0 && from >= 0) {
+      state.workspaces.splice(from, 1);
+      state.workspaces.splice(target, 0, ws);
+      renderTabs(); save();
+    }
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
 }
 
 function switchWs(id) { state.activeWs = id; layout(); renderTabs(); save(); }
@@ -1814,14 +1876,24 @@ async function openSettings(tab = 'settings') {
     const chk = (key) => h('input', { type: 'checkbox', checked: !!s[key], onchange: (e) => set(key, e.target.checked) });
     const notesLbl = h('span', { class: 'hint', textContent: s.notesDir || info.defaultNotesDir });
     function set(key, val) { s[key] = val; applySettings(); save(); }
+    function accentRow() {
+      const box = h('div', { class: 'swatches' });
+      const draw = () => box.replaceChildren(
+        ...ACCENTS.map((c) => h('button', { class: 'swatch' + (s.accent === c ? ' on' : ''), title: c, style: 'background:' + c, onclick: () => { set('accent', c); draw(); } })),
+        h('input', { type: 'color', value: s.accent || ACCENTS[0], title: t('Özel renk'), oninput: (e) => { set('accent', e.target.value); }, onchange: draw }));
+      draw();
+      return h('div', { class: 'row' }, h('span', { textContent: t('Tema rengi') }), box);
+    }
 
     const settingsPane = h('div', { class: 'pane' },
       h('label', { class: 'row' }, t('Dil / Language'), sel('lang', [['tr', 'Türkçe'], ['en', 'English']], () => setTimeout(() => location.reload(), 350))),
       h('label', { class: 'row' }, t('Tema'), sel('theme', [['dark', t('Koyu')], ['light', t('Açık')]])),
+      accentRow(),
       h('label', { class: 'row' }, t('Açılışta pencere konumu'), sel('startDock', [['last', t('Son bıraktığım yer')], ['right', t('Ekranın sağ yarısı')], ['right3', t('Sağ üçte bir')], ['left', t('Ekranın sol yarısı')], ['full', t('Tam ekran')]])),
       h('label', { class: 'row' }, t('Windows açılınca başlat'), chk('startWithWindows')),
       h('label', { class: 'row' }, t('Her zaman üstte'), chk('alwaysOnTop')),
       h('label', { class: 'row' }, t('Dolu sekmeyi kapatırken sor'), chk('confirmTabClose')),
+      h('label', { class: 'row' }, t('Açılışta yeni sürümü denetle'), chk('autoUpdate')),
       h('label', {}, t('Notların kaydedileceği klasör'), notesLbl,
         h('div', { class: 'fav-add' },
           h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; } } }),
@@ -1835,7 +1907,9 @@ async function openSettings(tab = 'settings') {
       h('div', { class: 'brand', textContent: 'rbnbilisim' }),
       h('div', { class: 'hint', textContent: t('© {y} rbnbilisim. Tüm hakları saklıdır.', { y: new Date().getFullYear() }) }),
       h('div', { class: 'hint', textContent: `Electron ${info.electron} · Chromium ${info.chrome}` }),
-      h('div', { class: 'fav-add' }, h('button', { textContent: t('Veri klasörü'), onclick: () => window.desk.open(info.dataDir) })));
+      h('div', { class: 'fav-add' },
+        h('button', { class: 'primary', textContent: t('Güncellemeleri denetle'), onclick: () => checkUpdate(true) }),
+        h('button', { textContent: t('Veri klasörü'), onclick: () => window.desk.open(info.dataDir) })));
 
     const tabs = h('div', { class: 'dtabs' });
     const show = (which) => {
@@ -1853,7 +1927,45 @@ function applySettings() {
   lang = state.settings.lang === 'en' ? 'en' : 'tr';
   document.documentElement.lang = lang;
   document.body.classList.toggle('light', state.settings.theme === 'light');
+  const ac = /^#[0-9a-f]{6}$/i.test(state.settings.accent || '') ? state.settings.accent : DEFAULT_SETTINGS.accent;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(ac.slice(i, i + 2), 16));
+  document.documentElement.style.setProperty('--accent', ac);
+  document.documentElement.style.setProperty('--on-accent', (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#111' : '#fff'); // açık renkte koyu yazı
   window.desk.applySettings(state.settings);
+}
+
+// ---------- Güncelleme ----------
+// Yeni sürüm GitHub Releases'tan denetlenir. Onaylanırsa indirilir; Desk Helper kapanıp aynı klasöre kurulur ve
+// yeniden açılır (aynı exe, aynı kısayollar, ayarlar ve veriler korunur).
+async function checkUpdate(manual) {
+  const r = await window.desk.update.check().catch((e) => ({ error: String(e?.message || e) }));
+  if (r.dev) { if (manual) alertBox(t('Güncelleme'), t('Geliştirme sürümünde güncelleme denetlenmez.')); return; }
+  if (r.error) { if (manual) alertBox(t('Güncelleme'), t('Güncelleme denetlenemedi: {err}', { err: r.error })); return; }
+  if (!r.available) { if (manual) alertBox(t('Güncelleme'), t('Desk Helper güncel (sürüm {v}).', { v: r.version })); return; }
+  if (!manual && state.settings.skipVersion === r.version) return;
+  showUpdate(r);
+}
+function showUpdate(r) {
+  Modal.open({ title: t('Yeni sürüm var: {v}', { v: r.version }), icon: '⬆', size: 'md', body: (api) => {
+    const fill = h('div', { class: 'upd-fill' });
+    const bar = h('div', { class: 'upd-bar', hidden: true }, fill);
+    const status = h('div', { class: 'mtext', textContent: t('Kullandığın sürüm {v}. Şimdi güncellemek ister misin?', { v: r.current }) });
+    const go = async () => {
+      api.setButtons([]); bar.hidden = false; status.textContent = t('İndiriliyor…');
+      const off = window.desk.update.onProgress((p) => { fill.style.width = p + '%'; status.textContent = t('İndiriliyor… %{p}', { p }); });
+      const d = await window.desk.update.download(); off();
+      if (d?.error) { status.textContent = t('İndirilemedi: {err}', { err: d.error }); api.setButtons([{ label: t('Kapat'), primary: true }]); return false; }
+      fill.style.width = '100%'; status.textContent = t('Kuruluyor, Desk Helper birazdan yeniden açılacak…');
+      await window.desk.update.install();
+      return false;
+    };
+    api.setButtons([
+      { label: t('Bu sürümü atla'), left: true, onClick: () => { state.settings.skipVersion = r.version; save(); } },
+      { label: t('Sonra'), value: null },
+      { label: t('Şimdi güncelle'), primary: true, keep: true, onClick: go },
+    ]);
+    return [status, h('h4', { class: 'upd-h', textContent: t('Yenilikler') }), h('div', { class: 'upd-notes', textContent: r.notes || t('Bu sürüm için not yok.') }), bar];
+  } });
 }
 
 // ---------- Pencereler (modal) ----------
@@ -1930,6 +2042,7 @@ async function start(saved) {
     }
   });
   save();
+  if (state.settings.autoUpdate) setTimeout(() => checkUpdate(false), 4000);
 }
 
 init();
