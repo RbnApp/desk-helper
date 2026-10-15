@@ -167,4 +167,11 @@ window.I18N_EN = {
   'Sağ tık: alt çubuğa ekle, yeniden adlandır': 'Right-click: add to bottom bar, rename',
   'Yeniden adlandır…': 'Rename…',
   'Tıkla: aç · Sağ tık: alt çubuğa ekle, yeniden adlandır · ✕: çıkar': 'Click: open · Right-click: add to bottom bar, rename · ✕: remove',
+  'Harici tarayıcı': 'External browser',
+  'İleri': 'Forward',
+  'Adres yaz veya ara': 'Type an address or search',
+  'Yeni profil…': 'New profile…',
+  'Yeni tarayıcı profili': 'New browser profile',
+  'Her profilin girişleri ve çerezleri ayrı tutulur.': 'Each profile keeps its own sign-ins and cookies.',
+  'Profil adı': 'Profile name',
 };

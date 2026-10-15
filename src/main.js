@@ -97,7 +97,7 @@ app.on('web-contents-created', (_e, wc) => {
         return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true, parent: win, icon: path.join(__dirname, 'logo.png') } };
       }
       if (/^https?:/.test(url)) {
-        if (wc.getType() === 'webview' && win) win.webContents.send('web:link', wc.id, url, false);
+        if (wc.getType() === 'webview' && win) win.webContents.send('web:link', wc.id, url, 'auto');
         else shell.openExternal(url);
       }
       return { action: 'deny' };
@@ -113,7 +113,8 @@ function webContextMenu(wc, p) {
   const items = [];
   if (p.linkURL && /^https?:/.test(p.linkURL)) {
     items.push(
-      { label: L('Yeni panelde aç', 'Open in new panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, true) },
+      { label: L('Yeni sekmede aç', 'Open in new tab'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'tab') },
+      { label: L('Yeni panelde aç', 'Open in new panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'panel') },
       { label: L('Tarayıcıda aç', 'Open in browser'), click: () => shell.openExternal(p.linkURL) },
       { label: L('Bağlantıyı kopyala', 'Copy link'), click: () => clipboard.writeText(p.linkURL) },
       { type: 'separator' });
@@ -130,7 +131,10 @@ function webContextMenu(wc, p) {
   }
   items.push(
     { label: L('Geri', 'Back'), enabled: wc.navigationHistory.canGoBack(), click: () => wc.navigationHistory.goBack() },
-    { label: L('Yenile', 'Reload'), click: () => wc.reload() });
+    { label: L('İleri', 'Forward'), enabled: wc.navigationHistory.canGoForward(), click: () => wc.navigationHistory.goForward() },
+    { label: L('Yenile', 'Reload'), click: () => wc.reload() },
+    { type: 'separator' },
+    { label: L('İncele', 'Inspect'), click: () => wc.inspectElement(p.x, p.y) });
   Menu.buildFromTemplate(items).popup({ window: win });
 }
 

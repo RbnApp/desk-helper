@@ -41,7 +41,7 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 6;
+const STATE_SCHEMA = 7;
 
 // WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
 const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
@@ -66,10 +66,14 @@ const YT_URL = 'https://www.youtube.com/';
 const youtubeShortcut = () => ({ id: 'yt', name: 'YouTube', emo: '▶️', kind: 'native', open: 'web', webUrl: YT_URL,
   native: { type: 'browser', browser: 'ask', url: YT_URL, appMode: true, remember: true } });
 
+// Kendi tarayıcımız (sekmeli, profilli; localhost ve giriş istemeyen siteler için)
+const deskBrowserShortcut = () => ({ id: 'deskbrowser', name: t('Tarayıcı'), emo: '🧭', kind: 'browser' });
+
 const defaultShortcuts = () => [
   ...webShortcuts(),
   youtubeShortcut(),
-  { id: 'browser', name: t('Tarayıcı'), emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } },
+  deskBrowserShortcut(),
+  { id: 'browser', name: t('Harici tarayıcı'), emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } },
   { id: 'notes', name: t('Not Defteri'), emo: '📝', kind: 'notes' },
   { id: 'files', name: t('Dosyalar'), emo: '📁', kind: 'files' },
 ];
@@ -79,12 +83,13 @@ function leafFrom(sc) {
   if (sc.url) leaf.url = sc.url;
   if (sc.mobile) leaf.mobile = true;
   if (sc.multi) leaf.multi = true;
+  if (sc.profile) leaf.profile = sc.profile;
   if (sc.native) leaf.native = { ...sc.native };
   return leaf;
 }
 
 function defaultState() {
-  const [wa, tg, , , , notes, files] = defaultShortcuts().map(leafFrom);
+  const [wa, tg, , , , , notes, files] = defaultShortcuts().map(leafFrom);
   const ws = {
     id: uid(), name: t('Masam'), active: wa.id,
     root: {
@@ -108,6 +113,12 @@ function migrate(s) {
     s.shortcuts.splice(ig + 1, 0, youtubeShortcut());
   }
   if ((s.schema || 1) < 6) for (const sc of s.shortcuts) if (sc.id === 'yt') { sc.open = 'web'; sc.webUrl = YT_URL; }
+  if ((s.schema || 1) < 7 && !s.shortcuts.some((x) => x.id === 'deskbrowser')) {
+    const old = s.shortcuts.find((x) => x.id === 'browser');
+    if (old && (old.name === 'Tarayıcı' || old.name === 'Browser')) old.name = t('Harici tarayıcı');
+    const yt = s.shortcuts.findIndex((x) => x.id === 'yt');
+    s.shortcuts.splice(yt + 1, 0, deskBrowserShortcut());
+  }
   s.schema = STATE_SCHEMA;
   return s;
 }
@@ -324,6 +335,7 @@ function createPanel(ws, leaf) {
 
   if (leaf.kind === 'native') buildNative(p);
   else if (leaf.kind === 'web') buildWeb(p);
+  else if (leaf.kind === 'browser') buildBrowser(p);
   else if (leaf.kind === 'notes') buildNotes(p);
   else if (leaf.kind === 'files') buildFiles(p);
   return p;
@@ -449,9 +461,16 @@ window.desk.native.onSpawn((srcId, w) => {
 
 // Web panelinden link: YouTube gibi çoklu panellerde (veya sağ tık > Yeni panelde aç) yanına yeni panel,
 // diğerlerinde varsayılan tarayıcı.
-window.desk.onWebLink((wcId, url, force) => {
-  const src = [...panels.values()].find((p) => { try { return p.wv && p.wv.getWebContentsId() === wcId; } catch { return false; } });
-  if (!src || !(force || src.leaf.multi)) { window.desk.openExternal(url); return; }
+window.desk.onWebLink((wcId, url, mode) => {
+  const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
+  if (!src) { window.desk.openExternal(url); return; }
+  // Kendi tarayıcımız: linkler yeni sekmede açılır ("Yeni panelde aç" hariç).
+  if (src.leaf.kind === 'browser') {
+    if (mode === 'panel') addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url, profile: src.leaf.profile });
+    else src.newTab(url);
+    return;
+  }
+  if (!(mode === 'panel' || mode === 'tab' || src.leaf.multi)) { window.desk.openExternal(url); return; }
   const leaf = { type: 'panel', id: uid(), kind: 'web', title: src.leaf.title, emo: src.leaf.emo, url, multi: src.leaf.multi };
   if (src.leaf.mobile) leaf.mobile = true;
   // Art arda açılan videolar sırayla dizilsin: en son açılan aynı türden panelin yanına ekle.
@@ -463,6 +482,145 @@ window.desk.onWebLink((wcId, url, force) => {
   layout(); renderTabs(); save();
 });
 
+// --- Kendi tarayıcımız: sekmeler, adres çubuğu, ayrı kalıcı profiller ---
+// Her profil ayrı oturumdur (çerezler, girişler): persist:br-<profil>. Gizli pencere kalıcı değildir.
+const partitionFor = (profile) => (profile === '__private' ? 'br-private' : 'persist:br-' + encodeURIComponent(profile || 'default'));
+const profileLabel = (pr) => (pr === '__private' ? '🕶 ' + t('Gizli') : '👤 ' + (pr && pr !== 'default' ? pr : t('Varsayılan')));
+function normalizeUrl(text) {
+  const v = text.trim();
+  if (!v) return 'about:blank';
+  if (/^[a-z][\w+.-]*:\/\//i.test(v) || /^(about|data|file):/i.test(v)) return v;
+  if (/^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|\d+\.\d+\.\d+\.\d+)(:\d+)?(\/|$)/i.test(v)) return 'http://' + v;
+  if (/^[^\s]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(v)) return 'https://' + v;
+  return 'https://www.google.com/search?q=' + encodeURIComponent(v);
+}
+const HOME_URL = 'https://www.google.com/';
+
+function buildBrowser(p) {
+  const L = p.leaf;
+  if (L.profile === '__private') L.tabs = []; // gizli pencere yeniden açılınca boş başlar
+  if (!L.tabs?.length) L.tabs = [{ id: uid(), url: L.url || HOME_URL, title: '' }];
+  if (!L.tabs.some((x) => x.id === L.activeTab)) L.activeTab = L.tabs[0].id;
+  L.profile ||= 'default';
+  const strip = h('div', { class: 'br-tabs' });
+  const back = h('button', { title: t('Geri'), textContent: '←' });
+  const fwd = h('button', { title: t('İleri'), textContent: '→' });
+  const reload = h('button', { title: t('Yenile'), textContent: '⟳' });
+  const addr = h('input', { class: 'br-addr', spellcheck: false, placeholder: t('Adres yaz veya ara') });
+  const prof = h('button', { class: 'br-prof', title: t('Profil') });
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, addr, prof);
+  const views = h('div', { class: 'br-views' });
+  p.body.append(strip, bar, views);
+  p.body.classList.add('browser');
+  const wvs = new Map(); // sekme id -> webview
+  p.ownsWc = (id) => [...wvs.values()].some((wv) => { try { return wv.getWebContentsId() === id; } catch { return false; } });
+  const cur = () => wvs.get(L.activeTab);
+
+  function makeView(tab) {
+    const wv = document.createElement('webview');
+    wv.setAttribute('partition', partitionFor(L.profile));
+    wv.setAttribute('allowpopups', '');
+    wv.setAttribute('src', tab.url || HOME_URL);
+    wv.addEventListener('focus', () => setActive(p.ws, L.id));
+    const sync = () => {
+      tab.url = wv.getURL(); save();
+      if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); }
+    };
+    wv.addEventListener('did-navigate', sync);
+    wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && sync());
+    wv.addEventListener('page-title-updated', (e) => { tab.title = e.title; renderStrip(); if (tab.id === L.activeTab) setTitle(p, L.title + ' · ' + e.title); save(); });
+    wv.addEventListener('page-favicon-updated', (e) => { tab.icon = e.favicons[0]; renderStrip(); });
+    wv.addEventListener('did-start-loading', () => { tab.loading = true; renderStrip(); });
+    wv.addEventListener('did-stop-loading', () => { tab.loading = false; renderStrip(); updateNav(); });
+    wv.addEventListener('did-fail-load', (e) => {
+      if (e.errorCode === -3 || !e.isMainFrame) return;
+      tab.title = t('Sayfa yüklenemedi ({err}). İnternet bağlantını kontrol edip ⟳ ile yenile.', { err: e.errorDescription });
+      renderStrip();
+    });
+    views.append(wv);
+    wvs.set(tab.id, wv);
+    return wv;
+  }
+  function updateNav() {
+    const wv = cur();
+    try { back.disabled = !wv.canGoBack(); fwd.disabled = !wv.canGoForward(); } catch { back.disabled = fwd.disabled = true; }
+  }
+  function show(id) {
+    L.activeTab = id;
+    const tab = L.tabs.find((x) => x.id === id);
+    if (!wvs.has(id)) makeView(tab);
+    for (const [tid, wv] of wvs) wv.classList.toggle('on', tid === id);
+    addr.value = tab.url === 'about:blank' ? '' : tab.url || '';
+    setTitle(p, L.title + (tab.title ? ' · ' + tab.title : ''));
+    renderStrip(); updateNav(); save(); renderTabs();
+  }
+  function closeTab(id) {
+    const i = L.tabs.findIndex((x) => x.id === id);
+    if (i < 0) return;
+    wvs.get(id)?.remove(); wvs.delete(id);
+    L.tabs.splice(i, 1);
+    if (!L.tabs.length) { closePanel(p.ws, L.id); return; }
+    if (L.activeTab === id) show(L.tabs[Math.min(i, L.tabs.length - 1)].id); else { renderStrip(); save(); }
+  }
+  p.newTab = (url = HOME_URL, focusAddr = false) => {
+    const tab = { id: uid(), url, title: '' };
+    const i = L.tabs.findIndex((x) => x.id === L.activeTab);
+    L.tabs.splice(i + 1, 0, tab);
+    show(tab.id);
+    if (focusAddr) { addr.value = ''; addr.focus(); }
+  };
+  function renderStrip() {
+    strip.replaceChildren(...L.tabs.map((tab) => {
+      const ic = tab.loading ? h('span', { class: 'br-spin' }) : tab.icon ? h('img', { src: tab.icon, alt: '' }) : h('span', { textContent: '🌐' });
+      if (ic.tagName === 'IMG') ic.onerror = () => ic.replaceWith(h('span', { textContent: '🌐' }));
+      const el = h('div', { class: 'br-tab' + (tab.id === L.activeTab ? ' on' : ''), title: (tab.title || tab.url || '') },
+        ic, h('span', { class: 'n', textContent: tab.title || tab.url || t('Yeni sekme') }),
+        h('button', { class: 'x', textContent: '✕', title: t('Sekmeyi kapat'), onclick: (e) => { e.stopPropagation(); closeTab(tab.id); } }));
+      el.addEventListener('mousedown', (e) => { if (e.button === 1) { e.preventDefault(); closeTab(tab.id); } });
+      el.addEventListener('click', () => show(tab.id));
+      return el;
+    }), h('button', { class: 'br-new', textContent: '＋', title: t('Yeni sekme'), onclick: () => p.newTab(HOME_URL, true) }));
+  }
+  function setProfile(pr) {
+    if (pr === L.profile) return;
+    L.profile = pr;
+    for (const wv of wvs.values()) wv.remove();
+    wvs.clear();
+    if (pr === '__private') L.tabs = [{ id: uid(), url: HOME_URL, title: '' }];
+    prof.textContent = profileLabel(pr);
+    p.el.classList.toggle('private', pr === '__private');
+    show(L.tabs.find((x) => x.id === L.activeTab)?.id || L.tabs[0].id);
+  }
+  prof.onclick = (e) => {
+    state.browserProfiles ||= ['default'];
+    contextMenu(e, document.body, [
+      ...state.browserProfiles.map((pr) => ({ label: profileLabel(pr) + (pr === L.profile ? '  ✓' : ''), action: () => setProfile(pr) })),
+      { label: profileLabel('__private') + (L.profile === '__private' ? '  ✓' : ''), action: () => setProfile('__private') },
+      '-',
+      { label: t('Yeni profil…'), action: async () => {
+        const r = await modal({ title: t('Yeni tarayıcı profili'), text: t('Her profilin girişleri ve çerezleri ayrı tutulur.'), fields: [{ name: 'name', label: t('Profil adı'), value: '' }] });
+        const name = r?.name?.trim();
+        if (!name) return;
+        if (!state.browserProfiles.includes(name)) state.browserProfiles.push(name);
+        save(); setProfile(name);
+      } },
+    ]);
+  };
+  back.onclick = () => { try { cur().goBack(); } catch {} };
+  fwd.onclick = () => { try { cur().goForward(); } catch {} };
+  reload.onclick = () => { try { cur().reload(); } catch {} };
+  addr.addEventListener('focus', () => addr.select());
+  addr.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { const u = normalizeUrl(addr.value); const wv = cur(); wv.loadURL(u).catch(() => {}); wv.focus(); }
+    if (e.key === 'Escape') { addr.value = L.tabs.find((x) => x.id === L.activeTab)?.url || ''; addr.blur(); }
+  });
+  prof.textContent = profileLabel(L.profile);
+  p.el.classList.toggle('private', L.profile === '__private');
+  p.tools.append(h('button', { title: t('Tarayıcıda aç'), textContent: '↗', onclick: () => { try { window.desk.openExternal(cur().getURL()); } catch {} } }));
+  for (const tab of L.tabs) tab.loading = false;
+  show(L.activeTab);
+}
+
 // --- Uygulama içi web sayfası ---
 const MOBILE_UA = `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${(/Chrome\/([\d.]+)/.exec(navigator.userAgent) || [, '130.0.0.0'])[1]} Mobile Safari/537.36`;
 function buildWeb(p) {
@@ -473,6 +631,7 @@ function buildWeb(p) {
   wv.setAttribute('src', p.leaf.url);
   p.body.append(wv);
   p.wv = wv;
+  p.ownsWc = (id) => { try { return wv.getWebContentsId() === id; } catch { return false; } };
   p.tools.append(
     h('button', { title: t('Geri'), textContent: '←', onclick: () => wv.canGoBack() && wv.goBack() }),
     h('button', { title: t('Yenile'), textContent: '⟳', onclick: () => wv.reload() }),

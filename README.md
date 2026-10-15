@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.2 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.2.3 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -29,7 +29,15 @@ Kendi tarayıcı profilinin hesabıyla açmak istersen: kısayola sağ tık > D�
 
 Tüm web panellerinde sağ tık menüsü vardır: yeni panelde aç, tarayıcıda aç, bağlantıyı kopyala, kes/kopyala/yapıştır.
 
-## Tarayıcı ve diğer programlar panelde
+## Tarayıcı (Desk Helper'ın kendi tarayıcısı)
+🧭 **Tarayıcı** kısayolu Desk Helper'ın içinde sekmeli bir tarayıcı paneli açar: sekmeler (＋, ✕, orta tık),
+geri / ileri / yenile, adres çubuğu (`localhost:3000` yazınca doğrudan açılır, adres değilse Google'da arar).
+Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık > "Yeni panelde aç" yanına ayrı panel açar.
+👤 düğmesinden profil seçilir: her profilin girişleri ve çerezleri ayrıdır, "Yeni profil…" ile eklenir;
+🕶 Gizli seçilirse hiçbir şey kaydedilmez. Sekmeler ve açık sayfalar uygulama kapanınca hatırlanır.
+Gerçek Opera / Chrome profilini panele yerleştirmek için **Harici tarayıcı** kısayolu duruyor.
+
+## Harici tarayıcı ve diğer programlar panelde
 "Tarayıcı" kısayolu ve "Kısayol ekle" ile eklenen programlar bilgisayardaki **gerçek programlardır**.
 Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üstüne oturtur:
 - Panel taşınınca, boyutlanınca, Desk Helper küçülünce pencere de takip eder.
@@ -45,7 +53,7 @@ Sınırlar: Windows başka bir programın penceresini gerçekten gömmeye izin v
 Bu yüzden Desk Helper'ın açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici gizlenir.
 
 ### Tarayıcı ve profil
-"Tarayıcı" kısayolu her seferinde sorar: hangi tarayıcı (bilgisayardakiler otomatik bulunur), hangi
+"Harici tarayıcı" kısayolu her seferinde sorar: hangi tarayıcı (bilgisayardakiler otomatik bulunur), hangi
 profil, normal / gizli / misafir pencere ve isteğe bağlı açılış adresi (ör. `http://localhost:3000`).
 "Bu seçimi kısayol olarak kaydet" ile ör. "Opera · localhost" kısayolu oluşur ve bir daha sormaz.
 
