@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('desk', {
   applySettings: (s) => ipcRenderer.invoke('settings:apply', s),
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
   describe: (p) => ipcRenderer.invoke('fav:describe', p),
+  iconFor: (p) => ipcRenderer.invoke('fav:icon', p),
   launch: (item) => ipcRenderer.invoke('fav:launch', item),
   pathForFile: (file) => webUtils.getPathForFile(file),
   places: () => ipcRenderer.invoke('fs:places'),

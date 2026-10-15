@@ -949,7 +949,7 @@ function renderShortcuts() {
     ...state.shortcuts.map((sc) => {
       const desc = sc.native ? (sc.native.type === 'app' ? (sc.open === 'web' ? t('Uygulama içi web') : t('Kurulu uygulama')) : sc.native.type === 'browser' ? t('Tarayıcı penceresi') : sc.native.exe) : (sc.url || '');
       const b = h('button', { class: 'sc', title: sc.name + (desc ? ' · ' + desc : '') + '\n' + t('Tıkla: panel ekle · Sağ tık: düzenle') },
-        h('span', { class: 'emo', textContent: sc.emo || '🌐' }), sc.name);
+        h('span', { class: 'emo' }, iconEl(sc, 'sc')), sc.name);
       b.addEventListener('click', () => addPanel(sc));
       b.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -978,7 +978,7 @@ async function newShortcut() {
     const exe = await window.desk.pick('file');
     if (!exe) return;
     const d = await window.desk.describe(exe);
-    state.shortcuts.push({ id: uid(), name: d.name, emo: '🖥', kind: 'native', native: { type: 'program', exe } });
+    state.shortcuts.push({ id: uid(), name: d.name, emo: '', icon: d.icon, kind: 'native', native: { type: 'program', exe } });
     renderShortcuts(); save();
   } else if (type === 'web') {
     const r = await modal({ title: t('Yeni kısayol'), fields: [
@@ -1032,13 +1032,36 @@ async function launchFavorite(f) {
   return true;
 }
 
-function appbarIcon(src, from) {
-  const emoji = h('span', { class: 'ab-emo', textContent: from === 'sc' ? (src.emo || '🌐') : src.type === 'url' ? '🌐' : src.type === 'folder' ? '📁' : '🖥' });
-  const url = from === 'fav' ? (src.icon || (src.type === 'url' ? siteIcon(src.target) : '')) : (src.kind === 'web' && !src.emo ? siteIcon(src.url) : '');
-  if (!url) return emoji;
+// Her öğenin kendi simgesi: programlarda exe/kısayol simgesi, sitelerde sitenin favicon'u,
+// yoksa emoji; o da yoksa baş harfli renkli kare.
+function letterIcon(name) {
+  let hsh = 0; for (const c of name || '?') hsh = (hsh * 31 + c.charCodeAt(0)) >>> 0;
+  return h('span', { class: 'letter-ic', textContent: (name || '?').trim().charAt(0).toUpperCase(), style: `background:hsl(${hsh % 360} 55% 45%)` });
+}
+function scSiteUrl(sc) { return sc.kind === 'web' ? sc.url : sc.webUrl || (sc.native?.type === 'browser' ? sc.native.url : ''); }
+function iconEl(src, from) {
+  let url = '', fallback;
+  if (from === 'sc') {
+    url = src.icon || (scSiteUrl(src) ? siteIcon(scSiteUrl(src)) : '');
+    fallback = () => (src.native?.type === 'program' && !src.emo ? letterIcon(src.name) : h('span', { class: 'ab-emo', textContent: src.emo || '🌐' }));
+  } else {
+    url = src.icon || (src.type === 'url' ? siteIcon(src.target) : '');
+    fallback = () => (src.type === 'url' ? h('span', { class: 'ab-emo', textContent: '🌐' }) : src.type === 'folder' ? h('span', { class: 'ab-emo', textContent: '📁' }) : letterIcon(src.name));
+  }
+  if (!url) return fallback();
   const img = h('img', { src: url, alt: '' });
-  img.onerror = () => img.replaceWith(emoji);
+  img.onerror = () => img.replaceWith(fallback());
   return img;
+}
+const appbarIcon = iconEl;
+
+// Program simgelerini yeniden üret (eski sürümler bazı programlarda jenerik simge kaydetmişti).
+async function refreshIcons() {
+  if (state.iconsRev === 2 || !isWin) return;
+  for (const f of state.favorites) if (f.type !== 'url') { const ic = await window.desk.iconFor(f.target); f.icon = ic || null; }
+  for (const sc of state.shortcuts) if (sc.native?.type === 'program') { const ic = await window.desk.iconFor(sc.native.exe); if (ic) sc.icon = ic; }
+  state.iconsRev = 2;
+  save(); renderShortcuts(); renderAppbar();
 }
 
 function renderAppbar() {
@@ -1162,7 +1185,7 @@ function openFavorites() {
     const grid = h('div', { class: 'fav-grid' });
     const render = () => {
       grid.replaceChildren(...(state.favorites.length ? state.favorites.map((f) => {
-        const pic = f.icon ? h('img', { src: f.icon, alt: '' }) : h('span', { class: 'ph', textContent: f.type === 'url' ? '🌐' : f.type === 'folder' ? '📁' : '📄' });
+        const pic = h('span', { class: 'ph' }, iconEl(f, 'fav'));
         const item = h('button', { class: 'fav-item' + (inAppbar('fav', f.id) ? ' docked' : ''), title: f.target + '\n' + t('Sağ tık: alt çubuğa ekle, yeniden adlandır') }, pic, h('span', { class: 'n', textContent: f.name }),
           h('span', { class: 'del', textContent: '✕', title: t('Favorilerden çıkar'), onclick: (e) => {
             e.stopPropagation(); state.favorites = state.favorites.filter((x) => x !== f); appbarRemove('fav', f.id); save(); render();
@@ -1356,6 +1379,7 @@ async function init() {
   translateStatic();
   renderShortcuts();
   initAppbar();
+  refreshIcons();
   layout();
   renderTabs();
   new ResizeObserver(() => layout()).observe($('#stage'));

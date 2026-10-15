@@ -197,3 +197,13 @@ body { display: flex; flex-direction: column; }
 .fav-item.docked { box-shadow: inset 0 0 0 2px var(--accent); }
 .fav-item.docked .chk { color: var(--accent); }
 .fav-item .ph img { width: 40px; height: 40px; object-fit: contain; }
+
+/* Simgeler: gerçek simge, favicon veya baş harfli renkli kare */
+.sc .emo { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; }
+.sc .emo img { width: 16px; height: 16px; object-fit: contain; }
+.sc .emo .ab-emo { font-size: 15px; }
+.letter-ic { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; border-radius: 22%; width: 16px; height: 16px; font-size: 10px; line-height: 1; }
+.ab-ic .letter-ic { width: 28px; height: 28px; font-size: 15px; }
+.fav-item .ph { display: inline-flex; align-items: center; justify-content: center; }
+.fav-item .ph .letter-ic { width: 40px; height: 40px; font-size: 20px; }
+.fav-item .ph .ab-emo { font-size: 30px; }

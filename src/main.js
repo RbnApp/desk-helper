@@ -187,16 +187,58 @@ ipcMain.handle('dialog:pick', async (_e, kind) => {
 });
 
 ipcMain.handle('fav:describe', async (_e, p) => {
-  // .lnk kısayollarında asıl hedefi ve adını bul.
-  let target = p;
-  if (process.platform === 'win32' && p.toLowerCase().endsWith('.lnk')) {
-    try { target = shell.readShortcutLink(p).target || p; } catch {}
-  }
   const name = path.basename(p).replace(/\.(lnk|exe|url|bat|cmd|appref-ms)$/i, '');
-  let icon = null;
-  try { icon = (await app.getFileIcon(target, { size: 'large' })).toDataURL(); } catch {}
-  return { name, icon };
+  return { name, icon: await iconFor(p) };
 });
+
+// Programın gerçek simgesi. Sırayla dener: kısayolun kendi simge alanı (ör. uygulama klasöründeki .ico),
+// kısayolun hedefi, kısayol dosyasının kendisi. Windows'un jenerik "uygulama" simgesi gelirse sonrakine geçer.
+let genericIcon;
+async function iconFor(p) {
+  if (process.platform !== 'win32') return null;
+  const get = async (f) => { try { return (await app.getFileIcon(f, { size: 'large' })).toDataURL(); } catch { return null; } };
+  if (genericIcon === undefined) { // simgesi olmayan (boş) bir exe'nin simgesi = Windows'un jenerik simgesi
+    const dummy = path.join(app.getPath('temp'), 'desk-helper-jenerik.exe');
+    try { fs.writeFileSync(dummy, ''); } catch {}
+    genericIcon = await get(dummy);
+  }
+  const tries = [];
+  if (p.toLowerCase().endsWith('.lnk')) {
+    try {
+      const l = shell.readShortcutLink(p);
+      if (l.icon) tries.push(l.icon);
+      if (l.target) tries.push(l.target);
+    } catch {}
+  }
+  tries.push(p);
+  let first = null;
+  for (const f of tries) {
+    const icon = await get(f);
+    if (!icon) continue;
+    first ??= icon;
+    if (icon !== genericIcon) return icon;
+  }
+  // exe'nin içinde simge yoksa (ör. kendi derlediğin uygulamalar) program klasöründe .ico / icon.png ara.
+  const exe = tries.find((f) => /\.exe$/i.test(f));
+  if (exe) {
+    const dir = path.dirname(exe);
+    for (const sub of ['', 'resources', 'assets', 'resources/app', 'resources/assets']) {
+      let files = [];
+      try { files = fs.readdirSync(path.join(dir, sub)); } catch { continue; }
+      const pick = files.find((f) => /\.ico$/i.test(f)) || files.find((f) => /^(icon|logo|app)[\w-]*\.png$/i.test(f));
+      if (!pick) continue;
+      const full = path.join(dir, sub, pick);
+      try {
+        const img = require('electron').nativeImage.createFromPath(full);
+        if (!img.isEmpty()) return img.resize({ width: 64, height: 64, quality: 'best' }).toDataURL();
+      } catch {}
+      const icon = await get(full);
+      if (icon && icon !== genericIcon) return icon;
+    }
+  }
+  return first && first !== genericIcon ? first : null; // null: arayüz baş harfli renkli simge çizer
+}
+ipcMain.handle('fav:icon', (_e, p) => iconFor(p));
 
 ipcMain.handle('fav:launch', async (_e, item) => {
   if (item.type === 'url') { await shell.openExternal(item.target); return ''; }
