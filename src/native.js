@@ -248,7 +248,10 @@ async function resolveApp(key) {
 }
 
 // Asıl uygulama penceresi: yolu/başlığı uyan, yeterince büyük, sahipsiz pencere (açılış ekranı, araç ipucu vb. değil).
-const bigEnough = (w) => w.width >= 300 && w.height >= 200 && !w.owner;
+// Masaüstü, görev çubuğu ve diğer kabuk pencereleri: hiçbir koşulda taşınmaz, kapatılmaz, panele alınmaz.
+const SHELL_CLASSES = new Set(['Progman', 'WorkerW', 'Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'SHELLDLL_DefView', 'SysListView32', 'Windows.UI.Core.CoreWindow', 'NotifyIconOverflowWindow']);
+const isShellWindow = (w) => SHELL_CLASSES.has(w.cls) || (/\\explorer\.exe$/i.test(w.exe || '') && w.cls !== 'CabinetWClass');
+const bigEnough = (w) => w.width >= 300 && w.height >= 200 && !w.owner && !isShellWindow(w);
 function matcherForApp(key) {
   const a = APPS[key];
   return (w) => bigEnough(w) && !/desk helper/i.test(w.exe)
@@ -368,6 +371,7 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle, onSpawn = () => 
 
   function dock(panelId, w, opts) {
     loadWin32();
+    if (isShellWindow(w) || w.hwnd === hostHandle()) return { error: 'no-window' }; // masaüstüne asla dokunma
     const hostHwnd = hostHandle();
     const e = {
       hwnd: w.hwnd, pid: w.pid, exe: w.exe, title: w.title,
@@ -481,7 +485,7 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle, onSpawn = () => 
     windows() {
       if (!isWin) return [];
       const host = hostHandle(), taken = attachedHwnds();
-      return listWindows().filter((w) => w.hwnd !== host && !taken.has(w.hwnd) && bigEnough(w) && w.cls !== 'Progman' && w.cls !== 'Shell_TrayWnd')
+      return listWindows().filter((w) => w.hwnd !== host && !taken.has(w.hwnd) && bigEnough(w))
         .map((w) => ({ hwnd: w.hwnd, pid: w.pid, title: w.title, exe: path.basename(w.exe) }));
     },
     raise() { if (docked.size) stack(hostHandle()); },
@@ -499,8 +503,11 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle, onSpawn = () => 
 function rescueParked() {
   if (!loadWin32()) return 0;
   let n = 0;
-  for (const w of listWindows({ includeHidden: true })) {
-    if (w.x > PARK_X + 1000 || w.y > PARK_Y + 1000 || W.IsHungAppWindow(w.hwnd)) continue;
+  // Yalnızca tam park noktamızda duran, görünür ve simge durumunda olmayan pencereler. (Windows küçültülmüş
+  // pencereleri -32000'e koyar; onlara ve gizli sistem pencerelerine asla dokunulmaz.)
+  for (const w of listWindows()) {
+    if (Math.abs(w.x - PARK_X) > 50 || Math.abs(w.y - PARK_Y) > 50) continue;
+    if (isShellWindow(w) || W.IsIconic(w.hwnd) || W.IsHungAppWindow(w.hwnd)) continue;
     W.SetWindowPos(w.hwnd, 0, 120 + n * 30, 120 + n * 30, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     taskbarTab(w.hwnd, true);
     n++;
