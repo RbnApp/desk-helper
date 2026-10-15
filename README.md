@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.1.3 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.1.4 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -15,7 +15,8 @@ Kurulum dosyası imzasız olduğu için SmartScreen "Yine de çalıştır" istey
 WhatsApp, Telegram ve tarayıcı panelleri web sayfası değil, bilgisayarındaki **gerçek programlardır**.
 Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üstüne oturtur:
 - Panel taşınınca, boyutlanınca, Desk Helper küçülünce pencere de takip eder.
-- Başka sekmeye geçince o sekmenin pencereleri gizlenir, geri dönünce görünür.
+- Başka sekmeye geçince o sekmenin pencereleri ekran dışına park edilir, geri dönünce yerine gelir
+  (gizlemek yerine park etmek, Chromium tabanlı programların geri dönünce boş görünmesini önler).
 - Desk Helper öne gelince paneldeki pencereler de öne gelir; paneldeki bir programa tıklayınca
   Desk Helper hemen arkasında kalır.
 - Program kendi oturumu, profili, sekmeleri, bildirimleri ve eklentileriyle çalışır.
@@ -25,7 +26,15 @@ Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üst
 
 Sınırlar: pencere gerçekten Desk Helper'ın "içine" gömülmez, panelin üstünde durur. Bu yüzden
 Desk Helper'ın kendi açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici gizlenir.
-Program kurulu değilse panel Microsoft Store'dan kurmayı önerir.
+Program kurulu değilse panel Microsoft Store'dan kurmayı önerir. Doğru pencere bulunamazsa panel başlığındaki
+🗗 düğmesi (veya paneldeki "Pencere seç") açık pencerelerin listesini gösterir, istediğini seçersin.
+
+### Masaüstü uygulaması mı, web mi?
+WhatsApp ve Telegram kısayollarında sağ tık > Düzenle > **Nasıl açılsın?** ile seçilir:
+- **Uygulama içinde web (önerilen):** web.whatsapp.com / web.telegram.org doğrudan Desk Helper'ın içinde açılır.
+  Gerçekten gömülüdür; sekme değiştirme, taşıma, açılır pencereler hiç sorun çıkarmaz. Oturum bir kez QR ile açılır ve kalır.
+- **Masaüstü uygulaması:** bilgisayardaki gerçek program panelin üstüne yerleştirilir. Desk Helper kapalıyken de
+  bildirim alırsın, ama dış pencere yerleştirme Windows'ta doğası gereği daha kırılgandır.
 
 ### Instagram
 Instagram'ın resmi Windows uygulaması yok. Instagram kısayolu ilk tıklamada hangi tarayıcı ve
@@ -49,8 +58,8 @@ profil, normal / gizli / misafir pencere ve isteğe bağlı açılış adresi (�
 - **Favoriler (⭐ veya Ctrl+Space):** bilgisayarındaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır.
 - **Panel taşıma:** başlıktan tutup başka panelin kenarına bırak; ortasına bırakırsan yer değiştirir.
 - **Boyutlandırma:** aradaki çizgiyi sürükle, çift tık eşitler.
-- **Ayarlar (⚙):** dil (Türkçe / English), tema, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü.
-- **Hakkında:** sol üstteki logo.
+- **Ayarlar ve Hakkında:** sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Ayarlar sekmesinde dil
+  (Türkçe / English), tema, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü; Hakkında sekmesinde sürüm bilgisi.
 
 ## Geliştirme
 Node.js gerekli. Bu klasörde:

@@ -148,3 +148,15 @@ body { display: flex; flex-direction: column; }
 .files-list:focus { outline: none; }
 .frow.cut { opacity: .5; }
 .frow input.rename { flex: 1; min-width: 0; padding: 0 4px; height: 20px; user-select: text; }
+
+/* Ayarlar + Hakkında tek pencere */
+#brand small { color: var(--muted); font-weight: 400; font-size: 11px; }
+#brand .gear { color: var(--muted); font-weight: 400; }
+.dtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px 0 4px; }
+.dtabs button { padding: 6px 12px; border-radius: 6px 6px 0 0; color: var(--muted); }
+.dtabs button.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.dialog .pane { display: flex; flex-direction: column; gap: 10px; }
+.dialog .pane[hidden] { display: none; }
+.dialog .pane.about { align-items: center; text-align: center; }
+.dialog .pane.about img { width: 84px; height: 84px; }
+.dialog .pane.about h3 { margin: 0; }

@@ -109,6 +109,7 @@ app.on('before-quit', () => { try { docker?.releaseAll(); } catch {} });
 // --- Gerçek programları panele oturtma ---
 ipcMain.handle('native:browsers', () => native.browsers());
 ipcMain.handle('native:attach', (_e, id, spec) => docker.attach(id, spec));
+ipcMain.handle('native:windows', () => docker.windows());
 ipcMain.handle('native:bounds', (_e, id, rect, visible) => docker.bounds(id, rect, visible));
 ipcMain.handle('native:release', (_e, id, close) => docker.release(id, { close }));
 ipcMain.handle('native:suspend', (_e, on) => docker.suspend(on));

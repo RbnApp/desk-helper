@@ -63,6 +63,10 @@ const SW_HIDE = 0, SW_SHOWNOACTIVATE = 4, SW_SHOW = 5, SW_RESTORE = 9;
 const EVENT_SYSTEM_FOREGROUND = 3, WINEVENT_OUTOFCONTEXT = 0, HWND_TOP = 0;
 const SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_NOMOVE = 0x2, SWP_NOSIZE = 0x1, SWP_ASYNCWINDOWPOS = 0x4000;
 const SWP_SHOWWINDOW = 0x40, SWP_HIDEWINDOW = 0x80;
+// Gizli sekmedeki pencereler gizlenmez, ekran dışına park edilir. Gizle/göster (SW_HIDE) Chromium
+// tabanlı pencerelerde (Opera, Chrome, WhatsApp, WebView2) geri gösterilince içeriğin çizilmemesine,
+// pencerenin "kaybolmasına" yol açıyordu; park etmek uygulamanın görünürlük durumunu hiç değiştirmez.
+const PARK_X = -30000, PARK_Y = -30000;
 const setShown = (hwnd, on) => W.SetWindowPos(hwnd, 0, 0, 0, 0, 0, (on ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 const WM_CLOSE = 0x10, DWMWA_EXTENDED_FRAME_BOUNDS = 9, DWMWA_CLOAKED = 14;
 const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
@@ -117,7 +121,9 @@ function listWindows({ includeHidden = false } = {}) {
       const owner = W.GetWindow(hwnd, GW_OWNER);
       const pid = [0];
       W.GetWindowThreadProcessId(hwnd, pid);
-      out.push({ hwnd: Number(hwnd), owner: Number(owner), pid: pid[0], title, cls: wstr(W.GetClassNameW, hwnd), exe: procPath(pid[0]) });
+      const r = rectOf(hwnd);
+      out.push({ hwnd: Number(hwnd), owner: Number(owner), pid: pid[0], title, cls: wstr(W.GetClassNameW, hwnd), exe: procPath(pid[0]),
+        width: r.right - r.left, height: r.bottom - r.top, visible: !!W.IsWindowVisible(hwnd) });
     } catch {}
     return true;
   }, 0);
@@ -130,12 +136,13 @@ const exists = (p) => { try { return fs.statSync(p).isFile(); } catch { return f
 
 const APPS = {
   whatsapp: {
-    name: 'WhatsApp', startName: 'WhatsApp', procs: ['whatsapp.exe', 'whatsapp.root.exe'], frameTitle: /whatsapp/i,
+    // Store sürümü C:\Program Files\WindowsApps\5319275A.WhatsAppDesktop_…\ altında çalışır; süreç adı sürüme göre değişiyor.
+    name: 'WhatsApp', startName: 'WhatsApp', pathRe: /whatsapp/i, frameTitle: /whatsapp/i,
     paths: ['%LOCALAPPDATA%\\WhatsApp\\WhatsApp.exe'],
     install: { store: 'ms-windows-store://pdp/?productid=9NKSQGP7F2NH', web: 'https://www.whatsapp.com/download' },
   },
   telegram: {
-    name: 'Telegram', startName: 'Telegram', procs: ['telegram.exe'], frameTitle: /telegram/i,
+    name: 'Telegram', startName: 'Telegram', pathRe: /telegram/i, frameTitle: /telegram/i,
     paths: ['%APPDATA%\\Telegram Desktop\\Telegram.exe', '%LOCALAPPDATA%\\Telegram Desktop\\Telegram.exe'],
     install: { store: 'ms-windows-store://pdp/?productid=9NZTWSQNTD0S', web: 'https://desktop.telegram.org/' },
   },
@@ -202,10 +209,12 @@ async function resolveApp(key) {
   return null;
 }
 
+// Asıl uygulama penceresi: yolu/başlığı uyan, yeterince büyük, sahipsiz pencere (açılış ekranı, araç ipucu vb. değil).
+const bigEnough = (w) => w.width >= 300 && w.height >= 200 && !w.owner;
 function matcherForApp(key) {
   const a = APPS[key];
-  return (w) => a.procs.includes(path.basename(w.exe).toLowerCase())
-    || (w.cls === 'ApplicationFrameWindow' && a.frameTitle.test(w.title));
+  return (w) => bigEnough(w) && !/desk helper/i.test(w.exe)
+    && (a.pathRe.test(w.exe) || (w.cls === 'ApplicationFrameWindow' && a.frameTitle.test(w.title)));
 }
 
 function launch([cmd, args]) {
@@ -215,7 +224,7 @@ function launch([cmd, args]) {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function waitForWindow(match, timeout = 20000) {
+async function waitForWindow(match, timeout = 45000) {
   const end = Date.now() + timeout;
   while (Date.now() < end) {
     const w = listWindows().find(match);
@@ -238,9 +247,14 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     const host = getHost();
     const show = e.visible && !suspended && e.rect && host && host.isVisible() && !host.isMinimized();
     if (!show) {
-      if (e.shown !== false) { setShown(e.hwnd, false); e.shown = false; }
+      if (e.shown !== false) {
+        W.SetWindowPos(e.hwnd, 0, PARK_X, PARK_Y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+        e.shown = false;
+      }
       return;
     }
+    const returning = e.shown === false;
+    if (!W.IsWindowVisible(e.hwnd)) setShown(e.hwnd, true); // tepsiye küçülmüş uygulama
     if (W.IsIconic(e.hwnd) || W.IsZoomed(e.hwnd)) W.ShowWindow(e.hwnd, SW_RESTORE);
     const t = toScreenRect(e.rect);
     // Windows 10/11'de pencerelerin görünmez kenarları var; hedefi buna göre genişlet.
@@ -248,11 +262,20 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     const l = fr.left - wr.left, tp = fr.top - wr.top, r = wr.right - fr.right, b = wr.bottom - fr.bottom;
     const x = t.x - l, y = t.y - tp, w = t.width + l + r, h = t.height + tp + b;
     if (wr.left !== x || wr.top !== y || wr.right - wr.left !== w || wr.bottom - wr.top !== h) {
-      W.SetWindowPos(e.hwnd, 0, x, y, w, h, SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+      // Park yerinden dönüşte asenkron taşıma bazen uygulanmıyor; o anda senkron taşı.
+      W.SetWindowPos(e.hwnd, 0, x, y, w, h, SWP_NOZORDER | SWP_NOACTIVATE | (returning ? 0 : SWP_ASYNCWINDOWPOS));
     }
     if (e.shown !== true) {
-      setShown(e.hwnd, true); e.shown = true;
+      e.shown = true;
       W.SetWindowPos(e.hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+    }
+    // Geri dönünce içeriği yeniden çizdir: boyutu 1 piksel oynat.
+    if (returning) {
+      setTimeout(() => {
+        if (!W.IsWindow(e.hwnd) || !e.shown || W.IsHungAppWindow(e.hwnd)) return;
+        W.SetWindowPos(e.hwnd, 0, x, y, w - 1, h, SWP_NOZORDER | SWP_NOACTIVATE);
+        setTimeout(() => e.shown && W.IsWindow(e.hwnd) && !W.IsHungAppWindow(e.hwnd) && W.SetWindowPos(e.hwnd, 0, x, y, w, h, SWP_NOZORDER | SWP_NOACTIVATE), 60);
+      }, 80);
     }
   }
 
@@ -297,10 +320,13 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
       hwnd: w.hwnd, pid: w.pid, exe: w.exe, title: w.title,
       // Panel için açtığımız tarayıcı penceresi panel kapanınca kapanır; WhatsApp/Telegram serbest bırakılır.
       closeOnRelease: opts.type === 'browser',
-      orig: { rect: rectOf(w.hwnd), zoomed: W.IsZoomed(w.hwnd) },
+      orig: { rect: rectOf(w.hwnd), zoomed: W.IsZoomed(w.hwnd), hidden: !W.IsWindowVisible(w.hwnd) },
       visible: opts.visible !== false, rect: opts.rect || null, shown: null,
     };
+    if (!W.IsWindowVisible(w.hwnd)) setShown(w.hwnd, true);
     if (W.IsIconic(w.hwnd) || W.IsZoomed(w.hwnd)) W.ShowWindow(w.hwnd, SW_RESTORE);
+    // Park edilmiş (önceki çökmeden kalmış) pencerenin eski konumu ekran dışıdır; ortalanmış bir konum kullan.
+    if (e.orig.rect.left <= PARK_X + 100) e.orig.rect = { left: 100, top: 100, right: 1300, bottom: 900 };
     docked.set(panelId, e);
     place(e);
     hookForeground();
@@ -341,6 +367,8 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
           launch(r.launch);
           w = await waitForWindow(match);
         }
+        // Tepsideki (gizli) ana pencere
+        if (!w) w = listWindows({ includeHidden: true }).filter(match).sort((a, b) => b.width * b.height - a.width * a.height)[0];
         if (!w) return { error: 'no-window' };
         return dock(panelId, w, spec);
       }
@@ -375,7 +403,7 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
       }
       if (spec.type === 'program') {
         const base = path.basename(spec.exe).toLowerCase();
-        const match = (w) => !taken.has(w.hwnd) && path.basename(w.exe).toLowerCase() === base;
+        const match = (w) => !taken.has(w.hwnd) && bigEnough(w) && path.basename(w.exe).toLowerCase() === base;
         let w = listWindows().find(match);
         if (!w) { launch([spec.exe, spec.args || []]); w = await waitForWindow(match); }
         if (!w) return { error: 'no-window' };
@@ -390,6 +418,13 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
       place(e);
     },
     refreshAll() { for (const e of docked.values()) place(e); },
+    // Elle seçmek için açık pencereler (Desk Helper ve başka panellerdekiler hariç)
+    windows() {
+      if (!isWin) return [];
+      const host = hostHandle(), taken = attachedHwnds();
+      return listWindows().filter((w) => w.hwnd !== host && !taken.has(w.hwnd) && bigEnough(w) && w.cls !== 'Progman' && w.cls !== 'Shell_TrayWnd')
+        .map((w) => ({ hwnd: w.hwnd, pid: w.pid, title: w.title, exe: path.basename(w.exe) }));
+    },
     raise() { if (docked.size) stack(hostHandle()); },
     suspend(on) { suspended = on; for (const e of docked.values()) place(e); },
     focus(panelId) { const e = docked.get(panelId); if (e) W.SetForegroundWindow(e.hwnd); },

@@ -43,6 +43,9 @@ const t = (s, vars) => {
 
 const STATE_SCHEMA = 3;
 
+// WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
+const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
+
 // Instagram'ın Windows uygulaması yok: kullanıcının tarayıcısında, adres çubuğu olmayan
 // uygulama penceresi olarak açılır; dar panelde Instagram kendiliğinden mobil düzene geçer.
 const instagramShortcut = () => ({ id: 'ig', name: 'Instagram', emo: '📷', kind: 'native', narrow: true,
@@ -310,6 +313,7 @@ function buildNative(p) {
   p.body.append(msg);
   p.body.classList.add('native');
   p.tools.append(
+    h('button', { title: t('Pencere seç'), textContent: '🗗', onclick: () => pickWindow() }),
     h('button', { title: t('Pencereyi yeniden bağla'), textContent: '⟳', onclick: () => connect() }),
     h('button', { title: t('Pencereyi panelden ayır (program açık kalır)'), textContent: '⇱', onclick: () => {
       window.desk.native.release(p.leaf.id, false); p.attached = false;
@@ -347,15 +351,30 @@ function buildNative(p) {
       return;
     }
     if (res.error) {
-      status(t('Pencere bulunamadı. Program açıldıysa ⟳ ile tekrar dene.'), h('button', { textContent: t('Tekrar dene'), onclick: connect }));
+      status(t('Pencere bulunamadı. Program açıldıysa ⟳ ile tekrar dene ya da açık pencerelerden seç.'),
+        h('button', { textContent: t('Tekrar dene'), onclick: connect }),
+        h('button', { class: 'primary', textContent: t('Pencere seç'), onclick: pickWindow }));
       return;
     }
     n.hwnd = res.hwnd; n.pid = res.pid;
     p.attached = true;
-    status(t('{name} bu panelde açık. Görünmüyorsa ⟳ ile yeniden bağla.', { name: p.leaf.title }));
+    status(t('{name} bu panelde açık. Görünmüyorsa ⟳ ile yeniden bağla.', { name: p.leaf.title }),
+      h('button', { textContent: '⟳ ' + t('Yeniden bağla'), onclick: connect }),
+      h('button', { textContent: '🗗 ' + t('Pencere seç'), onclick: pickWindow }));
     if (res.title) onNativeTitle(p, res.title);
     save();
     syncNative();
+  }
+  // Açık pencerelerden birini elle seçip bu panele bağla.
+  async function pickWindow() {
+    const list = await window.desk.native.windows();
+    const hwnd = await choose(t('Bu panele hangi pencere yerleşsin?'), list.length
+      ? list.map((w) => [w.hwnd, `${w.title}  ·  ${w.exe}`])
+      : [[null, t('Açık pencere bulunamadı')]]);
+    const w = list.find((x) => x.hwnd === hwnd);
+    if (!w) return;
+    p.leaf.native.hwnd = w.hwnd; p.leaf.native.pid = w.pid;
+    connect();
   }
   p.reconnect = connect;
   connect();
@@ -655,6 +674,9 @@ async function addPanel(sc) {
       sc = { ...sc, native: { ...sc.native } };
     } else sc = choice;
   }
+  if (sc.native?.type === 'app' && sc.open === 'web') {
+    sc = { name: sc.name, emo: sc.emo, kind: 'web', url: WEB_URL[sc.native.app] };
+  }
   const ws = curWs();
   const leaf = leafFrom(sc);
   const target = ws.active && findParent(ws.root, ws.active) ? ws.active : leaves(ws.root)[0]?.id;
@@ -850,7 +872,7 @@ function renderShortcuts() {
   const box = $('#shortcuts');
   box.replaceChildren(
     ...state.shortcuts.map((sc) => {
-      const desc = sc.native ? (sc.native.type === 'app' ? t('Kurulu uygulama') : sc.native.type === 'browser' ? t('Tarayıcı penceresi') : sc.native.exe) : (sc.url || '');
+      const desc = sc.native ? (sc.native.type === 'app' ? (sc.open === 'web' ? t('Uygulama içi web') : t('Kurulu uygulama')) : sc.native.type === 'browser' ? t('Tarayıcı penceresi') : sc.native.exe) : (sc.url || '');
       const b = h('button', { class: 'sc', title: sc.name + (desc ? ' · ' + desc : '') + '\n' + t('Tıkla: panel ekle · Sağ tık: düzenle') },
         h('span', { class: 'emo', textContent: sc.emo || '🌐' }), sc.name);
       b.addEventListener('click', () => addPanel(sc));
@@ -890,6 +912,8 @@ async function editShortcut(sc) {
   const fields = [{ name: 'name', label: t('Ad'), value: sc.name }, { name: 'emo', label: t('Simge (emoji)'), value: sc.emo || '🌐' }];
   if (sc.kind === 'web') fields.splice(1, 0, { name: 'url', label: t('Adres (web sitesi)'), value: sc.url });
   if (sc.native?.type === 'browser' && sc.native.browser !== 'ask') fields.splice(1, 0, { name: 'url', label: t('Açılış adresi (boş bırakılabilir)'), value: sc.native.url || '' });
+  if (sc.native?.type === 'app') fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'desktop',
+    options: [['desktop', t('Masaüstü uygulaması (bilgisayarda kurulu)')], ['web', t('Uygulama içi web (Desk Helper\'ın içinde)')]] });
   const canReset = sc.native?.remember && sc.native.browser !== 'ask';
   const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil'), extra: canReset ? t('Tarayıcıyı değiştir') : null });
   if (!r) return;
@@ -898,6 +922,7 @@ async function editShortcut(sc) {
   else {
     sc.name = r.name || sc.name; sc.emo = r.emo;
     if (sc.kind === 'web') sc.url = r.url;
+    else if (sc.native?.type === 'app') sc.open = r.open;
     else if (sc.native?.type === 'browser' && 'url' in r) sc.native.url = r.url.trim();
   }
   renderShortcuts(); save();
@@ -984,7 +1009,8 @@ function choose(title, options) {
 }
 
 // ---------- Ayarlar ----------
-async function openSettings() {
+// Ayarlar ve Hakkında tek pencerede, iki sekme.
+async function openSettings(tab = 'settings') {
   const info = await window.desk.info();
   const s = state.settings;
   openDialog((close) => {
@@ -993,8 +1019,8 @@ async function openSettings() {
     const chk = (key) => h('input', { type: 'checkbox', checked: !!s[key], onchange: (e) => set(key, e.target.checked) });
     const notesLbl = h('span', { class: 'hint', textContent: s.notesDir || info.defaultNotesDir });
     function set(key, val) { s[key] = val; applySettings(); save(); }
-    return [
-      h('h3', { textContent: '⚙ ' + t('Ayarlar') }),
+
+    const settingsPane = h('div', { class: 'pane' },
       h('label', { class: 'row' }, t('Dil / Language'), sel('lang', [['tr', 'Türkçe'], ['en', 'English']], () => setTimeout(() => location.reload(), 350))),
       h('label', { class: 'row' }, t('Tema'), sel('theme', [['dark', t('Koyu')], ['light', t('Açık')]])),
       h('label', { class: 'row' }, t('Açılışta pencere konumu'), sel('startDock', [['last', t('Son bıraktığım yer')], ['right', t('Ekranın sağ yarısı')], ['right3', t('Sağ üçte bir')], ['left', t('Ekranın sol yarısı')], ['full', t('Tam ekran')]])),
@@ -1005,9 +1031,27 @@ async function openSettings() {
         h('div', { class: 'fav-add' },
           h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; } } }),
           h('button', { textContent: t('Varsayılan'), onclick: () => { set('notesDir', ''); notesLbl.textContent = info.defaultNotesDir; } }),
-          h('button', { textContent: t('Klasörü aç'), onclick: () => window.desk.open(s.notesDir || info.defaultNotesDir) }))),
-      h('div', { class: 'btns' }, h('button', { class: 'primary', textContent: t('Tamam'), onclick: close })),
-    ];
+          h('button', { textContent: t('Klasörü aç'), onclick: () => window.desk.open(s.notesDir || info.defaultNotesDir) }))));
+
+    const aboutPane = h('div', { class: 'pane about' },
+      h('img', { src: 'logo.png', alt: '' }),
+      h('h3', { textContent: info.name }),
+      h('div', { class: 'ver', textContent: t('Sürüm') + ' ' + info.version }),
+      h('div', { class: 'brand', textContent: 'rbnbilisim' }),
+      h('div', { class: 'hint', textContent: t('© {y} rbnbilisim. Tüm hakları saklıdır.', { y: new Date().getFullYear() }) }),
+      h('div', { class: 'hint', textContent: `Electron ${info.electron} · Chromium ${info.chrome}` }),
+      h('div', { class: 'fav-add' }, h('button', { textContent: t('Veri klasörü'), onclick: () => window.desk.open(info.dataDir) })));
+
+    const tabs = h('div', { class: 'dtabs' });
+    const show = (which) => {
+      settingsPane.hidden = which !== 'settings'; aboutPane.hidden = which !== 'about';
+      tabs.replaceChildren(
+        h('button', { class: which === 'settings' ? 'on' : '', textContent: '⚙ ' + t('Ayarlar'), onclick: () => show('settings') }),
+        h('button', { class: which === 'about' ? 'on' : '', textContent: 'ⓘ ' + t('Hakkında'), onclick: () => show('about') }));
+    };
+    show(tab);
+    return [tabs, settingsPane, aboutPane,
+      h('div', { class: 'btns' }, h('button', { class: 'primary', textContent: t('Tamam'), onclick: close }))];
   });
 }
 
@@ -1016,22 +1060,6 @@ function applySettings() {
   document.documentElement.lang = lang;
   document.body.classList.toggle('light', state.settings.theme === 'light');
   window.desk.applySettings(state.settings);
-}
-
-// ---------- Hakkında ----------
-async function openAbout() {
-  const info = await window.desk.info();
-  openDialog((close) => [
-    h('img', { src: 'logo.png', alt: '' }),
-    h('h3', { textContent: info.name }),
-    h('div', { class: 'ver', textContent: t('Sürüm') + ' ' + info.version }),
-    h('div', { class: 'brand', textContent: 'rbnbilisim' }),
-    h('div', { class: 'hint', textContent: t('© {y} rbnbilisim. Tüm hakları saklıdır.', { y: new Date().getFullYear() }) }),
-    h('div', { class: 'hint', textContent: `Electron ${info.electron} · Chromium ${info.chrome}` }),
-    h('div', { class: 'btns' },
-      h('button', { textContent: t('Veri klasörü'), onclick: () => window.desk.open(info.dataDir) }),
-      h('button', { class: 'primary', textContent: t('Kapat'), onclick: close })),
-  ], { cls: 'about' });
 }
 
 // ---------- Pencereler (modal) ----------
@@ -1071,7 +1099,9 @@ function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('
       const ok = () => { val = fields.length ? Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value])) : true; close(); };
       const dlg = [
         h('h3', { textContent: title }), text ? h('div', { textContent: text }) : null,
-        ...fields.map((f) => h('label', {}, f.label, inputs[f.name] = h('input', { value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
+        ...fields.map((f) => h('label', {}, f.label, inputs[f.name] = f.options
+          ? h('select', {}, ...f.options.map(([v, txt]) => h('option', { value: v, textContent: txt, selected: v === f.value })))
+          : h('input', { value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
         h('div', { class: 'btns' },
           danger ? h('button', { class: 'danger', textContent: danger, onclick: () => { val = 'danger'; close(); } }) : null,
           extra ? h('button', { textContent: extra, onclick: () => { val = 'extra'; close(); } }) : null,
@@ -1104,8 +1134,8 @@ async function init() {
   new ResizeObserver(() => layout()).observe($('#stage'));
   $('#addTab').onclick = newWs;
   $('#favBtn').onclick = openFavorites;
-  $('#settingsBtn').onclick = openSettings;
-  $('#brand').onclick = openAbout;
+  $('#brand').onclick = () => openSettings();
+  window.desk.info().then((i) => { $('#brandVer').textContent = 'v' + i.version; });
   document.querySelectorAll('#dock button').forEach((b) => b.onclick = () => window.desk.dock(b.dataset.dock));
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key.toLowerCase() === 't') { e.preventDefault(); newWs(); }

@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('desk', {
   native: {
     browsers: () => ipcRenderer.invoke('native:browsers'),
     attach: (id, spec) => ipcRenderer.invoke('native:attach', id, spec),
+    windows: () => ipcRenderer.invoke('native:windows'),
     bounds: (id, rect, visible) => ipcRenderer.invoke('native:bounds', id, rect, visible),
     release: (id, close) => ipcRenderer.invoke('native:release', id, close),
     suspend: (on) => ipcRenderer.invoke('native:suspend', on),
