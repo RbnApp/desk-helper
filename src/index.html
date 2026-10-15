@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Desk Helper</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header id="topbar">
+    <button id="brand" data-title="Hakkında"><img src="logo.png" alt=""><span>Desk Helper</span></button>
+    <div id="tabs"></div>
+    <button id="addTab" class="icon" data-title="Yeni sekme (Ctrl+T)">＋</button>
+    <div class="spacer"></div>
+    <div id="dock" data-title="Pencereyi ekrana yerleştir">
+      <button data-dock="left" data-title="Sol yarı">◧</button>
+      <button data-dock="right" data-title="Sağ yarı">◨</button>
+      <button data-dock="right3" data-title="Sağ üçte bir">▕</button>
+      <button data-dock="full" data-title="Tam ekran">▣</button>
+    </div>
+    <button id="settingsBtn" class="icon" data-title="Ayarlar">⚙</button>
+  </header>
+  <nav id="bar">
+    <button id="favBtn" class="sc fav" data-title="Favoriler (Ctrl+Space)"><span class="emo">⭐</span><span data-t="Favoriler">Favoriler</span></button>
+    <span class="sep"></span>
+    <div id="shortcuts"></div>
+  </nav>
+  <main id="stage"></main>
+  <div id="cover"></div>
+  <div id="dropHint"></div>
+  <div id="modal" hidden></div>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
+
+contextBridge.exposeInMainWorld('desk', {
+  loadState: () => ipcRenderer.invoke('state:load'),
+  saveState: (s) => ipcRenderer.invoke('state:save', s),
+  info: () => ipcRenderer.invoke('app:info'),
+  applySettings: (s) => ipcRenderer.invoke('settings:apply', s),
+  pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
+  describe: (p) => ipcRenderer.invoke('fav:describe', p),
+  launch: (item) => ipcRenderer.invoke('fav:launch', item),
+  pathForFile: (file) => webUtils.getPathForFile(file),
+  places: () => ipcRenderer.invoke('fs:places'),
+  list: (dir) => ipcRenderer.invoke('fs:list', dir),
+  read: (p) => ipcRenderer.invoke('fs:read', p),
+  write: (p, t) => ipcRenderer.invoke('fs:write', p, t),
+  open: (p) => ipcRenderer.invoke('fs:open', p),
+  reveal: (p) => ipcRenderer.invoke('fs:reveal', p),
+  notePath: (id) => ipcRenderer.invoke('notes:path', id),
+  notesList: () => ipcRenderer.invoke('notes:list'),
+  dock: (where) => ipcRenderer.invoke('win:dock', where),
+  native: {
+    browsers: () => ipcRenderer.invoke('native:browsers'),
+    attach: (id, spec) => ipcRenderer.invoke('native:attach', id, spec),
+    bounds: (id, rect, visible) => ipcRenderer.invoke('native:bounds', id, rect, visible),
+    release: (id, close) => ipcRenderer.invoke('native:release', id, close),
+    suspend: (on) => ipcRenderer.invoke('native:suspend', on),
+    focus: (id) => ipcRenderer.invoke('native:focus', id),
+    onGone: (fn) => ipcRenderer.on('native:gone', (_e, id) => fn(id)),
+    onTitle: (fn) => ipcRenderer.on('native:title', (_e, id, t) => fn(id, t)),
+  },
+  openExternal: (url) => ipcRenderer.invoke('open:external', url),
+  platform: process.platform,
+});
