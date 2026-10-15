@@ -158,4 +158,13 @@ window.I18N_EN = {
   'Opera ve Firefox adres çubuğu olmayan pencereyi desteklemez; sayfa normal pencerede açılır. Sadece sayfanın görünmesi için Chrome, Edge veya Brave seç.': 'Opera and Firefox don\'t support windows without an address bar; the page opens in a normal window. To see only the page, choose Chrome, Edge or Brave.',
   'Desk Helper içinde (her video ayrı panel)': 'Inside Desk Helper (each video in its own panel)',
   'Tarayıcı profilimle (kendi hesabımla)': 'With my browser profile (my own account)',
+  'Panel ekle': 'Add panel',
+  'Alt çubuktan kaldır': 'Remove from bottom bar',
+  'Alt çubuğa ekle': 'Add to bottom bar',
+  'Düzenle…': 'Edit…',
+  'Ekle': 'Add',
+  'Tıklayınca eklenir veya kaldırılır. Simgeleri alt çubukta sürükleyerek sıralayabilirsin.': 'Click to add or remove. Drag icons in the bottom bar to reorder them.',
+  'Sağ tık: alt çubuğa ekle, yeniden adlandır': 'Right-click: add to bottom bar, rename',
+  'Yeniden adlandır…': 'Rename…',
+  'Tıkla: aç · Sağ tık: alt çubuğa ekle, yeniden adlandır · ✕: çıkar': 'Click: open · Right-click: add to bottom bar, rename · ✕: remove',
 };

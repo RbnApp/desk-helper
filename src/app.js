@@ -951,7 +951,15 @@ function renderShortcuts() {
       const b = h('button', { class: 'sc', title: sc.name + (desc ? ' · ' + desc : '') + '\n' + t('Tıkla: panel ekle · Sağ tık: düzenle') },
         h('span', { class: 'emo', textContent: sc.emo || '🌐' }), sc.name);
       b.addEventListener('click', () => addPanel(sc));
-      b.addEventListener('contextmenu', (e) => { e.preventDefault(); editShortcut(sc); });
+      b.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        contextMenu(e, document.body, [
+          { label: t('Panel ekle'), bold: true, action: () => addPanel(sc) },
+          inAppbar('sc', sc.id) ? { label: t('Alt çubuktan kaldır'), action: () => appbarRemove('sc', sc.id) } : { label: t('Alt çubuğa ekle'), action: () => appbarAdd('sc', sc.id) },
+          '-',
+          { label: t('Düzenle…'), action: () => editShortcut(sc) },
+        ]);
+      });
       return b;
     }),
     h('button', { class: 'sc add', textContent: '＋ ' + t('Kısayol ekle'), onclick: () => newShortcut() }));
@@ -994,7 +1002,7 @@ async function editShortcut(sc) {
   const canReset = sc.native?.remember && sc.native.browser !== 'ask';
   const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil'), extra: canReset ? t('Tarayıcıyı değiştir') : null });
   if (!r) return;
-  if (r === 'danger') state.shortcuts = state.shortcuts.filter((s) => s !== sc);
+  if (r === 'danger') { state.shortcuts = state.shortcuts.filter((s) => s !== sc); appbarRemove('sc', sc.id); }
   else if (r === 'extra') sc.native.browser = 'ask';
   else {
     sc.name = r.name || sc.name; sc.emo = r.emo;
@@ -1003,7 +1011,141 @@ async function editShortcut(sc) {
     if (sc.webUrl && r.open) sc.open = r.open;
     else if (sc.native?.type === 'browser' && 'url' in r) sc.native.url = r.url.trim();
   }
-  renderShortcuts(); save();
+  renderShortcuts(); renderAppbar(); save();
+}
+
+// ---------- Alt çubuk (uygulama rafı) ----------
+// Android'deki "ana ekrana ekle" gibi: kısayollar ve favoriler buraya eklenir/kaldırılır. Her sekmede görünür,
+// tek sıra; sığmazsa yana kayar. Üstüne gelinen simge büyür, yanındakiler biraz büyür. Sürükleyerek sıralanır.
+const inAppbar = (from, ref) => state.appbar.some((x) => x.from === from && x.ref === ref);
+function appbarAdd(from, ref) { if (!inAppbar(from, ref)) { state.appbar.push({ from, ref }); save(); renderAppbar(); } }
+function appbarRemove(from, ref) { state.appbar = state.appbar.filter((x) => !(x.from === from && x.ref === ref)); save(); renderAppbar(); }
+function appbarSource(x) {
+  return x.from === 'sc' ? state.shortcuts.find((s) => s.id === x.ref) : state.favorites.find((f) => f.id === x.ref);
+}
+const siteIcon = (url) => { try { return new URL(url).origin + '/favicon.ico'; } catch { return ''; } };
+
+async function launchFavorite(f) {
+  if (f.type === 'url' && f.inApp) { addPanel({ name: f.name, emo: '🌐', kind: 'web', url: f.target }); return true; }
+  const err = await window.desk.launch(f);
+  if (err) { alertBox(t('Açılamadı'), err); return false; }
+  return true;
+}
+
+function appbarIcon(src, from) {
+  const emoji = h('span', { class: 'ab-emo', textContent: from === 'sc' ? (src.emo || '🌐') : src.type === 'url' ? '🌐' : src.type === 'folder' ? '📁' : '🖥' });
+  const url = from === 'fav' ? (src.icon || (src.type === 'url' ? siteIcon(src.target) : '')) : (src.kind === 'web' && !src.emo ? siteIcon(src.url) : '');
+  if (!url) return emoji;
+  const img = h('img', { src: url, alt: '' });
+  img.onerror = () => img.replaceWith(emoji);
+  return img;
+}
+
+function renderAppbar() {
+  const track = $('#abTrack');
+  state.appbar = state.appbar.filter((x) => appbarSource(x)); // silinmiş kaynakları at
+  let dragFrom = -1;
+  const items = state.appbar.map((x, i) => {
+    const src = appbarSource(x);
+    const b = h('button', { class: 'ab-item', draggable: true },
+      h('span', { class: 'ab-ic' }, appbarIcon(src, x.from)), h('span', { class: 'ab-label', textContent: src.name }));
+    b.addEventListener('click', () => (x.from === 'sc' ? addPanel(src) : launchFavorite(src)));
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      contextMenu(e, document.body, [
+        { label: t('Aç'), bold: true, action: () => b.click() },
+        { label: t('Alt çubuktan kaldır'), action: () => appbarRemove(x.from, x.ref) },
+      ]);
+    });
+    b.addEventListener('dragstart', (e) => { dragFrom = i; b.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    b.addEventListener('dragend', () => b.classList.remove('dragging'));
+    b.addEventListener('dragover', (e) => { if (dragFrom >= 0) { e.preventDefault(); b.classList.add('drop'); } });
+    b.addEventListener('dragleave', () => b.classList.remove('drop'));
+    b.addEventListener('drop', (e) => {
+      e.preventDefault(); b.classList.remove('drop');
+      if (dragFrom < 0 || dragFrom === i) return;
+      const [m] = state.appbar.splice(dragFrom, 1);
+      state.appbar.splice(i, 0, m);
+      save(); renderAppbar();
+    });
+    return b;
+  });
+  const add = h('button', { class: 'ab-item ab-add', title: t('Alt çubuğa ekle') }, h('span', { class: 'ab-ic' }, h('span', { class: 'ab-emo', textContent: '＋' })), h('span', { class: 'ab-label', textContent: t('Ekle') }));
+  add.onclick = appbarPicker;
+  track.replaceChildren(...items, add);
+  $('#appbar').classList.toggle('empty', !items.length);
+  updateAppbarArrows();
+}
+
+// macOS dock tarzı büyütme: fareye uzaklığa göre ölçek.
+function magnify(e) {
+  for (const b of document.querySelectorAll('#abTrack .ab-item')) {
+    const r = b.getBoundingClientRect();
+    const d = e ? Math.abs(e.clientX - (r.left + r.width / 2)) : 999;
+    const k = Math.max(0, 1 - d / 120);
+    b.style.setProperty('--s', (1 + 0.3 * k * k).toFixed(3));
+  }
+}
+function updateAppbarArrows() {
+  const sc = $('#abScroll');
+  $('#abLeft').hidden = sc.scrollLeft <= 2;
+  $('#abRight').hidden = sc.scrollLeft + sc.clientWidth >= sc.scrollWidth - 2;
+}
+function initAppbar() {
+  const sc = $('#abScroll');
+  sc.addEventListener('mousemove', magnify);
+  sc.addEventListener('mouseleave', () => magnify(null));
+  // Fare tekerleği yana kaydırır.
+  sc.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { sc.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  sc.addEventListener('scroll', updateAppbarArrows);
+  new ResizeObserver(updateAppbarArrows).observe(sc);
+  $('#abLeft').onclick = () => sc.scrollBy({ left: -sc.clientWidth * 0.7, behavior: 'smooth' });
+  $('#abRight').onclick = () => sc.scrollBy({ left: sc.clientWidth * 0.7, behavior: 'smooth' });
+  renderAppbar();
+}
+
+// "＋": kısayollardan veya favorilerden seç ya da yeni program / site ekle.
+function appbarPicker() {
+  openDialog((close) => {
+    const grid = h('div', { class: 'fav-grid' });
+    const render = () => {
+      const all = [...state.shortcuts.map((x) => ['sc', x]), ...state.favorites.map((x) => ['fav', x])];
+      grid.replaceChildren(...all.map(([from, src]) => {
+        const on = inAppbar(from, src.id);
+        const it = h('button', { class: 'fav-item' + (on ? ' docked' : ''), title: on ? t('Alt çubuktan kaldır') : t('Alt çubuğa ekle') },
+          h('span', { class: 'ph' }, appbarIcon(src, from)), h('span', { class: 'n', textContent: src.name }), h('span', { class: 'chk', textContent: on ? '✓' : '＋' }));
+        it.onclick = () => { on ? appbarRemove(from, src.id) : appbarAdd(from, src.id); render(); };
+        return it;
+      }));
+    };
+    const addNew = async (kind) => {
+      const before = state.favorites.length;
+      if (kind === 'file') await addFavoritePath(await window.desk.pick('file'), 'file');
+      else if (kind === 'folder') await addFavoritePath(await window.desk.pick('folder'), 'folder');
+      else {
+        const r = await modal({ title: t('Web sitesi'), fields: [{ name: 'name', label: t('Ad'), value: '' }, { name: 'url', label: t('Adres'), value: 'https://' }] });
+        if (r && r.url.trim().length > 8) {
+          let url = r.url.trim(); if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+          const inApp = await modal({ title: t('Nerede açılsın?'), text: t('Uygulamanın içinde panel olarak mı, yoksa varsayılan tarayıcında mı?'), okText: t('Uygulama içinde'), cancelText: t('Tarayıcıda') });
+          state.favorites.push({ id: uid(), type: 'url', target: url, name: r.name || new URL(url).hostname.replace(/^www\./, ''), inApp: !!inApp });
+        }
+      }
+      if (state.favorites.length > before) appbarAdd('fav', state.favorites[state.favorites.length - 1].id);
+      appbarPicker();
+    };
+    render();
+    return [
+      h('h3', { textContent: t('Alt çubuğa ekle') }),
+      h('div', { class: 'hint', textContent: t('Tıklayınca eklenir veya kaldırılır. Simgeleri alt çubukta sürükleyerek sıralayabilirsin.') }),
+      grid,
+      h('div', { class: 'fav-add' },
+        h('button', { textContent: '＋ ' + t('Program / dosya'), onclick: () => { close(); addNew('file'); } }),
+        h('button', { textContent: '＋ ' + t('Klasör'), onclick: () => { close(); addNew('folder'); } }),
+        h('button', { textContent: '＋ ' + t('Web sitesi'), onclick: () => { close(); addNew('url'); } }),
+        h('span', { class: 'spacer' }),
+        h('button', { textContent: t('Kapat'), onclick: close })),
+    ];
+  }, { wide: true });
 }
 
 // ---------- Favoriler ----------
@@ -1021,20 +1163,25 @@ function openFavorites() {
     const render = () => {
       grid.replaceChildren(...(state.favorites.length ? state.favorites.map((f) => {
         const pic = f.icon ? h('img', { src: f.icon, alt: '' }) : h('span', { class: 'ph', textContent: f.type === 'url' ? '🌐' : f.type === 'folder' ? '📁' : '📄' });
-        const item = h('button', { class: 'fav-item', title: f.target + '\n' + t('Sağ tık: yeniden adlandır') }, pic, h('span', { class: 'n', textContent: f.name }),
+        const item = h('button', { class: 'fav-item' + (inAppbar('fav', f.id) ? ' docked' : ''), title: f.target + '\n' + t('Sağ tık: alt çubuğa ekle, yeniden adlandır') }, pic, h('span', { class: 'n', textContent: f.name }),
           h('span', { class: 'del', textContent: '✕', title: t('Favorilerden çıkar'), onclick: (e) => {
-            e.stopPropagation(); state.favorites = state.favorites.filter((x) => x !== f); save(); render();
+            e.stopPropagation(); state.favorites = state.favorites.filter((x) => x !== f); appbarRemove('fav', f.id); save(); render();
           } }));
-        item.addEventListener('click', async () => {
-          if (f.type === 'url' && f.inApp) { close(); addPanel({ name: f.name, emo: '🌐', kind: 'web', url: f.target }); return; }
-          const err = await window.desk.launch(f);
-          if (err) alertBox(t('Açılamadı'), err); else close();
-        });
-        item.addEventListener('contextmenu', async (e) => {
+        item.addEventListener('click', async () => { if (await launchFavorite(f)) close(); });
+        item.addEventListener('contextmenu', (e) => {
           e.preventDefault();
-          const r = await modal({ title: t('Favoriyi yeniden adlandır'), fields: [{ name: 'name', label: t('Ad'), value: f.name }] });
-          if (r?.name) { f.name = r.name; save(); }
-          render();
+          contextMenu(e, document.body, [
+            { label: t('Aç'), bold: true, action: async () => { if (await launchFavorite(f)) close(); } },
+            inAppbar('fav', f.id) ? { label: t('Alt çubuktan kaldır'), action: () => { appbarRemove('fav', f.id); render(); } }
+              : { label: t('Alt çubuğa ekle'), action: () => { appbarAdd('fav', f.id); render(); } },
+            '-',
+            { label: t('Yeniden adlandır…'), action: async () => {
+              const r = await modal({ title: t('Favoriyi yeniden adlandır'), fields: [{ name: 'name', label: t('Ad'), value: f.name }] });
+              if (r?.name) { f.name = r.name; save(); renderAppbar(); }
+              render();
+            } },
+            { label: t('Favorilerden çıkar'), action: () => { state.favorites = state.favorites.filter((x) => x !== f); appbarRemove('fav', f.id); save(); render(); } },
+          ]);
         });
         return item;
       }) : [h('div', { class: 'fav-empty', innerHTML: t('Henüz favori yok.<br>Aşağıdan program, klasör veya site ekle ya da masaüstündeki bir kısayolu buraya sürükle.') })]));
@@ -1052,7 +1199,7 @@ function openFavorites() {
     render();
     return [
       h('h3', { textContent: '⭐ ' + t('Favoriler') }),
-      h('div', { class: 'hint', textContent: t('Tıkla: aç · Sağ tık: yeniden adlandır · ✕: çıkar') }),
+      h('div', { class: 'hint', textContent: t('Tıkla: aç · Sağ tık: alt çubuğa ekle, yeniden adlandır · ✕: çıkar') }),
       grid,
       h('div', { class: 'fav-add' },
         h('button', { textContent: '＋ ' + t('Program / dosya'), onclick: async () => { await addFavoritePath(await window.desk.pick('file'), 'file'); render(); } }),
@@ -1203,10 +1350,12 @@ async function init() {
   lang = saved?.settings?.lang === 'en' ? 'en' : 'tr';
   state = saved?.workspaces?.length ? migrate(saved) : defaultState();
   state.favorites ||= [];
+  state.appbar ||= [];
   state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) };
   applySettings();
   translateStatic();
   renderShortcuts();
+  initAppbar();
   layout();
   renderTabs();
   new ResizeObserver(() => layout()).observe($('#stage'));
