@@ -522,6 +522,7 @@ function buildBrowser(p) {
     wv.setAttribute('allowpopups', '');
     wv.setAttribute('src', tab.url || HOME_URL);
     wv.addEventListener('focus', () => setActive(p.ws, L.id));
+    watchNotifications(p, wv, () => show(tab.id));
     const sync = () => {
       tab.url = wv.getURL(); save();
       if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); }
@@ -621,6 +622,18 @@ function buildBrowser(p) {
   show(L.activeTab);
 }
 
+// Web panelindeki bildirime tıklandı: Desk Helper'ı öne getir, panelin sekmesine geç ve paneli seç.
+function watchNotifications(p, wv, onClick) {
+  wv.addEventListener('ipc-message', (e) => {
+    if (e.channel !== 'desk-notif-click') return;
+    window.desk.reveal();
+    if (state.activeWs !== p.ws.id) switchWs(p.ws.id);
+    setActive(p.ws, p.leaf.id);
+    onClick?.();
+    setTimeout(() => wv.focus(), 50);
+  });
+}
+
 // --- Uygulama içi web sayfası ---
 const MOBILE_UA = `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${(/Chrome\/([\d.]+)/.exec(navigator.userAgent) || [, '130.0.0.0'])[1]} Mobile Safari/537.36`;
 function buildWeb(p) {
@@ -632,6 +645,7 @@ function buildWeb(p) {
   p.body.append(wv);
   p.wv = wv;
   p.ownsWc = (id) => { try { return wv.getWebContentsId() === id; } catch { return false; } };
+  watchNotifications(p, wv);
   p.tools.append(
     h('button', { title: t('Geri'), textContent: '←', onclick: () => wv.canGoBack() && wv.goBack() }),
     h('button', { title: t('Yenile'), textContent: '⟳', onclick: () => wv.reload() }),

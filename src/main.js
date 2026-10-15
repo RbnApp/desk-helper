@@ -104,6 +104,8 @@ app.on('web-contents-created', (_e, wc) => {
     });
   }
   if (wc.getType() === 'webview') wc.on('context-menu', (_ev, p) => webContextMenu(wc, p));
+  // Tüm web panellerine bildirim tıklamasını yakalayan küçük betik
+  if (wc.getType() === 'window') wc.on('will-attach-webview', (_ev, prefs) => { prefs.preload = path.join(__dirname, 'webview-preload.js'); });
 });
 
 // Web panellerinde sağ tık menüsü (Electron'da varsayılan olarak yok)
@@ -157,6 +159,15 @@ ipcMain.handle('open:external', (_e, url) => /^(https?|ms-windows-store):/.test(
 ipcMain.handle('win:dock', (_e, where) => dock(where));
 
 // --- Uygulama bilgisi ve ayarlar ---
+// Bildirime tıklanınca: pencereyi öne getir (simge durumundaysa geri yükle).
+ipcMain.handle('win:reveal', () => {
+  if (!win) return;
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible()) win.show();
+  win.focus();
+  if (process.platform === 'win32') { win.setAlwaysOnTop(true); win.setAlwaysOnTop(!!settings.alwaysOnTop); }
+});
+
 ipcMain.handle('app:info', () => ({
   name: 'Desk Helper',
   version: app.getVersion(),

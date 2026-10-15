@@ -229,6 +229,6 @@ body { display: flex; flex-direction: column; }
 .br-prof { white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .br-views { position: relative; flex: 1; min-height: 0; }
 .br-views webview { position: absolute; inset: 0; width: 100%; height: 100%; visibility: hidden; background: #fff; }
-.br-views webview.on { visibility: visible; }
+.br-views webview.on { visibility: inherit; } /* 'visible' gizli sekmenin içinden taşıyordu */
 .panel.private .br-bar { background: rgba(130, 80, 200, .18); }
 .fav-grid.apps { max-height: 55vh; }
