@@ -548,8 +548,9 @@ function buildBrowser(p) {
   const cookieBtn = h('button', { class: 'br-cookie', textContent: '🍪', title: t('Bu sitenin çerezlerini temizle') });
   const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, star), cookieBtn, prof);
   const bmBar = h('div', { class: 'br-bm' });
+  const pwBar = h('div', { class: 'br-pwbar', hidden: true });
   const views = h('div', { class: 'br-views' });
-  p.body.append(strip, bar, bmBar, views);
+  p.body.append(strip, bar, bmBar, pwBar, views);
   p.body.classList.add('browser');
   const wvs = new Map(); // sekme id -> webview
   p.ownsWc = (id) => [...wvs.values()].some((wv) => { try { return wv.getWebContentsId() === id; } catch { return false; } });
@@ -562,6 +563,9 @@ function buildBrowser(p) {
     wv.setAttribute('src', tab.url || HOME_URL);
     wv.addEventListener('focus', () => setActive(p.ws, L.id));
     watchNotifications(p, wv, () => show(tab.id));
+    // Şifre yöneticisi: gizli pencerede kapalı
+    wv.addEventListener('dom-ready', () => { if (L.profile !== '__private') wv.send('pw-enable'); });
+    wv.addEventListener('ipc-message', (e) => onPw(wv, e.channel, e.args[0]));
     const sync = () => {
       tab.url = wv.getURL(); save();
       if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); updateStar(); }
@@ -745,6 +749,34 @@ function buildBrowser(p) {
     alertBox(t('Çerez temizle'), t('{site} için {n} çerez silindi.', { site: info.base, n }));
   };
 
+  // --- Şifreler: doldurma ve "kaydedilsin mi / güncellensin mi" çubuğu ---
+  async function onPw(wv, ch, arg) {
+    if (L.profile === '__private') return;
+    const pf = L.profile;
+    if (ch === 'pw-form') {
+      const list = await window.desk.pw.accounts(pf, wv.getURL());
+      wv.send('pw-accounts', list.map((a) => ({ id: a.id, username: a.username })));
+    } else if (ch === 'pw-request') {
+      wv.send('pw-fill', await window.desk.pw.fill(pf, wv.getURL(), arg));
+    } else if (ch === 'pw-submit' && arg?.password) {
+      const r = await window.desk.pw.check(pf, arg.url, arg.username, arg.password);
+      if (r.action !== 'none') askSavePw(pf, arg, r);
+    }
+  }
+  function askSavePw(pf, d, r) {
+    const host = (() => { try { return new URL(d.url).host; } catch { return d.url; } })();
+    const done = () => { pwBar.hidden = true; pwBar.replaceChildren(); };
+    const upd = r.action === 'update';
+    pwBar.replaceChildren(...[
+      h('span', { class: 'k', textContent: '🔑' }),
+      h('span', { class: 'q' }, h('b', { textContent: upd ? t('Şifre güncellensin mi?') : t('Şifre kaydedilsin mi?') }),
+        ' ' + host + ' · ' + (d.username || t('(kullanıcı adı yok)'))),
+      h('button', { class: 'primary', textContent: upd ? t('Güncelle') : t('Kaydet'), onclick: async () => { await window.desk.pw.save(pf, d.url, d.username, d.password); done(); } }),
+      upd ? null : h('button', { textContent: t('Bu sitede asla'), onclick: async () => { await window.desk.pw.never(pf, d.url); done(); } }),
+      h('button', { textContent: t('Şimdi değil'), onclick: done })].filter(Boolean));
+    pwBar.hidden = false;
+  }
+
   function setProfile(pr) {
     if (pr === L.profile) return;
     L.profile = pr;
@@ -770,6 +802,7 @@ function buildBrowser(p) {
         if (!state.browserProfiles.includes(name)) state.browserProfiles.push(name);
         save(); setProfile(name);
       } },
+      L.profile !== '__private' ? { label: '🔑 ' + t('Kayıtlı şifreler…'), action: () => openPasswords(L.profile) } : null,
       L.profile !== 'default' && L.profile !== '__private' ? { label: t('Bu profili sil…'), action: () => deleteProfile(L.profile) } : null,
     ]);
   };
@@ -877,13 +910,83 @@ function bmImport(key) {
 }
 async function deleteProfile(name) {
   const n = bmList(name).length;
-  const ok = await modal({ title: t('Profili sil'), text: t('"{name}" profili, yer imleri ({n}) ve bu profildeki girişler/çerezler silinsin mi?', { name, n }), okText: t('Sil') });
+  const ok = await modal({ title: t('Profili sil'), text: t('"{name}" profili, yer imleri ({n}), kayıtlı şifreleri ve bu profildeki girişler/çerezler silinsin mi?', { name, n }), okText: t('Sil') });
   if (!ok) return;
   state.browserProfiles = (state.browserProfiles || []).filter((x) => x !== name);
   delete (state.bookmarks ||= {})[name];
   for (const p of panels.values()) if (p.leaf.kind === 'browser' && p.leaf.profile === name) p.setProfile?.('default');
   save();
   window.desk.clearBrowserProfile(name).catch(() => {});
+}
+
+// --- Kayıtlı şifreler penceresi (profil başına) ---
+// Şifreler Windows'un kullanıcı şifrelemesiyle saklanır; ekranda göstermek / kopyalamak için ana parola istenir.
+async function pwUnlock() {
+  if (await window.desk.pw.unlocked()) return true;
+  const { hasMaster } = await window.desk.pw.list('default');
+  if (!hasMaster) {
+    const r = await modal({ title: t('Ana parola belirle'),
+      text: t('Kayıtlı şifreleri ekranda göstermek ve kopyalamak için bir ana parola belirle. Otomatik doldurma ana parola istemez. Ana parolayı unutursan şifreler yine otomatik dolar, yalnızca gösterilemez.'),
+      fields: [{ name: 'a', label: t('Ana parola (en az 4 karakter)'), type: 'password' }, { name: 'b', label: t('Ana parola (tekrar)'), type: 'password' }] });
+    if (!r) return false;
+    if (r.a !== r.b || r.a.length < 4) { await alertBox(t('Ana parola'), t('Parolalar aynı değil ya da 4 karakterden kısa.')); return false; }
+    return window.desk.pw.setMaster(r.a);
+  }
+  const r = await modal({ title: t('Ana parola'), text: t('Şifreyi göstermek için ana parolanı gir.'), fields: [{ name: 'p', label: t('Ana parola'), type: 'password' }] });
+  if (!r) return false;
+  if (await window.desk.pw.unlock(r.p)) return true;
+  await alertBox(t('Ana parola'), t('Ana parola yanlış.'));
+  return false;
+}
+function openPasswords(profile) {
+  openDialog((close) => {
+    const body = h('div', { class: 'pw-list' });
+    const render = async () => {
+      const { entries, never } = await window.desk.pw.list(profile);
+      const hostOf = (o) => o.replace(/^https?:\/\//, '');
+      body.replaceChildren(...[
+        entries.length ? null : h('div', { class: 'hint', textContent: t('Bu profilde kayıtlı şifre yok. Bir sitede giriş yapınca Desk Helper kaydetmeyi önerir.') }),
+        ...entries.map((e) => {
+          const pwEl = h('span', { class: 'pw-val', textContent: '••••••••' });
+          const showBtn = h('button', { textContent: '👁', title: t('Göster') });
+          showBtn.onclick = async () => {
+            if (pwEl.dataset.shown) { pwEl.textContent = '••••••••'; delete pwEl.dataset.shown; return; }
+            if (!(await pwUnlock())) return;
+            pwEl.textContent = (await window.desk.pw.reveal(e.id)) ?? '?'; pwEl.dataset.shown = '1';
+          };
+          return h('div', { class: 'pw-row' },
+            h('img', { class: 'ic', src: e.origin + '/favicon.ico', alt: '', onerror: function () { this.style.visibility = 'hidden'; } }),
+            h('span', { class: 'site', textContent: hostOf(e.origin), title: e.origin }),
+            h('span', { class: 'user', textContent: e.username || t('(kullanıcı adı yok)') }),
+            pwEl, showBtn,
+            h('button', { textContent: '📋', title: t('Şifreyi kopyala'), onclick: async () => { if (!(await pwUnlock())) return; window.desk.copyText((await window.desk.pw.reveal(e.id)) || ''); } }),
+            h('button', { textContent: '✎', title: t('Düzenle'), onclick: async () => {
+              const r = await modal({ title: hostOf(e.origin), fields: [{ name: 'u', label: t('Kullanıcı adı'), value: e.username }, { name: 'p', label: t('Yeni şifre (boş bırakırsan değişmez)'), type: 'password' }] });
+              if (r) { await window.desk.pw.edit(e.id, r.u.trim(), r.p); render(); }
+            } }),
+            h('button', { textContent: '🗑', title: t('Sil'), onclick: async () => {
+              if (await modal({ title: t('Şifreyi sil'), text: t('{site} için "{user}" şifresi silinsin mi?', { site: hostOf(e.origin), user: e.username }), okText: t('Sil') })) { await window.desk.pw.remove(e.id); render(); }
+            } }));
+        }),
+        never.length ? h('h4', { textContent: t('Asla kaydedilmeyen siteler') }) : null,
+        ...never.map((o) => h('div', { class: 'pw-row never' }, h('span', { class: 'site', textContent: hostOf(o) }),
+          h('button', { textContent: t('Listeden çıkar'), onclick: async () => { await window.desk.pw.unNever(profile, o); render(); } })))].filter(Boolean));
+    };
+    render();
+    return [
+      h('h3', { textContent: t('Kayıtlı şifreler · {profile}', { profile: profileLabel(profile) }) }),
+      h('div', { class: 'hint', textContent: t('Şifreler Chrome\'dan bağımsızdır, Desk Helper\'ın kendi klasöründe Windows kullanıcı şifrelemesiyle saklanır.') }),
+      body,
+      h('div', { class: 'btns' },
+        h('button', { textContent: t('Chrome\'dan içe aktar (CSV)…'), onclick: async () => {
+          const r = await window.desk.pw.importCsv(profile);
+          if (!r) return;
+          await alertBox(t('İçe aktarma'), r.error ? t('Dosya Chrome şifre dışa aktarımı (CSV) gibi görünmüyor.') : t('{a} şifre eklendi, {u} şifre güncellendi.', { a: r.added, u: r.updated }));
+          render();
+        } }),
+        h('button', { class: 'primary', textContent: t('Kapat'), onclick: close })),
+    ];
+  }, { wide: true });
 }
 
 // Web panelindeki bildirime tıklandı: Desk Helper'ı öne getir, panelin sekmesine geç ve paneli seç.
@@ -1835,7 +1938,7 @@ function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('
         h('h3', { textContent: title }), text ? h('div', { class: 'mtext', textContent: text }) : null,
         ...fields.map((f) => h('label', {}, f.label, inputs[f.name] = f.options
           ? h('select', {}, ...f.options.map(([v, txt]) => h('option', { value: v, textContent: txt, selected: v === f.value })))
-          : h('input', { value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
+          : h('input', { type: f.type || 'text', value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
         h('div', { class: 'btns' },
           danger ? h('button', { class: 'danger', textContent: danger, onclick: () => { val = 'danger'; close(); } }) : null,
           extra ? h('button', { textContent: extra, onclick: () => { val = 'extra'; close(); } }) : null,

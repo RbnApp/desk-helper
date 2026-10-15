@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.9 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.3.1 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -42,6 +42,14 @@ Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık > "Yeni p
 alınan HTML dosyası) çıkar. Sürükle-bırak ile sıralanır, klasörün üstüne bırakılan yer imi klasöre girer.
 🍪 düğmesi yalnızca açık sekmedeki sitenin (alan adı ve alt alan adları) çerezlerini, o profilde temizler: önce hangi
 çerezlerin silineceğini listeler ve onay ister; istersen o sitenin yerel verileri de silinir. Diğer siteler ve profiller etkilenmez.
+**Şifre yöneticisi (Chrome'dan bağımsız):** bir sitede giriş yapınca üstte "Şifre kaydedilsin mi?" çubuğu çıkar
+(Kaydet / Bu sitede asla / Şimdi değil); aynı kullanıcı farklı şifreyle girerse "Şifre güncellensin mi?" sorulur.
+Kayıtlı siteye gelince tek hesap varsa kullanıcı adı ve şifre kendiliğinden dolar, birden çok hesap varsa alana tıklayınca
+seçim listesi çıkar. Şifreler profile bağlıdır ve Desk Helper'ın veri klasöründe (`passwords.json`) Windows'un kullanıcı
+şifrelemesiyle (DPAPI) saklanır; Chrome silinse de durur, başka Windows kullanıcısı veya bilgisayar çözemez.
+👤 > **Kayıtlı şifreler…**: listele, göster, kopyala, düzenle, sil, "asla kaydetme" listesi ve Chrome'dan CSV içe aktarma
+(Chrome > Ayarlar > Şifre Yöneticisi > Ayarlar > Dışa aktar). Şifreyi göstermek/kopyalamak için ana parola istenir
+(ilk seferde belirlenir, 5 dakika açık kalır); otomatik doldurma ana parola istemez. Gizli pencerede şifre kaydedilmez.
 Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 > "Bu profili sil…" profili, yer imlerini ve girişlerini siler.
 "＋ Kısayol ekle" > **Tarayıcıda bir site** ile ör. phpMyAdmin için tek tıklık kısayol eklenir; tıklayınca tarayıcı panelinde sekme açar.
 

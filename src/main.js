@@ -183,6 +183,7 @@ ipcMain.handle('br:clear-profile', async (_e, name) => {
   if (!name || name === 'default') return false;
   const ses = session.fromPartition('persist:br-' + encodeURIComponent(name));
   await ses.clearStorageData(); await ses.clearCache();
+  pw().dropProfile(name);
   return true;
 });
 
@@ -212,6 +213,28 @@ ipcMain.handle('br:clear-site', async (_e, partition, url, withData) => {
     await ses.clearStorageData({ origin: new URL(url).origin, storages: ['localstorage', 'indexdb', 'serviceworkers', 'cachestorage', 'websql', 'filesystem', 'shadercache'] }).catch(() => {});
   }
   return cookies.length;
+});
+
+// --- Şifre yöneticisi (kendi tarayıcımız için, profile bağlı) ---
+let pwStore;
+const pw = () => (pwStore ||= require('./passwords')(dataDir()));
+ipcMain.handle('pw:accounts', (_e, profile, url) => pw().accounts(profile, url));
+ipcMain.handle('pw:fill', (_e, profile, url, id) => pw().fill(profile, url, id));
+ipcMain.handle('pw:check', (_e, profile, url, user, pass) => pw().check(profile, url, user, pass));
+ipcMain.handle('pw:save', (_e, profile, url, user, pass) => pw().save(profile, url, user, pass));
+ipcMain.handle('pw:never', (_e, profile, url) => pw().never(profile, url));
+ipcMain.handle('pw:unnever', (_e, profile, origin) => pw().unNever(profile, origin));
+ipcMain.handle('pw:list', (_e, profile) => pw().list(profile));
+ipcMain.handle('pw:remove', (_e, id) => pw().remove(id));
+ipcMain.handle('pw:edit', (_e, id, user, pass) => pw().edit(id, user, pass));
+ipcMain.handle('pw:set-master', (_e, newPw, oldPw) => pw().setMaster(newPw, oldPw));
+ipcMain.handle('pw:unlock', (_e, p) => pw().unlock(p));
+ipcMain.handle('pw:unlocked', () => pw().unlocked());
+ipcMain.handle('pw:reveal', (_e, id) => pw().reveal(id));
+ipcMain.handle('pw:import', async (_e, profile) => {
+  const r = await dialog.showOpenDialog(win, { title: 'Chrome şifreleri (CSV)', filters: [{ name: 'CSV', extensions: ['csv'] }], properties: ['openFile'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  return pw().importCsv(profile, fs.readFileSync(r.filePaths[0], 'utf8').replace(/^\uFEFF/, ''));
 });
 
 ipcMain.handle('app:info', () => ({
