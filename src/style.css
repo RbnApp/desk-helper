@@ -208,13 +208,13 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 #abScroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; min-width: 0; max-width: 100%; }
 #abScroll::-webkit-scrollbar { display: none; }
 #abTrack { display: flex; align-items: flex-end; gap: 6px; height: 100%; padding: 0 14px 6px; width: max-content; margin: 0 auto; }
-.ab-item { --s: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 52px; height: 58px; padding: 0; border-radius: 12px; background: none; }
+.ab-item { --s: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 62px; flex: none; min-width: 0; height: 58px; padding: 0; border-radius: 12px; background: none; }
 .ab-item:hover { background: none; }
 .ab-ic { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 11px; background: var(--panel);
   box-shadow: 0 1px 3px rgba(0,0,0,.25); transform: scale(var(--s)); transform-origin: 50% 100%; transition: transform .12s ease-out; }
 .ab-ic img { width: 28px; height: 28px; object-fit: contain; }
 .ab-emo { font-size: 23px; line-height: 1; }
-.ab-label { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--muted); margin-top: 3px; height: 13px; }
+.ab-label { max-width: 100%; padding: 0 2px; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; color: var(--muted); margin-top: 3px; height: 13px; }
 .ab-item:hover .ab-label { color: var(--text); }
 .ab-item.dragging { opacity: .4; }
 .ab-item.drop .ab-ic { box-shadow: 0 0 0 2px var(--accent); }
@@ -315,3 +315,37 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .upd-notes { white-space: pre-wrap; max-height: 260px; overflow: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; line-height: 1.5; user-select: text; }
 .upd-bar { margin-top: 12px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .upd-fill { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+/* Simgeyi değiştir penceresi */
+.ic-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.ic-preview { width: 56px; height: 56px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); }
+.ic-preview img { width: 40px; height: 40px; object-fit: contain; }
+.ic-preview .ab-emo { font-size: 32px; }
+.ic-preview .letter-ic { width: 40px; height: 40px; font-size: 20px; }
+.ic-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+.ic-emoji { width: 90px; font-size: 18px; text-align: center; }
+.ic-lc { display: flex; gap: 6px; align-items: center; }
+.ic-letter { width: 50px; text-align: center; font-weight: 700; }
+.ic-lc input[type=color] { width: 36px; height: 28px; padding: 0 2px; }
+
+/* Hakkında: bağlantılar · Yenilikler */
+.about-links { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; align-items: center; }
+.about-links .al { display: flex; align-items: center; gap: 8px; }
+.about-links a { color: var(--accent); text-decoration: none; }
+.about-links a:hover { text-decoration: underline; }
+.about-links .cp { padding: 2px 6px; font-size: 12px; }
+.pane.changelog { max-height: 380px; overflow: auto; user-select: text; line-height: 1.5; padding-right: 6px; }
+.pane.changelog h4 { margin: 14px 0 4px; color: var(--accent); }
+.pane.changelog h4:first-child { margin-top: 0; }
+.pane.changelog p { margin: 6px 0; }
+.pane.changelog ul { margin: 2px 0 6px; padding-left: 18px; }
+.pane.changelog code { background: var(--bg); padding: 0 4px; border-radius: 4px; font-size: 12px; }
+/* Zil (bildirim merkezi) */
+#bell { position: relative; align-self: flex-end; margin-bottom: 4px; padding: 3px 8px; }
+#bell .bell-ic { font-size: 15px; }
+#bell .badge { position: absolute; top: -4px; right: -4px; background: #e5534b; color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 16px; min-width: 16px; text-align: center; }
+#bell.dnd { color: var(--muted); }
+.tab .icons { display: inline-flex; align-items: center; gap: 3px; }
+.tab .icons img { width: 14px; height: 14px; object-fit: contain; }
+.tab .icons .ab-emo { font-size: 12px; }
+.tab .icons .letter-ic { width: 14px; height: 14px; font-size: 9px; }

@@ -6,11 +6,15 @@ window.addEventListener('message', (e) => {
   if (e.source === window && e.data && e.data.__deskNotifClick) ipcRenderer.sendToHost('desk-notif-click');
 });
 
+// Rahatsız etme: açıkken sayfanın masaüstü bildirimleri gösterilmez (sayfa yine de bildirim oluşturduğunu sanır).
+ipcRenderer.on('desk-dnd', (_e, on) => { webFrame.executeJavaScript(`window.__deskDnd = ${on ? 'true' : 'false'}`).catch(() => {}); });
+
 webFrame.executeJavaScript(`(() => {
   const N = window.Notification;
   if (!N || N.__desk) return;
   class DeskNotification extends N {
     constructor(title, opts) {
+      if (window.__deskDnd) { const silent = new EventTarget(); silent.close = () => {}; silent.title = title; return silent; }
       super(title, opts);
       this.addEventListener('click', () => window.postMessage({ __deskNotifClick: true }, '*'));
     }

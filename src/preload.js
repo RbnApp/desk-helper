@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('desk', {
   saveState: (s) => ipcRenderer.invoke('state:save', s),
   backupState: (tag) => ipcRenderer.invoke('state:backup', tag),
   info: () => ipcRenderer.invoke('app:info'),
+  changelog: () => ipcRenderer.invoke('app:changelog'),
   applySettings: (s) => ipcRenderer.invoke('settings:apply', s),
   update: {
     check: () => ipcRenderer.invoke('upd:check'),
@@ -16,6 +17,7 @@ contextBridge.exposeInMainWorld('desk', {
   describe: (p) => ipcRenderer.invoke('fav:describe', p),
   installedApps: (refresh) => ipcRenderer.invoke('apps:list', refresh),
   iconFor: (p) => ipcRenderer.invoke('fav:icon', p),
+  pickIcon: () => ipcRenderer.invoke('icon:pick'),
   launch: (item) => ipcRenderer.invoke('fav:launch', item),
   pathForFile: (file) => webUtils.getPathForFile(file),
   places: () => ipcRenderer.invoke('fs:places'),

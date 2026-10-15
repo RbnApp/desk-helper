@@ -3,6 +3,29 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.3.5 · 2026-10-15
+
+**Yeni**
+- Bildirim merkezi: sağ üstteki 🔔 zilde toplam okunmamış sayısı; tıklayınca WhatsApp, Telegram, Instagram, X ve YouTube
+  ayrı ayrı sayılarıyla listelenir. Birine tıklayınca açık paneline geçilir, açık değilse yeni sekmede açılır. Sekme
+  rozeti, panel başlığı ve zil aynı sayıları gösterir (aynı servis iki panelde açıksa iki kez sayılmaz).
+- Rahatsız etme: zilin menüsünden 1 saat, bugün boyunca ya da kapatana kadar. Açıkken masaüstü bildirimleri ve
+  mesajlaşma panellerinin sesi susar, sayılar saymaya devam eder.
+- X (Twitter) kısayolu: Instagram'ın yanında, tek sitelik panel; e-posta ve şifreyle giriş, şifre yöneticisi bu
+  panellerde de çalışır (🔑 düğmesi: "Uygulama panelleri" şifreleri).
+- Simgeyi değiştir: kısayollarda, alt çubukta ve Favoriler'de sağ tık > "Simgeyi değiştir…": kendi resmin, emoji ya da
+  harf + renk; "Varsayılana dön". Değiştirilmeyenler otomatik simgede kalır.
+- Üst sekmelerde gerçek simgeler: açık panellerin logoları, tarayıcıda açık sitenin simgesi, özel simgeler.
+- Hakkında: iletişim e-postası (kopyala), uygulamanın GitHub deposu; yeni "Yenilikler" sekmesinde sürüm notları
+  (internetsiz) ve GitHub'daki sürüm notları bağlantısı.
+- Tarayıcı motoru güncellendi: Chromium 130'dan 152'ye (Electron 44). Daha güvenli ve güncel; Google hesabıyla
+  (YouTube, Gmail) giriş sorunu büyük olasılıkla eski motordan kaynaklanıyordu. Gerçek Google girişi bu sürümde
+  kullanıcıda denenecek.
+
+**Düzeltmeler**
+- Alt çubukta uzun uygulama adları birbirine giriyordu; artık kırpılıyor, üzerine gelince tam ad görünüyor.
+- Chrome uygulama kısayollarının (ör. Chrome Uzak Masaüstü) ve bazı uygulamaların simgesi boş beyaz sayfa çıkıyordu.
+
 ## 0.3.4 · 2026-10-15
 
 **Yeni**

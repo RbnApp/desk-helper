@@ -87,7 +87,7 @@ function createWindow() {
   });
 }
 
-const SITE_FAMILY = new Set(['whatsapp.com', 'whatsapp.net', 'telegram.org', 't.me', 'instagram.com', 'facebook.com', 'youtube.com', 'google.com', 'youtu.be', 'gstatic.com']);
+const SITE_FAMILY = new Set(['whatsapp.com', 'whatsapp.net', 'telegram.org', 't.me', 'instagram.com', 'facebook.com', 'youtube.com', 'google.com', 'youtu.be', 'gstatic.com', 'x.com', 'twitter.com', 'twimg.com']);
 // Web panellerinden açılan yeni pencereler: giriş pencereleri (window.open, ör. Google ile giriş) aynı
 // oturumla uygulama içinde açılır. Normal linkleri (yeni sekmede aç, orta tık) panel karar verir:
 // YouTube gibi çoklu paneller yeni panel açar, diğerleri Desk Helper'ın tarayıcı panelinde açılır.
@@ -213,8 +213,13 @@ ipcMain.handle('pw:import', async (_e, profile) => {
   return pw().importCsv(profile, fs.readFileSync(r.filePaths[0], 'utf8').replace(/^\uFEFF/, ''));
 });
 
+// Uygulamanın GitHub deposu tek yerden: package.json > build.publish (güncelleme kaynağı da burası).
+const REPO = (() => { try { const p = require('../package.json').build.publish[0]; return `https://github.com/${p.owner}/${p.repo}`; } catch { return ''; } })();
+ipcMain.handle('app:changelog', () => { try { return fs.readFileSync(path.join(__dirname, '..', 'CHANGELOG.md'), 'utf8'); } catch { return ''; } });
 ipcMain.handle('app:info', () => ({
   name: 'Desk Helper',
+  email: 'info@rbnbilisim.com.tr',
+  repo: REPO,
   version: app.getVersion(),
   electron: process.versions.electron,
   chrome: process.versions.chrome,
@@ -286,6 +291,20 @@ ipcMain.handle('dialog:pick', async (_e, kind) => {
   return r.canceled ? null : r.filePaths[0];
 });
 
+// "Simgeyi değiştir": kullanıcının seçtiği resim küçültülüp veri adresi olarak durumda saklanır (dosya silinse de kalır).
+ipcMain.handle('icon:pick', async () => {
+  const en = settings.lang === 'en';
+  const r = await dialog.showOpenDialog(win, { title: en ? 'Choose icon image' : 'Simge resmi seç', properties: ['openFile'],
+    filters: [{ name: en ? 'Images' : 'Resimler', extensions: ['png', 'jpg', 'jpeg', 'ico', 'webp', 'gif', 'bmp', 'svg'] }] });
+  const f = r.canceled ? null : r.filePaths[0];
+  if (!f) return null;
+  if (/\.svg$/i.test(f)) { try { return 'data:image/svg+xml;base64,' + fs.readFileSync(f).toString('base64'); } catch { return null; } }
+  const img = require('electron').nativeImage.createFromPath(f);
+  if (img.isEmpty()) return /\.(webp|gif)$/i.test(f) && fs.statSync(f).size < 512e3 ? `data:image/${f.split('.').pop().toLowerCase()};base64,` + fs.readFileSync(f).toString('base64') : null;
+  const { width, height } = img.getSize();
+  const k = 96 / Math.max(width, height);
+  return (k < 1 ? img.resize({ width: Math.round(width * k), height: Math.round(height * k), quality: 'best' }) : img).toDataURL();
+});
 ipcMain.handle('fav:describe', async (_e, p) => {
   const name = path.basename(p).replace(/\.(lnk|exe|url|bat|cmd|appref-ms)$/i, '');
   return { name, icon: await iconFor(p) };
@@ -293,7 +312,30 @@ ipcMain.handle('fav:describe', async (_e, p) => {
 
 // Programın gerçek simgesi. Sırayla dener: kısayolun kendi simge alanı (ör. uygulama klasöründeki .ico),
 // kısayolun hedefi, kısayol dosyasının kendisi. Windows'un jenerik "uygulama" simgesi gelirse sonrakine geçer.
-let genericIcon;
+let genericIcon, genericFileIcon;
+const expandEnv = (p) => p.replace(/%([^%]+)%/g, (m, v) => process.env[v] ?? process.env[v.toUpperCase()] ?? m);
+// Chrome / Edge "uygulama" kısayolları (ör. Chrome Uzak Masaüstü): hedef chrome_proxy.exe --app-id=<id>,
+// simge tarayıcı profilindeki "Web Applications\_crx_<id>\*.ico" dosyasında durur.
+function chromeAppIcon(args) {
+  const id = /--app-id=([a-p]{32})/.exec(args || '')?.[1];
+  if (!id) return null;
+  const local = process.env.LOCALAPPDATA || '';
+  for (const base of ['Google\\Chrome\\User Data', 'Microsoft\\Edge\\User Data', 'BraveSoftware\\Brave-Browser\\User Data']) {
+    let profiles = [];
+    try { profiles = fs.readdirSync(path.join(local, base)); } catch { continue; }
+    for (const pr of profiles) {
+      const dir = path.join(local, base, pr, 'Web Applications', '_crx_' + id);
+      let files = [];
+      try { files = fs.readdirSync(dir); } catch { continue; }
+      const ico = files.find((f) => /\.ico$/i.test(f)) || files.find((f) => /\.png$/i.test(f));
+      if (ico) return path.join(dir, ico);
+    }
+  }
+  return null;
+}
+const imageFile = (f) => {
+  try { const img = require('electron').nativeImage.createFromPath(f); return img.isEmpty() ? null : img.resize({ width: 64, height: 64, quality: 'best' }).toDataURL(); } catch { return null; }
+};
 async function iconFor(p) {
   if (process.platform !== 'win32') return null;
   const get = async (f) => { try { return (await app.getFileIcon(f, { size: 'large' })).toDataURL(); } catch { return null; } };
@@ -301,13 +343,23 @@ async function iconFor(p) {
     const dummy = path.join(app.getPath('temp'), 'desk-helper-jenerik.exe');
     try { fs.writeFileSync(dummy, ''); } catch {}
     genericIcon = await get(dummy);
+    const unknown = path.join(app.getPath('temp'), 'desk-helper-jenerik.deskyok'); // ilişkisiz dosya: boş beyaz sayfa simgesi
+    try { fs.writeFileSync(unknown, ''); } catch {}
+    genericFileIcon = await get(unknown);
   }
+  const isGeneric = (i) => i === genericIcon || i === genericFileIcon;
   const tries = [];
   if (p.toLowerCase().endsWith('.lnk')) {
     try {
       const l = shell.readShortcutLink(p);
-      if (l.icon) tries.push(l.icon);
-      if (l.target) tries.push(l.target);
+      const crx = chromeAppIcon(l.args);
+      if (crx) { const icon = imageFile(crx); if (icon) return icon; }
+      if (l.icon) {
+        const ic = expandEnv(l.icon);
+        if (/\.(ico|png)$/i.test(ic)) { const icon = imageFile(ic); if (icon) return icon; }
+        tries.push(ic);
+      }
+      if (l.target) tries.push(expandEnv(l.target));
     } catch {}
   }
   tries.push(p);
@@ -316,7 +368,7 @@ async function iconFor(p) {
     const icon = await get(f);
     if (!icon) continue;
     first ??= icon;
-    if (icon !== genericIcon) return icon;
+    if (!isGeneric(icon)) return icon;
   }
   // exe'nin içinde simge yoksa (ör. kendi derlediğin uygulamalar) program klasöründe .ico / icon.png ara.
   const exe = tries.find((f) => /\.exe$/i.test(f));
@@ -333,10 +385,10 @@ async function iconFor(p) {
         if (!img.isEmpty()) return img.resize({ width: 64, height: 64, quality: 'best' }).toDataURL();
       } catch {}
       const icon = await get(full);
-      if (icon && icon !== genericIcon) return icon;
+      if (icon && !isGeneric(icon)) return icon;
     }
   }
-  return first && first !== genericIcon ? first : null; // null: arayüz baş harfli renkli simge çizer
+  return first && !isGeneric(first) ? first : null; // null: arayüz baş harfli renkli simge çizer
 }
 ipcMain.handle('fav:icon', (_e, p) => iconFor(p));
 
@@ -348,6 +400,8 @@ ipcMain.handle('apps:list', async (_e, refresh) => {
   const apps = await native.installedApps();
   await Promise.all(apps.map(async (a) => {
     if (a.logo) { try { const img = nativeImage.createFromPath(a.logo); if (!img.isEmpty()) a.icon = img.resize({ width: 48, height: 48, quality: 'best' }).toDataURL(); } catch {} }
+    const crx = /_crx_([a-p]{32})/.exec(a.aumid || '')?.[1]; // Chrome/Edge uygulaması (AppID'de uygulama kimliği)
+    if (!a.icon && crx) { const f = chromeAppIcon('--app-id=' + crx); if (f) a.icon = imageFile(f); }
     if (!a.icon && a.lnk) a.icon = await iconFor(a.lnk);
   }));
   appsCache = apps.map(({ name, aumid, lnk, icon }) => ({ name, aumid, lnk, icon: icon || null }));
