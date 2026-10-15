@@ -118,36 +118,12 @@ app.on('web-contents-created', (_e, wc) => {
   if (wc.getType() === 'window') wc.on('will-attach-webview', (_ev, prefs) => { prefs.preload = path.join(__dirname, 'webview-preload.js'); });
 });
 
-// Web panellerinde sağ tık menüsü (Electron'da varsayılan olarak yok)
+// Web panellerinde sağ tık: menü Desk Helper'ın kendi menü bileşeninde çizilir (src/menu.js), burada yalnızca bilgi gider.
 function webContextMenu(wc, p) {
-  const en = settings.lang === 'en';
-  const L = (tr, eng) => (en ? eng : tr);
-  const items = [];
-  if (p.linkURL && /^https?:/.test(p.linkURL)) {
-    items.push(
-      { label: L('Yeni sekmede aç', 'Open in new tab'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'tab') },
-      { label: L('Yeni panelde aç', 'Open in new panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'panel') },
-      { label: L('Tarayıcı panelinde aç', 'Open in browser panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'browser') },
-      { label: L('Bağlantıyı kopyala', 'Copy link'), click: () => clipboard.writeText(p.linkURL) },
-      { type: 'separator' });
-  }
-  if (p.isEditable) {
-    items.push(
-      { label: L('Kes', 'Cut'), role: 'cut', enabled: p.editFlags.canCut },
-      { label: L('Kopyala', 'Copy'), role: 'copy', enabled: p.editFlags.canCopy },
-      { label: L('Yapıştır', 'Paste'), role: 'paste', enabled: p.editFlags.canPaste },
-      { label: L('Tümünü seç', 'Select all'), role: 'selectAll' },
-      { type: 'separator' });
-  } else if (p.selectionText) {
-    items.push({ label: L('Kopyala', 'Copy'), role: 'copy' }, { type: 'separator' });
-  }
-  items.push(
-    { label: L('Geri', 'Back'), enabled: wc.navigationHistory.canGoBack(), click: () => wc.navigationHistory.goBack() },
-    { label: L('İleri', 'Forward'), enabled: wc.navigationHistory.canGoForward(), click: () => wc.navigationHistory.goForward() },
-    { label: L('Yenile', 'Reload'), click: () => wc.reload() },
-    { type: 'separator' },
-    { label: L('İncele', 'Inspect'), click: () => wc.inspectElement(p.x, p.y) });
-  Menu.buildFromTemplate(items).popup({ window: win });
+  win?.webContents.send('web:ctx', wc.id, {
+    x: p.x, y: p.y, linkURL: p.linkURL || '', srcURL: p.srcURL || '', mediaType: p.mediaType, isEditable: p.isEditable,
+    selectionText: p.selectionText || '', editFlags: { canCut: p.editFlags.canCut, canCopy: p.editFlags.canCopy, canPaste: p.editFlags.canPaste },
+  });
 }
 
 // Beklenmedik kapanmada paneldeki pencereleri serbest bırak (gizli kalmasınlar).

@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.3.2 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.3.3 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -50,6 +50,9 @@ seçim listesi çıkar. Şifreler profile bağlıdır ve Desk Helper'ın veri kl
 👤 > **Kayıtlı şifreler…**: listele, göster, kopyala, düzenle, sil, "asla kaydetme" listesi ve Chrome'dan CSV içe aktarma
 (Chrome > Ayarlar > Şifre Yöneticisi > Ayarlar > Dışa aktar). Şifreyi göstermek/kopyalamak için ana parola istenir
 (ilk seferde belirlenir, 5 dakika açık kalır); otomatik doldurma ana parola istemez. Gizli pencerede şifre kaydedilmez.
+Adres çubuğundaki 🔑: bu sitenin kayıtlı hesapları (tıklayınca sayfaya doldurur) ve **Bu site için şifre ekle…** ile elle kayıt.
+Kayıtlı şifreler penceresinde de **＋ Şifre ekle** vardır (site, kullanıcı adı, şifre). Not: phpMyAdmin zaten açık bir oturumla
+açılıyorsa (veya `auth_type = config` ile şifre sorulmuyorsa) giriş formu olmadığından kaydetme önerilmez; o zaman elle ekle.
 Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 > "Bu profili sil…" profili, yer imlerini ve girişlerini siler.
 "＋ Kısayol ekle" > **Tarayıcıda bir site** ile ör. phpMyAdmin için tek tıklık kısayol eklenir; tıklayınca tarayıcı panelinde sekme açar.
 
@@ -106,5 +109,5 @@ pencerelerini panele yerleştirme, Win32), `src\preload.js` (köprü), `src\app.
 
 ## Geliştirici notu: pencere (modal) motoru
 Uygulamadaki bütün açılır pencereler (onaylar, formlar, çerez temizleme, şifreler, Favoriler, Ayarlar, alt çubuk…)
-tek motordan açılır: `src/modal.js` (`Modal.open / form / confirm / alert / choose`). Görünüm `style.css` içindeki
+tek motordan açılır: `src/modal.js`; bütün sağ tık ve açılır menüler de tek bileşenden: `src/menu.js` (`PopMenu.open`, stil: `.pm-*`) (`Modal.open / form / confirm / alert / choose`). Görünüm `style.css` içindeki
 "Modal motoru" bölümündedir (`.mdl-*`). Tasarım ya da klavye davranışı (Enter, Esc, Tab) değişecekse yalnızca bu iki yer değişir.

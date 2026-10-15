@@ -491,7 +491,37 @@ window.desk.native.onSpawn((srcId, w) => {
 
 // Web panelinden link: YouTube gibi çoklu panellerde (veya sağ tık > Yeni panelde aç) yanına yeni panel,
 // diğerlerinde kendi tarayıcımız (Chrome'a gitmez).
-window.desk.onWebLink((wcId, url, mode) => {
+window.desk.onWebLink(routeWebLink);
+
+// Web sayfalarında sağ tık (WhatsApp, tarayıcı…): aynı menü bileşeniyle.
+window.desk.onWebCtx((wcId, q) => {
+  const wv = [...document.querySelectorAll('webview')].find((w) => { try { return w.getWebContentsId() === wcId; } catch { return false; } });
+  if (!wv) return;
+  const at = { clientX: q.x, clientY: q.y }; // Electron webview sağ tık koordinatları pencereye göredir
+  const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
+  const inBrowser = src?.leaf.kind === 'browser';
+  const link = /^https?:/.test(q.linkURL) ? q.linkURL : '';
+  let canBack = false, canFwd = false;
+  try { canBack = wv.canGoBack(); canFwd = wv.canGoForward(); } catch {}
+  contextMenu(at, document.body, [
+    link ? { icon: '🗗', label: t('Yeni sekmede aç'), action: () => routeWebLink(wcId, link, 'tab') } : null,
+    link ? { icon: '▣', label: t('Yeni panelde aç'), action: () => routeWebLink(wcId, link, 'panel') } : null,
+    link && !inBrowser ? { icon: '🧭', label: t('Tarayıcı panelinde aç'), action: () => routeWebLink(wcId, link, 'browser') } : null,
+    link ? { icon: '🔗', label: t('Bağlantıyı kopyala'), action: () => window.desk.copyText(link) } : null,
+    link ? '-' : null,
+    q.isEditable ? { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: !q.editFlags.canCut, action: () => wv.cut() } : null,
+    q.isEditable || q.selectionText ? { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: q.isEditable && !q.editFlags.canCopy, action: () => wv.copy() } : null,
+    q.isEditable ? { icon: '📋', label: t('Yapıştır'), key: 'Ctrl+V', disabled: !q.editFlags.canPaste, action: () => wv.paste() } : null,
+    q.isEditable ? { icon: '', label: t('Tümünü seç'), key: 'Ctrl+A', action: () => wv.selectAll() } : null,
+    q.isEditable || q.selectionText ? '-' : null,
+    { icon: '←', label: t('Geri'), disabled: !canBack, action: () => wv.goBack() },
+    { icon: '→', label: t('İleri'), disabled: !canFwd, action: () => wv.goForward() },
+    { icon: '⟳', label: t('Yenile'), action: () => wv.reload() },
+    '-',
+    { icon: '🔍', label: t('İncele'), action: () => wv.inspectElement(Math.round(q.x), Math.round(q.y)) },
+  ]);
+});
+function routeWebLink(wcId, url, mode) {
   const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
   if (!src) { openInDeskBrowser(url); return; }
   // Kendi tarayıcımız: linkler yeni sekmede açılır ("Yeni panelde aç" hariç).
@@ -516,11 +546,12 @@ window.desk.onWebLink((wcId, url, mode) => {
   insertNear(src.ws, near.leaf.id, leaf, el && el.offsetHeight > el.offsetWidth * 1.2 ? 'bottom' : 'right');
   src.ws.active = leaf.id;
   layout(); renderTabs(); save();
-});
+}
 
 // --- Kendi tarayıcımız: sekmeler, adres çubuğu, ayrı kalıcı profiller ---
 // Her profil ayrı oturumdur (çerezler, girişler): persist:br-<profil>. Gizli pencere kalıcı değildir.
 const partitionFor = (profile) => (profile === '__private' ? 'br-private' : 'persist:br-' + encodeURIComponent(profile || 'default'));
+const profileName = (pr) => (pr === '__private' ? t('Gizli pencere') : pr && pr !== 'default' ? pr : t('Varsayılan'));
 const profileLabel = (pr) => (pr === '__private' ? '🕶 ' + t('Gizli') : '👤 ' + (pr && pr !== 'default' ? pr : t('Varsayılan')));
 function normalizeUrl(text) {
   const v = text.trim();
@@ -543,10 +574,12 @@ function buildBrowser(p) {
   const fwd = h('button', { title: t('İleri'), textContent: '→' });
   const reload = h('button', { title: t('Yenile'), textContent: '⟳' });
   const addr = h('input', { class: 'br-addr', spellcheck: false, placeholder: t('Adres yaz veya ara') });
-  const prof = h('button', { class: 'br-prof', title: t('Profil') });
-  const star = h('button', { class: 'br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
-  const cookieBtn = h('button', { class: 'br-cookie', textContent: '🍪', title: t('Bu sitenin çerezlerini temizle') });
-  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, star), cookieBtn, prof);
+  const prof = h('button', { class: 'br-prof', title: t('Profil, şifreler ve çerezler') });
+  const star = h('button', { class: 'br-in br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
+  const keyBtn = h('button', { class: 'br-in br-key', textContent: '🔑', title: t('Bu sitenin şifreleri') });
+  const cookieBtn = h('button', { class: 'br-tool br-cookie', textContent: '🍪', title: t('Bu sitenin çerezlerini temizle') });
+  for (const b of [back, fwd, reload]) b.classList.add('br-tool');
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, keyBtn, star), cookieBtn, prof);
   const bmBar = h('div', { class: 'br-bm' });
   const pwBar = h('div', { class: 'br-pwbar', hidden: true });
   const views = h('div', { class: 'br-views' });
@@ -640,6 +673,7 @@ function buildBrowser(p) {
     star.textContent = on ? '★' : '☆';
     star.classList.toggle('on', on);
     star.title = on ? t('Yer imini düzenle') : t('Bu sayfayı yer imlerine ekle');
+    updateKey();
   }
   star.onclick = async () => {
     const tab = curTab();
@@ -728,7 +762,8 @@ function buildBrowser(p) {
   bmBar.addEventListener('wheel', (e) => { if (e.deltaY) { bmBar.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
 
   // Çerez temizle: yalnızca açık sekmedeki sitenin çerezleri, bu profilde. Önce ne silineceği gösterilir.
-  cookieBtn.onclick = async () => {
+  cookieBtn.onclick = () => clearCookies();
+  async function clearCookies() {
     const url = curTab()?.url || '';
     const part = partitionFor(L.profile);
     const info = await window.desk.siteCookies(part, url).catch(() => null);
@@ -747,7 +782,31 @@ function buildBrowser(p) {
     const n = await window.desk.clearSite(part, url, r.what === 'all');
     try { cur().reload(); } catch {}
     alertBox(t('Çerez temizle'), t('{site} için {n} çerez silindi.', { site: info.base, n }));
+  }
+
+  // 🔑: bu sitenin kayıtlı hesapları (tıklayınca sayfaya doldurur), elle şifre ekleme, tüm şifreler
+  async function updateKey() {
+    const url = curTab()?.url || '';
+    const n = L.profile === '__private' || !/^https?:/.test(url) ? 0 : (await window.desk.pw.accounts(L.profile, url)).length;
+    keyBtn.classList.toggle('on', n > 0);
+    keyBtn.hidden = L.profile === '__private';
+    keyBtn.title = n ? t('Bu sitede {n} kayıtlı şifre', { n }) : t('Bu site için şifre ekle');
+  }
+  keyBtn.onclick = async () => {
+    const url = curTab()?.url || '';
+    const site = /^https?:/.test(url) ? new URL(url).host : '';
+    const list = site ? await window.desk.pw.accounts(L.profile, url) : [];
+    contextMenu(keyBtn, p.body, [
+      { header: site ? t('{site} şifreleri', { site }) : t('Şifreler') },
+      ...list.map((a) => ({ icon: '👤', label: a.username || t('(kullanıcı adı yok)'), title: t('Sayfaya doldur'),
+        action: async () => { const wv = cur(); wv.send('pw-fill', await window.desk.pw.fill(L.profile, wv.getURL(), a.id)); } })),
+      list.length ? '-' : null,
+      site ? { icon: '＋', label: t('Bu site için şifre ekle…'), action: () => pwAddDialog(L.profile, url).then(updateKey) } : null,
+      { icon: '🔑', label: t('Kayıtlı şifreler…'), action: () => openPasswords(L.profile) },
+    ], { align: 'right' });
   };
+  p.updateKey = updateKey;
+  p.curUrl = () => curTab()?.url || '';
 
   // --- Şifreler: doldurma ve "kaydedilsin mi / güncellensin mi" çubuğu ---
   async function onPw(wv, ch, arg) {
@@ -771,7 +830,7 @@ function buildBrowser(p) {
       h('span', { class: 'k', textContent: '🔑' }),
       h('span', { class: 'q' }, h('b', { textContent: upd ? t('Şifre güncellensin mi?') : t('Şifre kaydedilsin mi?') }),
         ' ' + host + ' · ' + (d.username || t('(kullanıcı adı yok)'))),
-      h('button', { class: 'primary', textContent: upd ? t('Güncelle') : t('Kaydet'), onclick: async () => { await window.desk.pw.save(pf, d.url, d.username, d.password); done(); } }),
+      h('button', { class: 'primary', textContent: upd ? t('Güncelle') : t('Kaydet'), onclick: async () => { await window.desk.pw.save(pf, d.url, d.username, d.password); done(); updateKey(); } }),
       upd ? null : h('button', { textContent: t('Bu sitede asla'), onclick: async () => { await window.desk.pw.never(pf, d.url); done(); } }),
       h('button', { textContent: t('Şimdi değil'), onclick: done })].filter(Boolean));
     pwBar.hidden = false;
@@ -783,29 +842,35 @@ function buildBrowser(p) {
     for (const wv of wvs.values()) wv.remove();
     wvs.clear();
     if (pr === '__private') L.tabs = [{ id: uid(), url: HOME_URL, title: '' }];
-    prof.textContent = profileLabel(pr);
+    prof.textContent = profileLabel(pr) + ' ▾';
     p.el.classList.toggle('private', pr === '__private');
     p.renderBm();
     show(L.tabs.find((x) => x.id === L.activeTab)?.id || L.tabs[0].id);
   }
   p.setProfile = setProfile;
-  prof.onclick = (e) => {
+  // Profil menüsü: profiller, yeni profil; bu sitenin şifre ve çerezleri; en altta kırmızı "Profili sil".
+  prof.onclick = () => {
     state.browserProfiles ||= ['default'];
-    contextMenu(e, document.body, [
-      ...state.browserProfiles.map((pr) => ({ label: profileLabel(pr) + (pr === L.profile ? '  ✓' : ''), action: () => setProfile(pr) })),
-      { label: profileLabel('__private') + (L.profile === '__private' ? '  ✓' : ''), action: () => setProfile('__private') },
-      '-',
-      { label: t('Yeni profil…'), action: async () => {
-        const r = await modal({ title: t('Yeni tarayıcı profili'), text: t('Her profilin girişleri ve çerezleri ayrı tutulur.'), fields: [{ name: 'name', label: t('Profil adı'), value: '' }] });
+    const priv = L.profile === '__private';
+    contextMenu(prof, p.body, [
+      { header: t('Profil') },
+      ...state.browserProfiles.map((pr) => ({ icon: '👤', label: profileName(pr), checked: pr === L.profile, action: () => setProfile(pr) })),
+      { icon: '🕶', label: profileName('__private'), checked: priv, action: () => setProfile('__private') },
+      { icon: '＋', label: t('Yeni profil…'), action: async () => {
+        const r = await modal({ title: t('Yeni tarayıcı profili'), icon: '👤', text: t('Her profilin girişleri, çerezleri, yer imleri ve şifreleri ayrı tutulur.'), fields: [{ name: 'name', label: t('Profil adı'), value: '' }], okText: t('Oluştur') });
         const name = r?.name?.trim();
         if (!name) return;
         if (!state.browserProfiles.includes(name)) state.browserProfiles.push(name);
         save(); setProfile(name);
       } },
-      L.profile !== '__private' ? { label: '🔑 ' + t('Kayıtlı şifreler…'), action: () => openPasswords(L.profile) } : null,
-      L.profile !== 'default' && L.profile !== '__private' ? { label: t('Bu profili sil…'), action: () => deleteProfile(L.profile) } : null,
-    ]);
+      '-',
+      priv ? null : { icon: '🔑', label: t('Kayıtlı şifreler…'), action: () => openPasswords(L.profile) },
+      { icon: '🍪', label: t('Bu sitenin çerezlerini temizle…'), action: () => clearCookies() },
+      L.profile !== 'default' && !priv ? '-' : null,
+      L.profile !== 'default' && !priv ? { icon: '🗑', label: t('"{name}" profilini sil…', { name: L.profile }), danger: true, action: () => deleteProfile(L.profile) } : null,
+    ], { align: 'right' });
   };
+
   back.onclick = () => { try { cur().goBack(); } catch {} };
   fwd.onclick = () => { try { cur().goForward(); } catch {} };
   reload.onclick = () => { try { cur().reload(); } catch {} };
@@ -814,7 +879,7 @@ function buildBrowser(p) {
     if (e.key === 'Enter') { const u = normalizeUrl(addr.value); const wv = cur(); wv.loadURL(u).catch(() => {}); wv.focus(); }
     if (e.key === 'Escape') { addr.value = L.tabs.find((x) => x.id === L.activeTab)?.url || ''; addr.blur(); }
   });
-  prof.textContent = profileLabel(L.profile);
+  prof.textContent = profileLabel(L.profile) + ' ▾';
   p.el.classList.toggle('private', L.profile === '__private');
   p.renderBm();
   for (const tab of L.tabs) tab.loading = false;
@@ -938,6 +1003,16 @@ async function pwUnlock() {
   await alertBox(t('Ana parola'), t('Ana parola yanlış.'));
   return false;
 }
+// Elle şifre ekle (site, kullanıcı adı, şifre)
+async function pwAddDialog(profile, url = '') {
+  let origin = ''; try { origin = new URL(url).origin; } catch {}
+  const r = await modal({ title: t('Şifre ekle'), icon: '🔑', text: t('Profil: {profile}', { profile: profileLabel(profile) }),
+    fields: [{ name: 'site', label: t('Site'), value: origin, placeholder: 'http://localhost' }, { name: 'u', label: t('Kullanıcı adı'), value: '' }, { name: 'p', label: t('Şifre'), type: 'password', value: '' }],
+    okText: t('Kaydet') });
+  if (!r) return false;
+  if (!r.site.trim() || !r.p) { await alertBox(t('Şifre ekle'), t('Site ve şifre boş olamaz.')); return false; }
+  return window.desk.pw.save(profile, normalizeUrl(r.site), r.u.trim(), r.p);
+}
 function openPasswords(profile) {
   Modal.open({ title: t('Kayıtlı şifreler · {profile}', { profile: profileLabel(profile) }), icon: '🔑', size: 'lg',
     hint: t('Şifreler Chrome\'dan bağımsızdır, Desk Helper\'ın kendi klasöründe Windows kullanıcı şifrelemesiyle saklanır.'),
@@ -976,6 +1051,7 @@ function openPasswords(profile) {
     };
     render();
     api.setButtons([
+      { label: '＋ ' + t('Şifre ekle'), left: true, keep: true, onClick: async () => { if (await pwAddDialog(profile, panels.get(curWs().active)?.leaf.kind === 'browser' ? panels.get(curWs().active).curUrl?.() : '')) render(); } },
       { label: t('Chrome\'dan içe aktar (CSV)…'), left: true, keep: true, onClick: async () => {
         const r = await window.desk.pw.importCsv(profile);
         if (!r) return;
@@ -1237,26 +1313,8 @@ async function buildFiles(p) {
 // Kes/kopyala panoları tüm dosya panelleri arasında ortak: bir panelde kopyala, ötekinde yapıştır.
 const fileClip = { items: [], cut: false };
 
-// Sade sağ tık menüsü. Menü panelin dışına taşmaz (yandaki gerçek program pencerelerinin altında kalmasın).
-function contextMenu(e, bounds, items) {
-  document.querySelector('.ctx')?.remove();
-  const menu = h('div', { class: 'ctx' }, ...items.filter(Boolean).map((it) => it === '-'
-    ? h('div', { class: 'sep' })
-    : h('div', { class: 'item' + (it.disabled ? ' disabled' : '') + (it.bold ? ' bold' : ''), title: it.title || '',
-        onclick: (ev) => { if (it.disabled) return; close(); it.action(ev); },
-        onauxclick: (ev) => { if (ev.button === 1 && it.middle) { close(); it.middle(); } },
-        oncontextmenu: (ev) => { ev.preventDefault(); if (it.ctx) { close(); it.ctx(ev); } } },
-      it.icon || null, h('span', { class: 'lbl', textContent: it.label }), h('span', { class: 'key', textContent: it.key || '' }))));
-  document.body.append(menu);
-  const b = bounds.getBoundingClientRect(), m = menu.getBoundingClientRect();
-  const x = Math.max(b.left, Math.min(e.clientX, b.right - m.width - 2));
-  const y = Math.max(b.top, Math.min(e.clientY, b.bottom - m.height - 2));
-  Object.assign(menu.style, { left: x + 'px', top: y + 'px' });
-  const close = () => { menu.remove(); window.removeEventListener('mousedown', outside, true); window.removeEventListener('keydown', esc, true); window.removeEventListener('blur', close); };
-  const outside = (ev) => { if (!menu.contains(ev.target)) close(); };
-  const esc = (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); close(); } };
-  setTimeout(() => { window.addEventListener('mousedown', outside, true); window.addEventListener('keydown', esc, true); window.addEventListener('blur', close); });
-}
+// Bütün sağ tık / açılır menüler tek bileşenden (src/menu.js). Menü verilen alanın (panel) dışına taşmaz.
+const contextMenu = (e, bounds, items, opts = {}) => PopMenu.open(e, items, { bounds, ...opts });
 
 // Metin dosyasını aynı sekmedeki bir not defteri panelinde aç (yoksa yanına yeni panel ekle).
 function openInNotes(fromPanel, file) {
