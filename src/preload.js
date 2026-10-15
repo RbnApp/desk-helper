@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('desk', {
     onSpawn: (fn) => ipcRenderer.on('native:spawn', (_e, id, w) => fn(id, w)),
     onTitle: (fn) => ipcRenderer.on('native:title', (_e, id, t) => fn(id, t)),
   },
+  onWebLink: (fn) => ipcRenderer.on('web:link', (_e, wcId, url, force) => fn(wcId, url, force)),
   openExternal: (url) => ipcRenderer.invoke('open:external', url),
   platform: process.platform,
 });

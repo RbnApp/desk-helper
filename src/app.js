@@ -41,7 +41,7 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 5;
+const STATE_SCHEMA = 6;
 
 // WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
 const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
@@ -60,8 +60,11 @@ const APP_INFO = {
 
 // YouTube: kullanıcının tarayıcısında, seçtiği profilin hesabıyla, adres çubuğu ve sekmeler olmadan
 // (Chrome/Edge/Brave uygulama penceresi). Seçim kısayolda saklanır; her tıklama yeni bir panel açar.
-const youtubeShortcut = () => ({ id: 'yt', name: 'YouTube', emo: '▶️', kind: 'native',
-  native: { type: 'browser', browser: 'ask', url: 'https://www.youtube.com/', appMode: true, remember: true } });
+// İki açılış biçimi: 'web' = Desk Helper içinde gömülü (her video ayrı panel, sağ tık > Yeni panelde aç),
+// 'browser' = seçilen tarayıcı profilinin hesabıyla gerçek pencere.
+const YT_URL = 'https://www.youtube.com/';
+const youtubeShortcut = () => ({ id: 'yt', name: 'YouTube', emo: '▶️', kind: 'native', open: 'web', webUrl: YT_URL,
+  native: { type: 'browser', browser: 'ask', url: YT_URL, appMode: true, remember: true } });
 
 const defaultShortcuts = () => [
   ...webShortcuts(),
@@ -75,6 +78,7 @@ function leafFrom(sc) {
   const leaf = { type: 'panel', id: uid(), kind: sc.kind, title: sc.name, emo: sc.emo };
   if (sc.url) leaf.url = sc.url;
   if (sc.mobile) leaf.mobile = true;
+  if (sc.multi) leaf.multi = true;
   if (sc.native) leaf.native = { ...sc.native };
   return leaf;
 }
@@ -103,6 +107,7 @@ function migrate(s) {
     const ig = s.shortcuts.findIndex((x) => x.id === 'ig');
     s.shortcuts.splice(ig + 1, 0, youtubeShortcut());
   }
+  if ((s.schema || 1) < 6) for (const sc of s.shortcuts) if (sc.id === 'yt') { sc.open = 'web'; sc.webUrl = YT_URL; }
   s.schema = STATE_SCHEMA;
   return s;
 }
@@ -442,6 +447,22 @@ window.desk.native.onSpawn((srcId, w) => {
   layout(); renderTabs(); save();
 });
 
+// Web panelinden link: YouTube gibi çoklu panellerde (veya sağ tık > Yeni panelde aç) yanına yeni panel,
+// diğerlerinde varsayılan tarayıcı.
+window.desk.onWebLink((wcId, url, force) => {
+  const src = [...panels.values()].find((p) => { try { return p.wv && p.wv.getWebContentsId() === wcId; } catch { return false; } });
+  if (!src || !(force || src.leaf.multi)) { window.desk.openExternal(url); return; }
+  const leaf = { type: 'panel', id: uid(), kind: 'web', title: src.leaf.title, emo: src.leaf.emo, url, multi: src.leaf.multi };
+  if (src.leaf.mobile) leaf.mobile = true;
+  // Art arda açılan videolar sırayla dizilsin: en son açılan aynı türden panelin yanına ekle.
+  const last = panels.get(src.ws.active);
+  const near = last && last.ws === src.ws && last.leaf.multi ? last : src;
+  const el = near.el;
+  insertNear(src.ws, near.leaf.id, leaf, el && el.offsetHeight > el.offsetWidth * 1.2 ? 'bottom' : 'right');
+  src.ws.active = leaf.id;
+  layout(); renderTabs(); save();
+});
+
 // --- Uygulama içi web sayfası ---
 const MOBILE_UA = `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${(/Chrome\/([\d.]+)/.exec(navigator.userAgent) || [, '130.0.0.0'])[1]} Mobile Safari/537.36`;
 function buildWeb(p) {
@@ -451,6 +472,7 @@ function buildWeb(p) {
   if (p.leaf.mobile) wv.setAttribute('useragent', MOBILE_UA); // Instagram: telefon görünümü
   wv.setAttribute('src', p.leaf.url);
   p.body.append(wv);
+  p.wv = wv;
   p.tools.append(
     h('button', { title: t('Geri'), textContent: '←', onclick: () => wv.canGoBack() && wv.goBack() }),
     h('button', { title: t('Yenile'), textContent: '⟳', onclick: () => wv.reload() }),
@@ -707,6 +729,7 @@ function openInNotes(fromPanel, file) {
 
 // ---------- Panel ekleme ----------
 async function addPanel(sc) {
+  if (sc.webUrl && sc.open !== 'browser') sc = { name: sc.name, emo: sc.emo, kind: 'web', url: sc.webUrl, multi: true };
   if (sc.kind === 'native' && sc.native.type === 'browser' && sc.native.browser === 'ask') {
     const choice = await askBrowser(sc.native, sc.native.remember ? sc : null);
     if (!choice) return;
@@ -966,6 +989,8 @@ async function editShortcut(sc) {
   if (sc.native?.type === 'browser' && sc.native.browser !== 'ask') fields.splice(1, 0, { name: 'url', label: t('Açılış adresi (boş bırakılabilir)'), value: sc.native.url || '' });
   if (sc.native?.type === 'app') fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'desktop',
     options: [['desktop', t('Masaüstü uygulaması (bilgisayarda kurulu)')], ['web', t('Uygulama içi web (Desk Helper\'ın içinde)')]] });
+  if (sc.webUrl) fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'web',
+    options: [['web', t('Desk Helper içinde (her video ayrı panel)')], ['browser', t('Tarayıcı profilimle (kendi hesabımla)')]] });
   const canReset = sc.native?.remember && sc.native.browser !== 'ask';
   const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil'), extra: canReset ? t('Tarayıcıyı değiştir') : null });
   if (!r) return;
@@ -975,6 +1000,7 @@ async function editShortcut(sc) {
     sc.name = r.name || sc.name; sc.emo = r.emo;
     if (sc.kind === 'web') sc.url = r.url;
     else if (sc.native?.type === 'app') sc.open = r.open;
+    if (sc.webUrl && r.open) sc.open = r.open;
     else if (sc.native?.type === 'browser' && 'url' in r) sc.native.url = r.url.trim();
   }
   renderShortcuts(); save();

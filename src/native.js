@@ -333,27 +333,31 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle, onSpawn = () => 
   }
 
   let hook = null, hookCb = null;
-  let lastFg = 0;
+  let lastBrowserFg = null;
   const known = new Set(); // Desk Helper'ın gördüğü pencereler; yalnızca yeni açılanlar panele alınır
+  const adopted = new Set();
   function adopt(srcId, src, hwnd) {
-    if (!W.IsWindow(hwnd) || attachedHwnds().has(hwnd)) return;
+    if (adopted.has(hwnd) || !W.IsWindow(hwnd) || attachedHwnds().has(hwnd)) return;
     const w = listWindows().find((x) => x.hwnd === hwnd);
     if (!w || w.pid !== src.pid || !bigEnough(w)) return;
+    adopted.add(hwnd);
     onSpawn(srcId, { hwnd: w.hwnd, pid: w.pid, title: w.title });
   }
   function hookForeground() {
     if (hook) return;
     hookCb = W.koffi.register((_h, _ev, hwnd) => {
       try {
-        const fg = Number(hwnd), prev = lastFg;
-        lastFg = fg;
-        if (fg === hostHandle() || [...docked.values()].some((e) => e.hwnd === fg)) { stack(fg); return; }
+        const fg = Number(hwnd);
+        const own = [...docked.entries()].find(([, e]) => e.hwnd === fg);
+        if (own && own[1].closeOnRelease) lastBrowserFg = { id: own[0], e: own[1], at: Date.now() };
+        if (fg === hostHandle() || own) { stack(fg); return; }
         // Paneldeki tarayıcıdan yeni pencere açıldı mı (ör. YouTube'da sağ tık > Bağlantıyı yeni pencerede aç)?
-        // Öyleyse yanına yeni panel olarak al. Önceden görülmüş pencereler (kullanıcının kendi açtıkları) alınmaz.
-        const src = [...docked.entries()].find(([, e]) => e.hwnd === prev && e.closeOnRelease);
+        // Öyleyse yanına yeni panel olarak al. Arada sağ tık menüsü öne gelebildiği için "az önce paneldeki
+        // tarayıcı öndeydi" yeterli sayılır. Önceden görülmüş pencereler (kullanıcının kendi açtıkları) alınmaz.
         const isNew = !known.has(fg);
         known.add(fg);
-        if (src && isNew) setTimeout(() => adopt(src[0], src[1], fg), 400);
+        const src = lastBrowserFg && Date.now() - lastBrowserFg.at < 10000 && docked.get(lastBrowserFg.id) === lastBrowserFg.e ? lastBrowserFg : null;
+        if (src && isNew) for (const delay of [300, 1200]) setTimeout(() => adopt(src.id, src.e, fg), delay);
       } catch {}
     }, W.WinEventProc);
     hook = W.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, 0, hookCb, 0, 0, WINEVENT_OUTOFCONTEXT);
@@ -365,6 +369,16 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle, onSpawn = () => 
       if (e.shown) place(e);
       const title = wstr(W.GetWindowTextW, e.hwnd);
       if (title && title !== e.title) { e.title = title; onTitle(id, title); }
+    }
+    // Arka planda açılan yeni pencereler de (öne gelmeden) yakalansın.
+    const src = lastBrowserFg;
+    if (src && Date.now() - src.at < 10000 && docked.get(src.id) === src.e) {
+      for (const w of listWindows()) {
+        if (w.pid !== src.e.pid || known.has(w.hwnd)) continue;
+        if (!bigEnough(w)) continue; // küçük/sahipli (menü vb.) pencereler; büyürse sonra yakalanır
+        known.add(w.hwnd);
+        adopt(src.id, src.e, w.hwnd);
+      }
     }
     if (!docked.size) { clearInterval(poll); poll = null; }
   }

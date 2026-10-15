@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.1.8 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.1.9 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -18,11 +18,16 @@ Sekme değiştirme, panel taşıma ve boyutlandırma hiç sorun çıkarmaz, gör
 Instagram dar panelde telefon görünümünde açılır. Desk Helper kapalıyken bu üçünden bildirim gelmez.
 
 ## YouTube
-YouTube kısayolu ilk tıklamada hangi tarayıcı ve profille açılacağını sorar; o profildeki YouTube hesabın gelir.
-Chrome, Edge veya Brave seçilirse yalnızca YouTube görünür (adres çubuğu, sekmeler, yer imleri yok). Opera ve Firefox
-bu pencere türünü desteklemez, normal pencere açar. Seçim hatırlanır; değiştirmek için kısayola sağ tık > Tarayıcıyı değiştir.
-Her tıklama yeni bir YouTube paneli açar. Bir videoya sağ tıklayıp "Bağlantıyı yeni pencerede aç" dersen
-yeni pencere otomatik olarak yanına yeni panel olarak yerleşir.
+YouTube varsayılan olarak Desk Helper'ın içinde açılır; aynı anda birkaç video yan yana izlenebilir:
+bir videoya sağ tıklayıp **Yeni panelde aç** dersen (veya orta tıklarsan) video yanına yeni panel olarak açılır.
+Hesabınla giriş yapmak için paneldeki YouTube'un "Oturum aç" düğmesini kullan; Google bazen gömülü pencerelerde
+girişe izin vermez, video izlemek için giriş gerekmez.
+
+Kendi tarayıcı profilinin hesabıyla açmak istersen: kısayola sağ tık > Düzenle > **Nasıl açılsın?** >
+"Tarayıcı profilimle". O zaman tarayıcı ve profil sorulur; Chrome, Edge veya Brave'de yalnızca YouTube görünür
+(Opera ve Firefox normal pencere açar). Bu modda "Bağlantıyı yeni pencerede aç" ile açılan pencere yanına yeni panel olarak alınır.
+
+Tüm web panellerinde sağ tık menüsü vardır: yeni panelde aç, tarayıcıda aç, bağlantıyı kopyala, kes/kopyala/yapıştır.
 
 ## Tarayıcı ve diğer programlar panelde
 "Tarayıcı" kısayolu ve "Kısayol ekle" ile eklenen programlar bilgisayardaki **gerçek programlardır**.

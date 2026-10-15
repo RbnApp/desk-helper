@@ -87,20 +87,52 @@ function createWindow() {
   });
 }
 
-// Web panellerinden açılan yeni pencereler (linkler) varsayılan tarayıcıda açılsın.
-// Normal linkler varsayılan tarayıcıda açılır; giriş pencereleri (Google ile giriş gibi
-// window.open açılır pencereleri) aynı oturumla uygulama içinde açılır, yoksa giriş tamamlanamaz.
+// Web panellerinden açılan yeni pencereler: giriş pencereleri (window.open, ör. Google ile giriş) aynı
+// oturumla uygulama içinde açılır. Normal linkleri (yeni sekmede aç, orta tık) panel karar verir:
+// YouTube gibi çoklu paneller yeni panel açar, diğerleri varsayılan tarayıcıda açılır.
 app.on('web-contents-created', (_e, wc) => {
   if (wc.getType() === 'webview' || wc.getType() === 'window') {
     wc.setWindowOpenHandler(({ url, disposition }) => {
       if (wc.getType() === 'webview' && (disposition === 'new-window' || url === 'about:blank')) {
         return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true, parent: win, icon: path.join(__dirname, 'logo.png') } };
       }
-      if (/^https?:/.test(url)) shell.openExternal(url);
+      if (/^https?:/.test(url)) {
+        if (wc.getType() === 'webview' && win) win.webContents.send('web:link', wc.id, url, false);
+        else shell.openExternal(url);
+      }
       return { action: 'deny' };
     });
   }
+  if (wc.getType() === 'webview') wc.on('context-menu', (_ev, p) => webContextMenu(wc, p));
 });
+
+// Web panellerinde sağ tık menüsü (Electron'da varsayılan olarak yok)
+function webContextMenu(wc, p) {
+  const en = settings.lang === 'en';
+  const L = (tr, eng) => (en ? eng : tr);
+  const items = [];
+  if (p.linkURL && /^https?:/.test(p.linkURL)) {
+    items.push(
+      { label: L('Yeni panelde aç', 'Open in new panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, true) },
+      { label: L('Tarayıcıda aç', 'Open in browser'), click: () => shell.openExternal(p.linkURL) },
+      { label: L('Bağlantıyı kopyala', 'Copy link'), click: () => clipboard.writeText(p.linkURL) },
+      { type: 'separator' });
+  }
+  if (p.isEditable) {
+    items.push(
+      { label: L('Kes', 'Cut'), role: 'cut', enabled: p.editFlags.canCut },
+      { label: L('Kopyala', 'Copy'), role: 'copy', enabled: p.editFlags.canCopy },
+      { label: L('Yapıştır', 'Paste'), role: 'paste', enabled: p.editFlags.canPaste },
+      { label: L('Tümünü seç', 'Select all'), role: 'selectAll' },
+      { type: 'separator' });
+  } else if (p.selectionText) {
+    items.push({ label: L('Kopyala', 'Copy'), role: 'copy' }, { type: 'separator' });
+  }
+  items.push(
+    { label: L('Geri', 'Back'), enabled: wc.navigationHistory.canGoBack(), click: () => wc.navigationHistory.goBack() },
+    { label: L('Yenile', 'Reload'), click: () => wc.reload() });
+  Menu.buildFromTemplate(items).popup({ window: win });
+}
 
 // Beklenmedik kapanmada paneldeki pencereleri serbest bırak (gizli kalmasınlar).
 for (const ev of ['uncaughtException', 'unhandledRejection']) {
