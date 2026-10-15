@@ -99,19 +99,37 @@ body { display: flex; flex-direction: column; }
 .frow .m { color: var(--muted); font-size: 12px; width: 70px; text-align: right; }
 .ferr { padding: 12px; color: #ff8080; }
 
-/* Modal */
-#modal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; }
+/* Modal motoru (src/modal.js): bütün açılır pencerelerin tek tasarımı */
+#modal { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0); display: flex; align-items: center; justify-content: center; padding: 16px; transition: background .14s; }
+#modal.in { background: rgba(0,0,0,.5); }
 #modal[hidden] { display: none; }
-.dialog { background: var(--bar); border: 1px solid var(--line); border-radius: 10px; padding: 18px; width: 380px; display: flex; flex-direction: column; gap: 10px; }
-.dialog h3 { margin: 0 0 4px; font-size: 15px; }
-.dialog label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
-.dialog .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-.dialog .btns button { padding: 6px 14px; background: var(--panel); }
-.dialog .btns .primary { background: var(--accent); color: #fff; }
-.dialog .btns .danger { background: #c94848; color: #fff; margin-right: auto; }
+.mdl { background: var(--bar); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.45); display: flex; flex-direction: column; max-height: calc(100vh - 32px); max-width: calc(100vw - 32px); }
+.mdl[hidden] { display: none; }
+.mdl.pop { animation: mdl-in .14s ease-out; }
+@keyframes mdl-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+.mdl:focus { outline: none; }
+.mdl-sm { width: 400px; } .mdl-md { width: 520px; } .mdl-lg { width: 680px; }
+.mdl-head { display: flex; align-items: center; gap: 10px; padding: 14px 14px 4px 18px; }
+.mdl-icon { font-size: 18px; line-height: 1; }
+.mdl-title { flex: 1; margin: 0; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mdl-x { padding: 3px 8px; color: var(--muted); border-radius: 6px; }
+.mdl-x:hover { background: var(--panel); color: var(--text); }
+.mdl-hint { padding: 0 18px 4px; color: var(--muted); font-size: 12px; }
+.mdl-body { display: flex; flex-direction: column; gap: 10px; padding: 8px 18px 4px; overflow-y: auto; min-height: 0; }
+.mdl-danger .mdl-title { color: #ff8a80; }
+.mdl-field { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
+.mdl label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
+.mdl-foot { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding: 12px 18px 16px; }
+.mdl-foot[hidden] { display: none; }
+.mdl-btn { padding: 6px 14px; background: var(--panel); border-radius: 7px; }
+.mdl-btn.primary { background: var(--accent); color: #fff; }
+.mdl-btn.danger { background: #c94848; color: #fff; }
+.mdl-btn.left { order: -1; }
+.mdl-btn.left + .mdl-btn:not(.left) { margin-left: auto; }
+.mdl-choice { text-align: left; padding: 10px 12px; background: var(--panel); border-radius: 8px; }
+.mdl-choice:hover { box-shadow: inset 0 0 0 1px var(--accent); }
 
 /* Favoriler */
-.dialog.wide { width: 620px; max-width: calc(100vw - 32px); }
 .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; max-height: 50vh; overflow: auto; padding: 2px; }
 .fav-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px 10px; border-radius: 10px; background: var(--panel); text-align: center; }
 .fav-item img, .fav-item .ph { width: 40px; height: 40px; object-fit: contain; font-size: 30px; line-height: 40px; }
@@ -124,22 +142,21 @@ body { display: flex; flex-direction: column; }
 .fav-add button { padding: 6px 12px; background: var(--panel); }
 
 /* Ayarlar ve Hakkında */
-.dialog .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); flex-direction: row; }
-.dialog .row select { width: 190px; }
-.dialog .row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
-.dialog .hint { color: var(--muted); font-size: 12px; }
+.mdl .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); flex-direction: row; }
+.mdl .row select { width: 190px; }
+.mdl .row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+.mdl .hint { color: var(--muted); font-size: 12px; }
 .about { align-items: center; text-align: center; }
 .about img { width: 84px; height: 84px; }
 .about .ver { color: var(--muted); }
 .about .brand { font-weight: 600; letter-spacing: .5px; }
-.dialog:focus { outline: none; }
+.mdl:focus { outline: none; }
 
 /* Gerçek program paneli: pencere bu alanın üstüne oturur */
 .pbody.native { background: var(--bg); }
 .native-msg { margin: auto; padding: 24px; max-width: 420px; text-align: center; color: var(--muted); line-height: 1.6; display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .native-msg b { color: var(--text); }
 .fav-add .primary, .native-msg .primary { background: var(--accent); color: #fff; }
-.dialog .choice { text-align: left; padding: 10px 12px; background: var(--panel); }
 
 /* Sağ tık menüsü (Windows 10 tarzı) */
 .ctx { position: fixed; z-index: 150; min-width: 230px; padding: 3px 0; background: #f2f2f2; color: #000; border: 1px solid #a0a0a0; box-shadow: 2px 2px 4px rgba(0,0,0,.35); font: 12px "Segoe UI", system-ui, sans-serif; }
@@ -159,11 +176,11 @@ body { display: flex; flex-direction: column; }
 .dtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px 0 4px; }
 .dtabs button { padding: 6px 12px; border-radius: 6px 6px 0 0; color: var(--muted); }
 .dtabs button.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
-.dialog .pane { display: flex; flex-direction: column; gap: 10px; }
-.dialog .pane[hidden] { display: none; }
-.dialog .pane.about { align-items: center; text-align: center; }
-.dialog .pane.about img { width: 84px; height: 84px; }
-.dialog .pane.about h3 { margin: 0; }
+.mdl .pane { display: flex; flex-direction: column; gap: 10px; }
+.mdl .pane[hidden] { display: none; }
+.mdl .pane.about { align-items: center; text-align: center; }
+.mdl .pane.about img { width: 84px; height: 84px; }
+.mdl .pane.about h3 { margin: 0; }
 
 /* İnce, temaya uyan kaydırma çubukları */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -171,7 +188,7 @@ body { display: flex; flex-direction: column; }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 ::-webkit-scrollbar-corner { background: transparent; }
-.dialog .hint.warn { color: #e0a040; }
+.mdl .hint.warn { color: #e0a040; }
 
 /* Alt çubuk: her sekmede sabit, tek sıra, üstüne gelince büyüyen simgeler */
 #appbar { flex: none; display: flex; align-items: stretch; justify-content: center; height: 76px; background: var(--bar); border-top: 1px solid var(--line); position: relative; }

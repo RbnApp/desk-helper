@@ -696,7 +696,7 @@ function buildBrowser(p) {
       folder ? null : '-',
       { label: t('Düzenle…'), action: () => (folder ? bmRenameFolder(bm) : bmEdit(key, bm)) },
       { label: t('Sil'), action: async () => {
-        if (folder && bm.items.length && !(await modal({ title: t('Klasörü sil'), text: t('"{name}" klasörü ve içindeki {n} yer imi silinsin mi?', { name: bm.title, n: bm.items.length }), okText: t('Sil') }))) return;
+        if (folder && bm.items.length && !(await modal({ title: t('Klasörü sil'), text: t('"{name}" klasörü ve içindeki {n} yer imi silinsin mi?', { name: bm.title, n: bm.items.length }), okText: t('Sil'), tone: 'danger' }))) return;
         list.splice(list.indexOf(bm), 1); bmChanged();
       } },
       '-',
@@ -741,7 +741,7 @@ function buildBrowser(p) {
       text: t('Profil: {profile}\nSite: {site} ve alt alan adları\n\nSilinecek {n} çerez:\n{list}\n\nBu sitedeki oturumun kapanabilir. Diğer siteler ve diğer profiller etkilenmez.',
         { profile: profileLabel(L.profile), site: info.base, n: info.cookies.length, list: list || t('(çerez yok)') }),
       fields: [{ name: 'what', label: t('Ne silinsin?'), value: 'cookies', options: [['cookies', t('Yalnızca çerezler')], ['all', t('Çerezler ve site verileri ({origin})', { origin: new URL(url).origin })]] }],
-      okText: t('Sil'),
+      okText: t('Sil'), tone: 'danger', icon: '🍪',
     });
     if (!r) return;
     const n = await window.desk.clearSite(part, url, r.what === 'all');
@@ -910,7 +910,7 @@ function bmImport(key) {
 }
 async function deleteProfile(name) {
   const n = bmList(name).length;
-  const ok = await modal({ title: t('Profili sil'), text: t('"{name}" profili, yer imleri ({n}), kayıtlı şifreleri ve bu profildeki girişler/çerezler silinsin mi?', { name, n }), okText: t('Sil') });
+  const ok = await modal({ title: t('Profili sil'), text: t('"{name}" profili, yer imleri ({n}), kayıtlı şifreleri ve bu profildeki girişler/çerezler silinsin mi?', { name, n }), okText: t('Sil'), tone: 'danger' });
   if (!ok) return;
   state.browserProfiles = (state.browserProfiles || []).filter((x) => x !== name);
   delete (state.bookmarks ||= {})[name];
@@ -939,7 +939,9 @@ async function pwUnlock() {
   return false;
 }
 function openPasswords(profile) {
-  openDialog((close) => {
+  Modal.open({ title: t('Kayıtlı şifreler · {profile}', { profile: profileLabel(profile) }), icon: '🔑', size: 'lg',
+    hint: t('Şifreler Chrome\'dan bağımsızdır, Desk Helper\'ın kendi klasöründe Windows kullanıcı şifrelemesiyle saklanır.'),
+    body: (api) => {
     const body = h('div', { class: 'pw-list' });
     const render = async () => {
       const { entries, never } = await window.desk.pw.list(profile);
@@ -965,7 +967,7 @@ function openPasswords(profile) {
               if (r) { await window.desk.pw.edit(e.id, r.u.trim(), r.p); render(); }
             } }),
             h('button', { textContent: '🗑', title: t('Sil'), onclick: async () => {
-              if (await modal({ title: t('Şifreyi sil'), text: t('{site} için "{user}" şifresi silinsin mi?', { site: hostOf(e.origin), user: e.username }), okText: t('Sil') })) { await window.desk.pw.remove(e.id); render(); }
+              if (await modal({ title: t('Şifreyi sil'), text: t('{site} için "{user}" şifresi silinsin mi?', { site: hostOf(e.origin), user: e.username }), okText: t('Sil'), tone: 'danger' })) { await window.desk.pw.remove(e.id); render(); }
             } }));
         }),
         never.length ? h('h4', { textContent: t('Asla kaydedilmeyen siteler') }) : null,
@@ -973,20 +975,17 @@ function openPasswords(profile) {
           h('button', { textContent: t('Listeden çıkar'), onclick: async () => { await window.desk.pw.unNever(profile, o); render(); } })))].filter(Boolean));
     };
     render();
-    return [
-      h('h3', { textContent: t('Kayıtlı şifreler · {profile}', { profile: profileLabel(profile) }) }),
-      h('div', { class: 'hint', textContent: t('Şifreler Chrome\'dan bağımsızdır, Desk Helper\'ın kendi klasöründe Windows kullanıcı şifrelemesiyle saklanır.') }),
-      body,
-      h('div', { class: 'btns' },
-        h('button', { textContent: t('Chrome\'dan içe aktar (CSV)…'), onclick: async () => {
-          const r = await window.desk.pw.importCsv(profile);
-          if (!r) return;
-          await alertBox(t('İçe aktarma'), r.error ? t('Dosya Chrome şifre dışa aktarımı (CSV) gibi görünmüyor.') : t('{a} şifre eklendi, {u} şifre güncellendi.', { a: r.added, u: r.updated }));
-          render();
-        } }),
-        h('button', { class: 'primary', textContent: t('Kapat'), onclick: close })),
-    ];
-  }, { wide: true });
+    api.setButtons([
+      { label: t('Chrome\'dan içe aktar (CSV)…'), left: true, keep: true, onClick: async () => {
+        const r = await window.desk.pw.importCsv(profile);
+        if (!r) return;
+        await alertBox(t('İçe aktarma'), r.error ? t('Dosya Chrome şifre dışa aktarımı (CSV) gibi görünmüyor.') : t('{a} şifre eklendi, {u} şifre güncellendi.', { a: r.added, u: r.updated }));
+        render();
+      } },
+      { label: t('Kapat'), primary: true },
+    ]);
+    return body;
+  } });
 }
 
 // Web panelindeki bildirime tıklandı: Desk Helper'ı öne getir, panelin sekmesine geç ve paneli seç.
@@ -1274,16 +1273,8 @@ function openInNotes(fromPanel, file) {
 async function addPanel(sc) {
   if (sc.kind === 'browser' && sc.url && sc.id) { openInDeskBrowser(sc.url); return; } // site kısayolu: tarayıcıda sekme
   if (sc.webUrl) sc = { name: sc.name, emo: sc.emo, kind: 'web', url: sc.webUrl, multi: true };
-  if (sc.kind === 'native' && sc.native.type === 'browser' && sc.native.browser === 'ask') {
-    const choice = await askBrowser(sc.native, sc.native.remember ? sc : null);
-    if (!choice) return;
-    if (sc.native.remember) {
-      // Instagram gibi hazır kısayollar seçimi kendinde saklar, bir daha sormaz.
-      Object.assign(sc.native, choice.native, { remember: true });
-      renderShortcuts(); save();
-      sc = { ...sc, native: { ...sc.native } };
-    } else sc = choice;
-  }
+  // Harici tarayıcı (Chrome/Opera) kısayolları 0.2.7'den beri yok; kalan olursa kendi tarayıcımızda aç.
+  if (sc.kind === 'native' && sc.native?.type === 'browser') { openInDeskBrowser(sc.native.url || HOME_URL); return; }
   if (sc.native?.type === 'app' && sc.open === 'web') {
     sc = { name: sc.name, emo: sc.emo, kind: 'web', url: WEB_URL[sc.native.app] };
   }
@@ -1300,75 +1291,6 @@ async function addPanel(sc) {
   if (sc.narrow && target) { const pi = findParent(ws.root, leaf.id); if (pi?.parent) pi.parent.ratio = pi.key === 'b' ? 0.68 : 0.32; }
   ws.active = leaf.id;
   layout(); renderTabs(); save();
-}
-
-// Tarayıcı, profil ve pencere türünü sor. Seçim kısayol olarak da kaydedilebilir.
-let browserCache = null;
-async function askBrowser(preset = {}, fixedFor = null) {
-  if (!isWin) { await alertBox(t('Tarayıcı'), t('Kurulu programları panele yerleştirme yalnızca Windows\'ta çalışır.')); return null; }
-  browserCache ||= await window.desk.native.browsers();
-  const list = browserCache;
-  if (!list.length) { await alertBox(t('Tarayıcı bulunamadı'), t('Bilgisayarda Opera, Chrome, Edge, Brave veya Firefox bulunamadı.')); return null; }
-  return new Promise((resolve) => {
-    let result = null;
-    openDialog((close) => {
-      // Uygulama penceresi isteniyorsa (YouTube) bunu destekleyen bir tarayıcıyı öne al.
-      const appCapable = (id) => !/^opera|^firefox/.test(id);
-      const defaultBrowser = list.some((b) => b.id === preset.browser) ? preset.browser
-        : (preset.appMode && list.find((b) => appCapable(b.id))?.id) || list[0].id;
-      const bSel = h('select', {}, ...list.map((b) => h('option', { value: b.id, textContent: b.name, selected: b.id === defaultBrowser })));
-      const pSel = h('select');
-      const mode = h('select');
-      const url = h('input', { value: preset.url || '', placeholder: 'http://localhost:3000' });
-      const remember = h('input', { type: 'checkbox' });
-      const appMode = h('input', { type: 'checkbox', checked: !!preset.appMode });
-      const name = h('input', { value: '' });
-      const appWarn = h('div', { class: 'hint warn', textContent: t('Opera ve Firefox adres çubuğu olmayan pencereyi desteklemez; sayfa normal pencerede açılır. Sadece sayfanın görünmesi için Chrome, Edge veya Brave seç.') });
-      appMode.onchange = () => fill();
-      const fill = () => {
-        const b = list.find((x) => x.id === bSel.value);
-        pSel.replaceChildren(...b.profiles.map((pr) => h('option', { value: pr.id, textContent: t(pr.name), selected: pr.id === preset.profile })));
-        mode.replaceChildren(
-          h('option', { value: 'normal', textContent: t('Normal pencere') }),
-          b.private ? h('option', { value: 'private', textContent: t('Gizli pencere') }) : null,
-          b.guest ? h('option', { value: 'guest', textContent: t('Misafir modu') }) : null);
-        if (preset.mode) mode.value = preset.mode;
-        name.placeholder = b.name;
-        appWarn.hidden = !(appMode.checked && !appCapable(b.id));
-      };
-      bSel.onchange = fill; fill();
-      mode.onchange = () => { pSel.disabled = mode.value === 'guest'; };
-      const ok = () => {
-        const b = list.find((x) => x.id === bSel.value);
-        const modeTxt = mode.value === 'private' ? ' · ' + t('Gizli') : mode.value === 'guest' ? ' · ' + t('Misafir') : '';
-        const profTxt = mode.value !== 'guest' && b.profiles.length > 1 ? ' · ' + pSel.selectedOptions[0].textContent : '';
-        let u = url.value.trim();
-        if (u && !/^[a-z]+:\/\//i.test(u)) u = (/^localhost|^127\./.test(u) ? 'http://' : 'https://') + u;
-        result = {
-          id: uid(), kind: 'native', emo: '🌐',
-          name: name.value.trim() || b.name + profTxt + modeTxt,
-          native: { type: 'browser', browser: b.id, profile: mode.value === 'guest' ? '' : pSel.value, mode: mode.value, url: u, appMode: appMode.checked },
-        };
-        if (remember.checked && !fixedFor) { state.shortcuts.push({ ...result, native: { ...result.native } }); renderShortcuts(); save(); }
-        close();
-      };
-      return [
-        h('h3', { textContent: fixedFor ? fixedFor.emo + ' ' + t('{name} hangi tarayıcıyla açılsın?', { name: fixedFor.name }) : '🌐 ' + t('Tarayıcı penceresi aç') }),
-        h('div', { class: 'hint', textContent: fixedFor ? t('Seçimin hatırlanır; değiştirmek için kısayola sağ tıkla.') : t('Kendi tarayıcın kendi profilinle açılır ve bu panele yerleşir; sekmeleri, girişleri ve eklentileri olduğu gibi çalışır.') }),
-        h('label', { class: 'row' }, t('Tarayıcı'), bSel),
-        h('label', { class: 'row' }, t('Profil'), pSel),
-        h('label', { class: 'row' }, t('Pencere'), mode),
-        h('label', {}, t('Açılış adresi (boş bırakılabilir)'), url),
-        h('label', { class: 'row', title: t('Chrome, Edge ve Brave\'de çalışır; Opera ve Firefox normal pencere açar.') }, t('Uygulama penceresi (adres çubuğu ve sekmeler olmadan)'), appMode),
-        appWarn,
-        fixedFor ? null : h('label', { class: 'row' }, t('Bu seçimi kısayol olarak kaydet'), remember),
-        fixedFor ? null : h('label', {}, t('Kısayol adı'), name),
-        h('div', { class: 'btns' },
-          h('button', { textContent: t('Vazgeç'), onclick: close }),
-          h('button', { class: 'primary', textContent: t('Aç'), onclick: ok })),
-      ];
-    }, { onClose: () => resolve(result) });
-  });
 }
 
 // ---------- Sürükle: boyutlandırma ----------
@@ -1475,7 +1397,7 @@ async function newWs() {
 
 async function closeWs(ws) {
   if (ws.root && state.settings.confirmTabClose) {
-    const ok = await modal({ title: t('"{name}" sekmesi kapatılsın mı?', { name: ws.name }), text: t('İçindeki paneller de kapanır.'), okText: t('Kapat') });
+    const ok = await modal({ title: t('"{name}" sekmesi kapatılsın mı?', { name: ws.name }), text: t('İçindeki paneller de kapanır.'), okText: t('Kapat'), tone: 'danger' });
     if (!ok) return;
   }
   const i = state.workspaces.indexOf(ws);
@@ -1547,11 +1469,9 @@ async function editShortcut(sc) {
   if (sc.native?.type === 'app') fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'desktop',
     options: [['desktop', t('Masaüstü uygulaması (bilgisayarda kurulu)')], ['web', t('Uygulama içi web (Desk Helper\'ın içinde)')]] });
   if (sc.kind === 'browser' && sc.id !== 'deskbrowser') fields.splice(1, 0, { name: 'burl', label: t('Adres (web sitesi)'), value: sc.url || '' });
-  const canReset = sc.native?.remember && sc.native.browser !== 'ask';
-  const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil'), extra: canReset ? t('Tarayıcıyı değiştir') : null });
+  const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil') });
   if (!r) return;
   if (r === 'danger') { state.shortcuts = state.shortcuts.filter((s) => s !== sc); appbarRemove('sc', sc.id); }
-  else if (r === 'extra') sc.native.browser = 'ask';
   else {
     sc.name = r.name || sc.name; sc.emo = r.emo;
     if (sc.kind === 'web') sc.url = r.url;
@@ -1680,7 +1600,8 @@ function initAppbar() {
 
 // "＋": kısayollardan veya favorilerden seç ya da yeni program / site ekle.
 function appbarPicker() {
-  openDialog((close) => {
+  Modal.open({ title: t('Alt çubuğa ekle'), icon: '＋', size: 'lg', hint: t('Tıklayınca eklenir veya kaldırılır. Simgeleri alt çubukta sürükleyerek sıralayabilirsin.'), body: (api) => {
+    const close = api.close;
     const grid = h('div', { class: 'fav-grid' });
     const render = () => {
       const all = [...state.shortcuts.map((x) => ['sc', x]), ...state.favorites.map((x) => ['fav', x])];
@@ -1708,24 +1629,23 @@ function appbarPicker() {
       appbarPicker();
     };
     render();
-    return [
-      h('h3', { textContent: t('Alt çubuğa ekle') }),
-      h('div', { class: 'hint', textContent: t('Tıklayınca eklenir veya kaldırılır. Simgeleri alt çubukta sürükleyerek sıralayabilirsin.') }),
-      grid,
-      h('div', { class: 'fav-add' },
-        h('button', { class: 'primary', textContent: '＋ ' + t('Kurulu uygulama'), onclick: () => { close(); pickInstalledApps({ toAppbar: true, onClose: () => setTimeout(appbarPicker) }); } }),
-        h('button', { textContent: '＋ ' + t('Program / dosya'), onclick: () => { close(); addNew('file'); } }),
-        h('button', { textContent: '＋ ' + t('Klasör'), onclick: () => { close(); addNew('folder'); } }),
-        h('button', { textContent: '＋ ' + t('Web sitesi'), onclick: () => { close(); addNew('url'); } }),
-        h('span', { class: 'spacer' }),
-        h('button', { textContent: t('Kapat'), onclick: close })),
-    ];
-  }, { wide: true });
+    api.setButtons([
+      { label: '＋ ' + t('Kurulu uygulama'), left: true, onClick: () => { close(); pickInstalledApps({ toAppbar: true, onClose: () => setTimeout(appbarPicker) }); } },
+      { label: '＋ ' + t('Program / dosya'), left: true, onClick: () => { close(); addNew('file'); } },
+      { label: '＋ ' + t('Klasör'), left: true, onClick: () => { close(); addNew('folder'); } },
+      { label: '＋ ' + t('Web sitesi'), left: true, onClick: () => { close(); addNew('url'); } },
+      { label: t('Kapat'), primary: true },
+    ]);
+    return grid;
+  } });
 }
 
 // Başlat menüsündeki kurulu uygulamalardan seç (Microsoft Store uygulamaları dahil; exe aramaya gerek yok).
 function pickInstalledApps({ toAppbar = false, onClose = null } = {}) {
-  openDialog((close) => {
+  Modal.open({ title: t('Kurulu uygulamalar'), icon: '🖥', size: 'lg', onClose,
+    hint: toAppbar ? t('Tıklayınca alt çubuğa eklenir veya kaldırılır.') : t('Tıklayınca Favorilere eklenir veya çıkarılır.'),
+    buttons: [{ label: t('Tamam'), primary: true, value: true }],
+    body: () => {
     const search = h('input', { placeholder: t('Uygulama ara…') });
     const grid = h('div', { class: 'fav-grid apps' }, h('div', { class: 'fav-empty', textContent: '⏳ ' + t('Kurulu uygulamalar okunuyor…') }));
     let apps = [];
@@ -1750,13 +1670,8 @@ function pickInstalledApps({ toAppbar = false, onClose = null } = {}) {
     };
     search.addEventListener('input', render);
     window.desk.installedApps().then((list) => { apps = list || []; render(); });
-    return [
-      h('h3', { textContent: '🖥 ' + t('Kurulu uygulamalar') }),
-      h('div', { class: 'hint', textContent: toAppbar ? t('Tıklayınca alt çubuğa eklenir veya kaldırılır.') : t('Tıklayınca Favorilere eklenir veya çıkarılır.') }),
-      search, grid,
-      h('div', { class: 'btns' }, h('button', { class: 'primary', textContent: t('Tamam'), onclick: close })),
-    ];
-  }, { wide: true, onClose });
+    return [search, grid];
+  } });
 }
 
 // ---------- Favoriler ----------
@@ -1769,7 +1684,8 @@ async function addFavoritePath(p, type) {
 }
 
 function openFavorites() {
-  openDialog((close) => {
+  Modal.open({ title: t('Favoriler'), icon: '⭐', size: 'lg', hint: t('Tıkla: aç · Sağ tık: alt çubuğa ekle, yeniden adlandır · ✕: çıkar'), body: (api) => {
+    const close = api.close;
     const grid = h('div', { class: 'fav-grid' });
     const render = () => {
       grid.replaceChildren(...(state.favorites.length ? state.favorites.map((f) => {
@@ -1808,15 +1724,11 @@ function openFavorites() {
       render();
     });
     render();
-    return [
-      h('h3', { textContent: '⭐ ' + t('Favoriler') }),
-      h('div', { class: 'hint', textContent: t('Tıkla: aç · Sağ tık: alt çubuğa ekle, yeniden adlandır · ✕: çıkar') }),
-      grid,
-      h('div', { class: 'fav-add' },
-        h('button', { class: 'primary', textContent: '＋ ' + t('Kurulu uygulama'), onclick: () => pickInstalledApps({ onClose: () => setTimeout(render) }) }),
-        h('button', { textContent: '＋ ' + t('Program / dosya'), onclick: async () => { await addFavoritePath(await window.desk.pick('file'), 'file'); render(); } }),
-        h('button', { textContent: '＋ ' + t('Klasör'), onclick: async () => { await addFavoritePath(await window.desk.pick('folder'), 'folder'); render(); } }),
-        h('button', { textContent: '＋ ' + t('Web sitesi'), onclick: async () => {
+    api.setButtons([
+      { label: '＋ ' + t('Kurulu uygulama'), left: true, keep: true, onClick: () => pickInstalledApps({ onClose: () => setTimeout(render) }) },
+      { label: '＋ ' + t('Program / dosya'), left: true, keep: true, onClick: async () => { await addFavoritePath(await window.desk.pick('file'), 'file'); render(); } },
+      { label: '＋ ' + t('Klasör'), left: true, keep: true, onClick: async () => { await addFavoritePath(await window.desk.pick('folder'), 'folder'); render(); } },
+      { label: '＋ ' + t('Web sitesi'), left: true, keep: true, onClick: async () => {
           const r = await modal({ title: t('Favori web sitesi'), fields: [{ name: 'name', label: t('Ad'), value: '' }, { name: 'url', label: t('Adres'), value: 'https://' }] });
           if (r && r.url.trim().length > 8) {
             let url = r.url.trim(); if (!/^https?:\/\//.test(url)) url = 'https://' + url;
@@ -1825,32 +1737,20 @@ function openFavorites() {
             save();
           }
           render();
-        } }),
-        h('span', { class: 'spacer' }),
-        h('button', { textContent: t('Kapat'), onclick: close })),
-    ];
-  }, { wide: true });
+        } },
+      { label: t('Kapat'), primary: true },
+    ]);
+    return grid;
+  } });
 }
 
-function alertBox(title, text) { return modal({ title, text, noCancel: true }); }
-
-function choose(title, options) {
-  return new Promise((resolve) => {
-    let val = null;
-    openDialog((close) => [
-      h('h3', { textContent: title }),
-      ...options.map(([v, label]) => h('button', { class: 'choice', textContent: label, onclick: () => { val = v; close(); } })),
-      h('div', { class: 'btns' }, h('button', { textContent: t('Vazgeç'), onclick: close })),
-    ], { onClose: () => resolve(val) });
-  });
-}
 
 // ---------- Ayarlar ----------
 // Ayarlar ve Hakkında tek pencerede, iki sekme.
 async function openSettings(tab = 'settings') {
   const info = await window.desk.info();
   const s = state.settings;
-  openDialog((close) => {
+  Modal.open({ title: 'Desk Helper', icon: '⚙', size: 'md', buttons: [{ label: t('Tamam'), primary: true, value: true }], body: () => {
     const sel = (key, opts, after) => h('select', { onchange: (e) => { set(key, e.target.value); after?.(); } },
       ...opts.map(([v, txt]) => h('option', { value: v, textContent: txt, selected: s[key] === v })));
     const chk = (key) => h('input', { type: 'checkbox', checked: !!s[key], onchange: (e) => set(key, e.target.checked) });
@@ -1887,9 +1787,8 @@ async function openSettings(tab = 'settings') {
         h('button', { class: which === 'about' ? 'on' : '', textContent: 'ⓘ ' + t('Hakkında'), onclick: () => show('about') }));
     };
     show(tab);
-    return [tabs, settingsPane, aboutPane,
-      h('div', { class: 'btns' }, h('button', { class: 'primary', textContent: t('Tamam'), onclick: close }))];
-  });
+    return [tabs, settingsPane, aboutPane];
+  } });
 }
 
 function applySettings() {
@@ -1900,56 +1799,14 @@ function applySettings() {
 }
 
 // ---------- Pencereler (modal) ----------
-// Serbest içerikli pencere: build(close) öğe(ler) döndürür.
-let dialogDepth = 0;
-function openDialog(build, { wide = false, cls = '', onClose = null } = {}) {
-  const m = $('#modal');
-  const prev = [...m.childNodes];
-  const wasHidden = m.hidden;
-  if (wasHidden) suspendNative(true);
-  dialogDepth++;
-  let closed = false;
-  const close = () => {
-    if (closed) return;
-    closed = true;
-    dialogDepth--;
-    // İç içe açıldıysa önceki pencereyi geri getir.
-    if (prev.length && dialogDepth > 0) m.replaceChildren(...prev);
-    else { m.hidden = true; m.replaceChildren(); suspendNative(false); }
-    onClose?.();
-  };
-  const dlg = h('div', { class: 'dialog' + (wide ? ' wide' : '') + (cls ? ' ' + cls : '') });
-  dlg.append(...[build(close)].flat().filter(Boolean));
-  dlg.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
-  m.replaceChildren(dlg); m.hidden = false;
-  m.onclick = (e) => { if (e.target === m && m.firstChild === dlg) close(); };
-  dlg.tabIndex = -1;
-  (dlg.querySelector('input:not([type=checkbox]), select') || dlg).focus();
-  return close;
-}
-
-function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('Vazgeç'), danger = null, extra = null, noCancel = false }) {
-  return new Promise((resolve) => {
-    let val = null;
-    const inputs = {};
-    openDialog((close) => {
-      const ok = () => { val = fields.length ? Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value])) : true; close(); };
-      const dlg = [
-        h('h3', { textContent: title }), text ? h('div', { class: 'mtext', textContent: text }) : null,
-        ...fields.map((f) => h('label', {}, f.label, inputs[f.name] = f.options
-          ? h('select', {}, ...f.options.map(([v, txt]) => h('option', { value: v, textContent: txt, selected: v === f.value })))
-          : h('input', { type: f.type || 'text', value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
-        h('div', { class: 'btns' },
-          danger ? h('button', { class: 'danger', textContent: danger, onclick: () => { val = 'danger'; close(); } }) : null,
-          extra ? h('button', { textContent: extra, onclick: () => { val = 'extra'; close(); } }) : null,
-          noCancel ? null : h('button', { textContent: cancelText, onclick: close }),
-          h('button', { class: 'primary', textContent: okText, onclick: ok })),
-      ];
-      if (!fields.length) setTimeout(() => dlg.at(-1).lastChild.focus());
-      return dlg;
-    }, { onClose: () => resolve(val) });
-  });
-}
+// Bütün açılır pencereler tek motordan (src/modal.js) açılır; tasarım ve klavye davranışı orada.
+Modal.setTranslator((x) => t(x));
+Modal.onActiveChange((on) => suspendNative(on)); // pencere açıkken paneldeki programlar geçici gizlenir
+// Form / onay: { title, text, fields, okText, cancelText, danger, extra, noCancel, tone } →
+// alanlar varsa değerler, yoksa true; Vazgeç = null; danger/extra düğmeleri 'danger' / 'extra'.
+const modal = (opts) => Modal.form(opts);
+const alertBox = (title, text) => Modal.alert(title, text);
+const choose = (title, options) => Modal.choose(title, options);
 
 // ---------- Başlat ----------
 function translateStatic() {
@@ -1976,7 +1833,7 @@ async function startupFailed(err, saved) {
   saveBlocked = true; clearTimeout(saveTimer);
   const r = await modal({ title: t('Desk Helper açılırken bir hata oldu'),
     text: t('Kayıtlı düzen yüklenemedi: {err}\n\nDüzeni sıfırlarsan sekmeler ve kısayollar varsayılana döner; favoriler, alt çubuk, yer imleri, tarayıcı profilleri ve ayarlar korunur. Eski düzenin yedeği alınır.', { err: err?.message || String(err) }),
-    okText: t('Düzeni sıfırla'), cancelText: t('Kapat') });
+    okText: t('Düzeni sıfırla'), cancelText: t('Kapat'), icon: '⚠' });
   if (!r) return;
   await window.desk.backupState('broken').catch(() => {});
   const fresh = defaultState();

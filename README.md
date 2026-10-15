@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.3.1 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.3.2 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -103,3 +103,8 @@ Node.js gerekli. Bu klasörde:
 Dosyalar: `src\main.js` (pencere, dosya sistemi, ayarlar), `src\native.js` (gerçek program
 pencerelerini panele yerleştirme, Win32), `src\preload.js` (köprü), `src\app.js` (arayüz),
 `src\i18n.js` (İngilizce metinler), `src\style.css`, `build\icon.ico` (logo), `scripts\bump.js` (sürüm).
+
+## Geliştirici notu: pencere (modal) motoru
+Uygulamadaki bütün açılır pencereler (onaylar, formlar, çerez temizleme, şifreler, Favoriler, Ayarlar, alt çubuk…)
+tek motordan açılır: `src/modal.js` (`Modal.open / form / confirm / alert / choose`). Görünüm `style.css` içindeki
+"Modal motoru" bölümündedir (`.mdl-*`). Tasarım ya da klavye davranışı (Enter, Esc, Tab) değişecekse yalnızca bu iki yer değişir.
