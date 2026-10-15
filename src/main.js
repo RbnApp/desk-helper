@@ -89,7 +89,7 @@ function createWindow() {
 
 // Web panellerinden açılan yeni pencereler: giriş pencereleri (window.open, ör. Google ile giriş) aynı
 // oturumla uygulama içinde açılır. Normal linkleri (yeni sekmede aç, orta tık) panel karar verir:
-// YouTube gibi çoklu paneller yeni panel açar, diğerleri varsayılan tarayıcıda açılır.
+// YouTube gibi çoklu paneller yeni panel açar, diğerleri Desk Helper'ın tarayıcı panelinde açılır.
 app.on('web-contents-created', (_e, wc) => {
   if (wc.getType() === 'webview' || wc.getType() === 'window') {
     wc.setWindowOpenHandler(({ url, disposition }) => {
@@ -97,8 +97,7 @@ app.on('web-contents-created', (_e, wc) => {
         return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true, parent: win, icon: path.join(__dirname, 'logo.png') } };
       }
       if (/^https?:/.test(url)) {
-        if (wc.getType() === 'webview' && win) win.webContents.send('web:link', wc.id, url, 'auto');
-        else shell.openExternal(url);
+        if (win) win.webContents.send('web:link', wc.id, url, 'auto'); // kendi tarayıcımızda açılır
       }
       return { action: 'deny' };
     });
@@ -117,7 +116,7 @@ function webContextMenu(wc, p) {
     items.push(
       { label: L('Yeni sekmede aç', 'Open in new tab'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'tab') },
       { label: L('Yeni panelde aç', 'Open in new panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'panel') },
-      { label: L('Tarayıcıda aç', 'Open in browser'), click: () => shell.openExternal(p.linkURL) },
+      { label: L('Tarayıcı panelinde aç', 'Open in browser panel'), click: () => win?.webContents.send('web:link', wc.id, p.linkURL, 'browser') },
       { label: L('Bağlantıyı kopyala', 'Copy link'), click: () => clipboard.writeText(p.linkURL) },
       { type: 'separator' });
   }

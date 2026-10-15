@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.6 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.2.7 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -23,11 +23,10 @@ bir videoya sağ tıklayıp **Yeni panelde aç** dersen (veya orta tıklarsan) v
 Hesabınla giriş yapmak için paneldeki YouTube'un "Oturum aç" düğmesini kullan; Google bazen gömülü pencerelerde
 girişe izin vermez, video izlemek için giriş gerekmez.
 
-Kendi tarayıcı profilinin hesabıyla açmak istersen: kısayola sağ tık > Düzenle > **Nasıl açılsın?** >
-"Tarayıcı profilimle". O zaman tarayıcı ve profil sorulur; Chrome, Edge veya Brave'de yalnızca YouTube görünür
-(Opera ve Firefox normal pencere açar). Bu modda "Bağlantıyı yeni pencerede aç" ile açılan pencere yanına yeni panel olarak alınır.
-
-Tüm web panellerinde sağ tık menüsü vardır: yeni panelde aç, tarayıcıda aç, bağlantıyı kopyala, kes/kopyala/yapıştır.
+**Chrome, Opera veya Edge hiç kullanılmaz.** WhatsApp, Telegram ve diğer panellerdeki linkler, ↗ düğmesi,
+sağ tık > "Tarayıcı panelinde aç" ve Favorilerdeki siteler Desk Helper'ın kendi tarayıcı panelinde yeni sekme olarak açılır
+(sekmede tarayıcı paneli yoksa yanına açılır). Tüm web panellerinde sağ tık menüsü vardır: yeni sekmede aç, yeni panelde aç,
+tarayıcı panelinde aç, bağlantıyı kopyala, kes/kopyala/yapıştır.
 
 ## Tarayıcı (Desk Helper'ın kendi tarayıcısı)
 🧭 **Tarayıcı** kısayolu Desk Helper'ın içinde sekmeli bir tarayıcı paneli açar: sekmeler (＋, ✕, orta tık),
@@ -40,33 +39,28 @@ Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık > "Yeni p
 Çubuğa sağ tıklayınca yeni klasör ve Chrome'dan içe aktarma (Chrome'da Yer işaretleri yöneticisi > ⋮ > Dışa aktar ile
 alınan HTML dosyası) çıkar. Sürükle-bırak ile sıralanır, klasörün üstüne bırakılan yer imi klasöre girer.
 Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 > "Bu profili sil…" profili, yer imlerini ve girişlerini siler.
-Gerçek Opera / Chrome profilini panele yerleştirmek için **Harici tarayıcı** kısayolu duruyor.
+"＋ Kısayol ekle" > **Tarayıcıda bir site** ile ör. phpMyAdmin için tek tıklık kısayol eklenir; tıklayınca tarayıcı panelinde sekme açar.
 
-## Harici tarayıcı ve diğer programlar panelde
-"Tarayıcı" kısayolu ve "Kısayol ekle" ile eklenen programlar bilgisayardaki **gerçek programlardır**.
+## Programlar panelde
+"Kısayol ekle" ile eklenen programlar bilgisayardaki **gerçek programlardır**.
 Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üstüne oturtur:
 - Panel taşınınca, boyutlanınca, Desk Helper küçülünce pencere de takip eder.
 - Başka sekmeye geçince o sekmenin pencereleri ekran dışına park edilir, geri dönünce yerine gelir.
 - Paneldeki pencerenin görev çubuğunda ayrı simgesi olmaz; panelden ayrılınca (⇱) simge geri gelir.
 - Program kendi oturumu, profili, sekmeleri ve eklentileriyle çalışır.
-- ⇱ pencereyi panelden ayırır, ✕ paneli kapatır (panel için açılan tarayıcı penceresi de kapanır).
-- Desk Helper kapanınca panel için açılan tarayıcı pencereleri de kapanır, diğer programlar serbest bırakılır. Beklenmedik kapanmada ekran dışında kalan
+- ⇱ pencereyi panelden ayırır, ✕ paneli kapatır.
+- Desk Helper kapanınca programlar serbest bırakılır. Beklenmedik kapanmada ekran dışında kalan
   pencereler bir sonraki açılışta geri getirilir.
 - Doğru pencere bulunamazsa panel başlığındaki 🗗 düğmesi açık pencerelerden seçtirir.
 
 Sınırlar: Windows başka bir programın penceresini gerçekten gömmeye izin vermez; pencere panelin üstünde durur.
 Bu yüzden Desk Helper'ın açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici gizlenir.
 
-### Tarayıcı ve profil
-"Harici tarayıcı" kısayolu her seferinde sorar: hangi tarayıcı (bilgisayardakiler otomatik bulunur), hangi
-profil, normal / gizli / misafir pencere ve isteğe bağlı açılış adresi (ör. `http://localhost:3000`).
-"Bu seçimi kısayol olarak kaydet" ile ör. "Opera · localhost" kısayolu oluşur ve bir daha sormaz.
-
 ## Kullanım
 - **Sekmeler:** ＋ veya Ctrl+T yeni sekme açar ve ad sorar. Çift tık veya sağ tık ile yeniden adlandır.
   Sekmede içindeki panellerin simgeleri görünür, üzerine gelince açık olanların listesi çıkar. Ctrl+Tab ile geçiş.
 - **Kısayollar:** tıkla, aktif sekmeye panel eklenir. Sağ tık: panel ekle, alt çubuğa ekle, düzenle/sil. "＋ Kısayol ekle" ile
-  tarayıcı penceresi, kurulu herhangi bir program ya da uygulama içi web sayfası eklenir.
+  tarayıcıda açılan bir site, kurulu herhangi bir program ya da uygulama içi web sayfası eklenir.
 - **Dosyalar:** sağ tık menüsü (Windows 10 tarzı): aç, not defterinde aç, kes/kopyala/yapıştır, yolu kopyala,
   sil (Geri Dönüşüm Kutusu'na), yeniden adlandır; boş alanda yeni klasör, yeni metin belgesi, yapıştır, yenile.
   Kısayollar: Del, F2, Ctrl+C/X/V, Ctrl+Shift+N, F5, Enter, Backspace (üst klasör). Paneller arası kopyala-yapıştır çalışır.

@@ -206,4 +206,9 @@ window.I18N_EN = {
   "{n} yer imi eklendi.": "{n} bookmarks added.",
   "Profili sil": "Delete profile",
   "\"{name}\" profili, yer imleri ({n}) ve bu profildeki girişler/çerezler silinsin mi?": "Delete the profile \"{name}\", its bookmarks ({n}) and its sign-ins/cookies?",
+  "Tarayıcıda bir site": "A site in the browser",
+  "Site Desk Helper'ın tarayıcı panelinde açılır.": "The site opens in Desk Helper's browser panel.",
+  "Ayrı bir panel olarak mı, yoksa tarayıcı panelinde sekme olarak mı?": "As a separate panel, or as a tab in the browser panel?",
+  "Ayrı panel": "Separate panel",
+  "Tarayıcı sekmesi": "Browser tab",
 };

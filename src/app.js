@@ -41,7 +41,7 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 7;
+const STATE_SCHEMA = 8;
 
 // WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
 const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
@@ -73,7 +73,6 @@ const defaultShortcuts = () => [
   ...webShortcuts(),
   youtubeShortcut(),
   deskBrowserShortcut(),
-  { id: 'browser', name: t('Harici tarayıcı'), emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } },
   { id: 'notes', name: t('Not Defteri'), emo: '📝', kind: 'notes' },
   { id: 'files', name: t('Dosyalar'), emo: '📁', kind: 'files' },
 ];
@@ -89,7 +88,7 @@ function leafFrom(sc) {
 }
 
 function defaultState() {
-  const [wa, tg, , , , , notes, files] = defaultShortcuts().map(leafFrom);
+  const [wa, tg, , , , notes, files] = defaultShortcuts().map(leafFrom);
   const ws = {
     id: uid(), name: t('Masam'), active: wa.id,
     root: {
@@ -119,8 +118,36 @@ function migrate(s) {
     const yt = s.shortcuts.findIndex((x) => x.id === 'yt');
     s.shortcuts.splice(yt + 1, 0, deskBrowserShortcut());
   }
+  if ((s.schema || 1) < 8) dropExternalBrowsers(s);
   s.schema = STATE_SCHEMA;
   return s;
+}
+
+// 0.2.7: Chrome/Opera kullanılmıyor, her şey kendi tarayıcımızda açılır. Harici tarayıcı kısayolları
+// (adresi varsa) kendi tarayıcımızda o adresi açan kısayola, açık harici tarayıcı panelleri tarayıcı paneline döner.
+function dropExternalBrowsers(s) {
+  s.shortcuts = s.shortcuts.flatMap((sc) => {
+    if (sc.id === 'yt') { sc.open = 'web'; return [sc]; }
+    if (sc.native?.type !== 'browser') return [sc];
+    return sc.native.url ? [{ id: sc.id, name: sc.name, emo: '🧭', kind: 'browser', url: sc.native.url }] : [];
+  });
+  const fix = (n) => {
+    if (n.type === 'split') { fix(n.a); fix(n.b); return; }
+    if (n.kind === 'native' && n.native?.type === 'browser') {
+      n.kind = 'browser'; n.url = (n.native.url && !n.native.spawned) ? n.native.url : HOME_URL; n.emo = '🧭'; delete n.native;
+    }
+  };
+  for (const ws of s.workspaces || []) fix(ws.root);
+}
+
+// Bir adresi kendi tarayıcımızda aç: sekmedeki tarayıcı paneline yeni sekme, yoksa yeni tarayıcı paneli.
+function openInDeskBrowser(url, ws = curWs()) {
+  const ok = (p) => p && p.ws === ws && p.leaf.kind === 'browser' && p.leaf.profile !== '__private' && p.newTab;
+  const act = panels.get(ws.active);
+  const br = ok(act) ? act : [...panels.values()].find(ok);
+  if (br) { br.newTab(url); setActive(ws, br.leaf.id); return; }
+  if (state.activeWs !== ws.id) switchWs(ws.id);
+  addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url });
 }
 
 // 0.1.5: WhatsApp, Telegram ve Instagram dış program yerine gömülü web paneli olur
@@ -460,17 +487,18 @@ window.desk.native.onSpawn((srcId, w) => {
 });
 
 // Web panelinden link: YouTube gibi çoklu panellerde (veya sağ tık > Yeni panelde aç) yanına yeni panel,
-// diğerlerinde varsayılan tarayıcı.
+// diğerlerinde kendi tarayıcımız (Chrome'a gitmez).
 window.desk.onWebLink((wcId, url, mode) => {
   const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
-  if (!src) { window.desk.openExternal(url); return; }
+  if (!src) { openInDeskBrowser(url); return; }
   // Kendi tarayıcımız: linkler yeni sekmede açılır ("Yeni panelde aç" hariç).
   if (src.leaf.kind === 'browser') {
     if (mode === 'panel') addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url, profile: src.leaf.profile });
     else src.newTab(url);
     return;
   }
-  if (!(mode === 'panel' || mode === 'tab' || src.leaf.multi)) { window.desk.openExternal(url); return; }
+  // WhatsApp/Telegram'daki linkler ve "Tarayıcıda aç": kendi tarayıcımızda (Chrome'a gitmez).
+  if (mode === 'browser' || !(mode === 'panel' || mode === 'tab' || src.leaf.multi)) { openInDeskBrowser(url, src.ws); return; }
   const leaf = { type: 'panel', id: uid(), kind: 'web', title: src.leaf.title, emo: src.leaf.emo, url, multi: src.leaf.multi };
   if (src.leaf.mobile) leaf.mobile = true;
   // Art arda açılan videolar sırayla dizilsin: en son açılan aynı türden panelin yanına ekle.
@@ -725,7 +753,6 @@ function buildBrowser(p) {
   prof.textContent = profileLabel(L.profile);
   p.el.classList.toggle('private', L.profile === '__private');
   p.renderBm();
-  p.tools.append(h('button', { title: t('Tarayıcıda aç'), textContent: '↗', onclick: () => { try { window.desk.openExternal(cur().getURL()); } catch {} } }));
   for (const tab of L.tabs) tab.loading = false;
   show(L.activeTab);
 }
@@ -855,7 +882,7 @@ function buildWeb(p) {
   p.tools.append(
     h('button', { title: t('Geri'), textContent: '←', onclick: () => wv.canGoBack() && wv.goBack() }),
     h('button', { title: t('Yenile'), textContent: '⟳', onclick: () => wv.reload() }),
-    h('button', { title: t('Tarayıcıda aç'), textContent: '↗', onclick: () => window.desk.openExternal(wv.getURL()) }),
+    h('button', { title: t('Tarayıcıda aç'), textContent: '↗', onclick: () => openInDeskBrowser(wv.getURL(), p.ws) }),
   );
   wv.addEventListener('focus', () => setActive(p.ws, p.leaf.id));
   wv.addEventListener('page-title-updated', (e) => {
@@ -1111,7 +1138,8 @@ function openInNotes(fromPanel, file) {
 
 // ---------- Panel ekleme ----------
 async function addPanel(sc) {
-  if (sc.webUrl && sc.open !== 'browser') sc = { name: sc.name, emo: sc.emo, kind: 'web', url: sc.webUrl, multi: true };
+  if (sc.kind === 'browser' && sc.url && sc.id) { openInDeskBrowser(sc.url); return; } // site kısayolu: tarayıcıda sekme
+  if (sc.webUrl) sc = { name: sc.name, emo: sc.emo, kind: 'web', url: sc.webUrl, multi: true };
   if (sc.kind === 'native' && sc.native.type === 'browser' && sc.native.browser === 'ask') {
     const choice = await askBrowser(sc.native, sc.native.remember ? sc : null);
     if (!choice) return;
@@ -1349,13 +1377,18 @@ function renderShortcuts() {
 
 async function newShortcut() {
   const type = await choose(t('Ne eklemek istersin?'), [
-    ['browser', '🌐 ' + t('Tarayıcı penceresi (profil seçerek)')],
+    ['site', '🧭 ' + t('Tarayıcıda bir site')],
     ['program', '🖥 ' + t('Kurulu bir program')],
     ['web', '🔗 ' + t('Uygulama içi web sayfası')],
   ]);
-  if (type === 'browser') {
-    const r = await askBrowser();
-    if (r && !state.shortcuts.some((s) => s.id === r.id)) { state.shortcuts.push(r); renderShortcuts(); save(); }
+  if (type === 'site') {
+    const r = await modal({ title: t('Yeni kısayol'), text: t('Site Desk Helper\'ın tarayıcı panelinde açılır.'), fields: [
+      { name: 'name', label: t('Ad'), value: '' }, { name: 'url', label: t('Adres (web sitesi)'), value: '' }] });
+    if (!r?.url?.trim()) return;
+    const url = normalizeUrl(r.url);
+    let host = url; try { host = new URL(url).host.replace(/^www\./, ''); } catch {}
+    state.shortcuts.push({ id: uid(), name: r.name.trim() || host, emo: '🧭', kind: 'browser', url });
+    renderShortcuts(); save();
   } else if (type === 'program') {
     const exe = await window.desk.pick('file');
     if (!exe) return;
@@ -1379,8 +1412,7 @@ async function editShortcut(sc) {
   if (sc.native?.type === 'browser' && sc.native.browser !== 'ask') fields.splice(1, 0, { name: 'url', label: t('Açılış adresi (boş bırakılabilir)'), value: sc.native.url || '' });
   if (sc.native?.type === 'app') fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'desktop',
     options: [['desktop', t('Masaüstü uygulaması (bilgisayarda kurulu)')], ['web', t('Uygulama içi web (Desk Helper\'ın içinde)')]] });
-  if (sc.webUrl) fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'web',
-    options: [['web', t('Desk Helper içinde (her video ayrı panel)')], ['browser', t('Tarayıcı profilimle (kendi hesabımla)')]] });
+  if (sc.kind === 'browser' && sc.id !== 'deskbrowser') fields.splice(1, 0, { name: 'burl', label: t('Adres (web sitesi)'), value: sc.url || '' });
   const canReset = sc.native?.remember && sc.native.browser !== 'ask';
   const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil'), extra: canReset ? t('Tarayıcıyı değiştir') : null });
   if (!r) return;
@@ -1390,7 +1422,7 @@ async function editShortcut(sc) {
     sc.name = r.name || sc.name; sc.emo = r.emo;
     if (sc.kind === 'web') sc.url = r.url;
     else if (sc.native?.type === 'app') sc.open = r.open;
-    if (sc.webUrl && r.open) sc.open = r.open;
+    if (sc.kind === 'browser' && r.burl?.trim()) sc.url = normalizeUrl(r.burl);
     else if (sc.native?.type === 'browser' && 'url' in r) sc.native.url = r.url.trim();
   }
   renderShortcuts(); renderAppbar(); save();
@@ -1408,7 +1440,10 @@ function appbarSource(x) {
 const siteIcon = (url) => { try { return new URL(url).origin + '/favicon.ico'; } catch { return ''; } };
 
 async function launchFavorite(f) {
-  if (f.type === 'url' && f.inApp) { addPanel({ name: f.name, emo: '🌐', kind: 'web', url: f.target }); return true; }
+  if (f.type === 'url') { // siteler her zaman Desk Helper'ın içinde açılır
+    if (f.inApp) addPanel({ name: f.name, emo: '🌐', kind: 'web', url: f.target }); else openInDeskBrowser(f.target);
+    return true;
+  }
   const err = await window.desk.launch(f);
   if (err) { alertBox(t('Açılamadı'), err); return false; }
   return true;
@@ -1420,7 +1455,7 @@ function letterIcon(name) {
   let hsh = 0; for (const c of name || '?') hsh = (hsh * 31 + c.charCodeAt(0)) >>> 0;
   return h('span', { class: 'letter-ic', textContent: (name || '?').trim().charAt(0).toUpperCase(), style: `background:hsl(${hsh % 360} 55% 45%)` });
 }
-function scSiteUrl(sc) { return sc.kind === 'web' ? sc.url : sc.webUrl || (sc.native?.type === 'browser' ? sc.native.url : ''); }
+function scSiteUrl(sc) { return sc.kind === 'web' || (sc.kind === 'browser' && sc.url) ? sc.url : sc.webUrl || (sc.native?.type === 'browser' ? sc.native.url : ''); }
 function iconEl(src, from) {
   let url = '', fallback;
   if (from === 'sc') {
@@ -1531,7 +1566,7 @@ function appbarPicker() {
         const r = await modal({ title: t('Web sitesi'), fields: [{ name: 'name', label: t('Ad'), value: '' }, { name: 'url', label: t('Adres'), value: 'https://' }] });
         if (r && r.url.trim().length > 8) {
           let url = r.url.trim(); if (!/^https?:\/\//.test(url)) url = 'https://' + url;
-          const inApp = await modal({ title: t('Nerede açılsın?'), text: t('Uygulamanın içinde panel olarak mı, yoksa varsayılan tarayıcında mı?'), okText: t('Uygulama içinde'), cancelText: t('Tarayıcıda') });
+          const inApp = await modal({ title: t('Nerede açılsın?'), text: t('Ayrı bir panel olarak mı, yoksa tarayıcı panelinde sekme olarak mı?'), okText: t('Ayrı panel'), cancelText: t('Tarayıcı sekmesi') });
           state.favorites.push({ id: uid(), type: 'url', target: url, name: r.name || new URL(url).hostname.replace(/^www\./, ''), inApp: !!inApp });
         }
       }
@@ -1651,7 +1686,7 @@ function openFavorites() {
           const r = await modal({ title: t('Favori web sitesi'), fields: [{ name: 'name', label: t('Ad'), value: '' }, { name: 'url', label: t('Adres'), value: 'https://' }] });
           if (r && r.url.trim().length > 8) {
             let url = r.url.trim(); if (!/^https?:\/\//.test(url)) url = 'https://' + url;
-            const inApp = await modal({ title: t('Nerede açılsın?'), text: t('Uygulamanın içinde panel olarak mı, yoksa varsayılan tarayıcında mı?'), okText: t('Uygulama içinde'), cancelText: t('Tarayıcıda') });
+            const inApp = await modal({ title: t('Nerede açılsın?'), text: t('Ayrı bir panel olarak mı, yoksa tarayıcı panelinde sekme olarak mı?'), okText: t('Ayrı panel'), cancelText: t('Tarayıcı sekmesi') });
             state.favorites.push({ id: uid(), type: 'url', target: url, name: r.name || url.replace(/^https?:\/\//, ''), inApp: !!inApp });
             save();
           }
