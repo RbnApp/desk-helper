@@ -135,3 +135,16 @@ body { display: flex; flex-direction: column; }
 .native-msg b { color: var(--text); }
 .fav-add .primary, .native-msg .primary { background: var(--accent); color: #fff; }
 .dialog .choice { text-align: left; padding: 10px 12px; background: var(--panel); }
+
+/* Sağ tık menüsü (Windows 10 tarzı) */
+.ctx { position: fixed; z-index: 90; min-width: 230px; padding: 3px 0; background: #f2f2f2; color: #000; border: 1px solid #a0a0a0; box-shadow: 2px 2px 4px rgba(0,0,0,.35); font: 12px "Segoe UI", system-ui, sans-serif; }
+.ctx .item { display: flex; justify-content: space-between; gap: 24px; padding: 4px 18px 4px 30px; cursor: default; }
+.ctx .item:hover { background: #91c9f7; }
+.ctx .item.bold { font-weight: 600; }
+.ctx .item.disabled { color: #a0a0a0; }
+.ctx .item.disabled:hover { background: none; }
+.ctx .key { color: #6d6d6d; }
+.ctx .sep { height: 1px; margin: 3px 2px 3px 28px; background: #d7d7d7; }
+.files-list:focus { outline: none; }
+.frow.cut { opacity: .5; }
+.frow input.rename { flex: 1; min-width: 0; padding: 0 4px; height: 20px; user-select: text; }

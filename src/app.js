@@ -467,8 +467,8 @@ async function buildFiles(p) {
   const pathIn = h('input', { value: p.leaf.dir, spellcheck: false });
   const placeSel = h('select', {}, h('option', { textContent: t('Konumlar'), value: '' }),
     ...places.map((pl) => h('option', { value: pl.path, textContent: t(pl.name) })));
-  const list = h('div', { class: 'files-list' });
-  let parent = null, sel = null;
+  const list = h('div', { class: 'files-list', tabIndex: 0 });
+  let parent = null, sel = null, entries = [];
   p.body.append(
     h('div', { class: 'files-bar' },
       h('button', { textContent: '⬆', title: t('Üst klasör'), onclick: () => parent && go(parent) }),
@@ -477,9 +477,12 @@ async function buildFiles(p) {
     list);
 
   const fmt = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
-  async function go(dir) {
+  async function go(dir, { keep = false, select = null, rename = false } = {}) {
     try {
+      const scroll = list.scrollTop;
       const res = await window.desk.list(dir);
+      entries = res.entries;
+      sel = null;
       p.leaf.dir = res.dir; parent = res.parent !== res.dir ? res.parent : null;
       pathIn.value = res.dir;
       setTitle(p, p.leaf.title + ' · ' + (res.dir.split(/[\\/]/).filter(Boolean).pop() || res.dir));
@@ -488,11 +491,18 @@ async function buildFiles(p) {
           h('span', { textContent: en.isDir ? '📁' : TEXT_EXT.test(en.name) ? '📄' : '📦' }),
           h('span', { class: 'n', textContent: en.name }),
           h('span', { class: 'm', textContent: en.isDir ? '' : fmt(en.size) }));
-        row.addEventListener('click', () => { sel?.classList.remove('sel'); row.classList.add('sel'); sel = row; });
+        row.en = en;
+        row.addEventListener('click', () => pick(row));
         row.addEventListener('dblclick', () => openEntry(en));
+        row.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); pick(row); itemMenu(e, en, row); });
         return row;
       }));
-      list.scrollTop = 0;
+      list.scrollTop = keep ? scroll : 0;
+      markCut();
+      if (select) {
+        const row = [...list.children].find((r) => r.en?.path === select);
+        if (row) { pick(row); row.scrollIntoView({ block: 'nearest' }); if (rename) startRename(row); }
+      }
       save();
     } catch (err) {
       list.replaceChildren(h('div', { class: 'ferr', textContent: t('Açılamadı: {err}', { err: err.message }) }));
@@ -505,7 +515,121 @@ async function buildFiles(p) {
   }
   pathIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(pathIn.value.trim()); });
   placeSel.addEventListener('change', () => { if (placeSel.value) go(placeSel.value); placeSel.value = ''; });
+
+  // --- Sağ tık menüsü ve dosya işlemleri (Windows 10 tarzı, sade) ---
+  const refresh = (opts) => go(p.leaf.dir, { keep: true, ...opts });
+  function pick(row) { sel?.classList.remove('sel'); row.classList.add('sel'); sel = row; list.focus({ preventScroll: true }); }
+  async function run(fn) {
+    try { await fn(); } catch (err) { alertBox(t('İşlem yapılamadı'), String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
+  }
+  const newFolder = () => run(async () => refresh({ select: await window.desk.mkdir(p.leaf.dir, t('Yeni klasör')), rename: true }));
+  const newFile = () => run(async () => refresh({ select: await window.desk.newFile(p.leaf.dir, t('Yeni Metin Belgesi') + '.txt'), rename: true }));
+  const remove = (en) => run(async () => { await window.desk.trash(en.path); refresh(); });
+  const doPaste = () => run(async () => {
+    if (!fileClip.items.length) return;
+    await window.desk.paste(fileClip.items, p.leaf.dir, fileClip.cut);
+    if (fileClip.cut) fileClip.items = [];
+    refresh();
+  });
+  const setClip = (en, cut) => { fileClip.items = [en.path]; fileClip.cut = cut; markCut(); };
+  const markCut = () => { for (const r of list.children) r.classList.toggle('cut', !!(fileClip.cut && r.en && fileClip.items.includes(r.en.path))); };
+
+  function startRename(row) {
+    const en = row.en, nameEl = row.querySelector('.n');
+    const inp = h('input', { class: 'rename', value: en.name, spellcheck: false });
+    nameEl.replaceWith(inp);
+    inp.focus();
+    const dot = en.isDir ? -1 : en.name.lastIndexOf('.');
+    inp.setSelectionRange(0, dot > 0 ? dot : en.name.length);
+    let done = false;
+    const finish = (ok) => {
+      if (done) return; done = true;
+      const name = inp.value.trim();
+      if (!ok || !name || name === en.name) { inp.replaceWith(nameEl); list.focus(); return; }
+      run(async () => refresh({ select: await window.desk.rename(en.path, name) })).then(() => list.focus());
+    };
+    inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
+    inp.addEventListener('blur', () => finish(true));
+    inp.addEventListener('dblclick', (e) => e.stopPropagation());
+  }
+
+  function itemMenu(e, en, row) {
+    const isText = !en.isDir && TEXT_EXT.test(en.name);
+    contextMenu(e, p.body, [
+      { label: t('Aç'), bold: true, action: () => openEntry(en) },
+      isText ? { label: t('Not defterinde aç'), action: () => openInNotes(p, en.path) } : null,
+      !en.isDir ? { label: t('Varsayılan programla aç'), action: () => window.desk.open(en.path) } : null,
+      { label: t('Dosya konumunu Gezgin\'de göster'), action: () => window.desk.reveal(en.path) },
+      '-',
+      { label: t('Kes'), key: 'Ctrl+X', action: () => setClip(en, true) },
+      { label: t('Kopyala'), key: 'Ctrl+C', action: () => setClip(en, false) },
+      en.isDir ? { label: t('Yapıştır'), key: 'Ctrl+V', disabled: !fileClip.items.length, action: () => run(async () => { await window.desk.paste(fileClip.items, en.path, fileClip.cut); if (fileClip.cut) fileClip.items = []; refresh(); }) } : null,
+      { label: t('Yolu kopyala'), action: () => window.desk.copyText(en.path) },
+      '-',
+      { label: t('Sil'), key: 'Del', action: () => remove(en) },
+      { label: t('Yeniden adlandır'), key: 'F2', action: () => startRename(row) },
+    ]);
+  }
+
+  function blankMenu(e) {
+    contextMenu(e, p.body, [
+      { label: t('Yenile'), key: 'F5', action: () => refresh() },
+      '-',
+      { label: t('Yapıştır'), key: 'Ctrl+V', disabled: !fileClip.items.length, action: doPaste },
+      '-',
+      { label: t('Yeni klasör'), key: 'Ctrl+Shift+N', action: newFolder },
+      { label: t('Yeni metin belgesi'), action: newFile },
+      '-',
+      { label: t('Yolu kopyala'), action: () => window.desk.copyText(p.leaf.dir) },
+      { label: t('Windows Gezgini\'nde aç'), action: () => window.desk.open(p.leaf.dir) },
+    ]);
+  }
+
+  list.addEventListener('contextmenu', (e) => { e.preventDefault(); sel?.classList.remove('sel'); sel = null; blankMenu(e); });
+  list.addEventListener('mousedown', (e) => { if (e.target === list) { sel?.classList.remove('sel'); sel = null; } });
+  list.addEventListener('keydown', (e) => {
+    if (e.target !== list) return;
+    const en = sel?.en, k = e.key;
+    const stop = () => { e.preventDefault(); e.stopPropagation(); };
+    if (k === 'F5') { stop(); refresh(); }
+    else if (e.ctrlKey && e.shiftKey && k.toLowerCase() === 'n') { stop(); newFolder(); }
+    else if (e.ctrlKey && k.toLowerCase() === 'v') { stop(); doPaste(); }
+    else if (k === 'Backspace') { stop(); if (parent) go(parent); }
+    else if (!en) return;
+    else if (k === 'Delete') { stop(); remove(en); }
+    else if (k === 'F2') { stop(); startRename(sel); }
+    else if (k === 'Enter') { stop(); openEntry(en); }
+    else if (e.ctrlKey && k.toLowerCase() === 'c') { stop(); setClip(en, false); }
+    else if (e.ctrlKey && k.toLowerCase() === 'x') { stop(); setClip(en, true); }
+    else if (k === 'ArrowDown' || k === 'ArrowUp') {
+      stop();
+      const next = k === 'ArrowDown' ? sel.nextElementSibling : sel.previousElementSibling;
+      if (next) { pick(next); next.scrollIntoView({ block: 'nearest' }); }
+    }
+  });
+  p.onFileClip = markCut;
   go(p.leaf.dir);
+}
+
+// Kes/kopyala panoları tüm dosya panelleri arasında ortak: bir panelde kopyala, ötekinde yapıştır.
+const fileClip = { items: [], cut: false };
+
+// Sade sağ tık menüsü. Menü panelin dışına taşmaz (yandaki gerçek program pencerelerinin altında kalmasın).
+function contextMenu(e, bounds, items) {
+  document.querySelector('.ctx')?.remove();
+  const menu = h('div', { class: 'ctx' }, ...items.filter(Boolean).map((it) => it === '-'
+    ? h('div', { class: 'sep' })
+    : h('div', { class: 'item' + (it.disabled ? ' disabled' : '') + (it.bold ? ' bold' : ''), onclick: () => { if (it.disabled) return; close(); it.action(); } },
+      h('span', { textContent: it.label }), h('span', { class: 'key', textContent: it.key || '' }))));
+  document.body.append(menu);
+  const b = bounds.getBoundingClientRect(), m = menu.getBoundingClientRect();
+  const x = Math.max(b.left, Math.min(e.clientX, b.right - m.width - 2));
+  const y = Math.max(b.top, Math.min(e.clientY, b.bottom - m.height - 2));
+  Object.assign(menu.style, { left: x + 'px', top: y + 'px' });
+  const close = () => { menu.remove(); window.removeEventListener('mousedown', outside, true); window.removeEventListener('keydown', esc, true); window.removeEventListener('blur', close); };
+  const outside = (ev) => { if (!menu.contains(ev.target)) close(); };
+  const esc = (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); close(); } };
+  setTimeout(() => { window.addEventListener('mousedown', outside, true); window.addEventListener('keydown', esc, true); window.addEventListener('blur', close); });
 }
 
 // Metin dosyasını aynı sekmedeki bir not defteri panelinde aç (yoksa yanına yeni panel ekle).

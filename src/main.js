@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard } = require('electron');
 const path = require('path');
 const native = require('./native');
 const fs = require('fs');
@@ -204,6 +204,38 @@ ipcMain.handle('fs:read', (_e, p) => { try { return fs.readFileSync(p, 'utf8'); 
 ipcMain.handle('fs:write', (_e, p, text) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, text, 'utf8'); return true; });
 ipcMain.handle('fs:open', (_e, p) => shell.openPath(p));
 ipcMain.handle('fs:reveal', (_e, p) => shell.showItemInFolder(p));
+
+// --- Dosya gezgini sağ tık işlemleri ---
+// Aynı adda öğe varsa "Ad (2)", "Ad (3)" … dene.
+function uniquePath(dir, name) {
+  const ext = path.extname(name), base = name.slice(0, name.length - ext.length);
+  let p = path.join(dir, name), i = 2;
+  while (fs.existsSync(p)) p = path.join(dir, `${base} (${i++})${ext}`);
+  return p;
+}
+ipcMain.handle('fs:mkdir', (_e, dir, name) => { const p = uniquePath(dir, name); fs.mkdirSync(p); return p; });
+ipcMain.handle('fs:newfile', (_e, dir, name) => { const p = uniquePath(dir, name); fs.writeFileSync(p, ''); return p; });
+ipcMain.handle('fs:rename', (_e, from, newName) => {
+  if (!newName || /[\\/:*?"<>|]/.test(newName)) throw new Error(settings.lang === 'en' ? 'Invalid name' : 'Geçersiz ad');
+  const to = path.join(path.dirname(from), newName);
+  if (to !== from && fs.existsSync(to) && to.toLowerCase() !== from.toLowerCase()) throw new Error(settings.lang === 'en' ? 'An item with this name already exists' : 'Bu adda bir öğe zaten var');
+  fs.renameSync(from, to);
+  return to;
+});
+// Silme Geri Dönüşüm Kutusu'na gönderir, geri alınabilir.
+ipcMain.handle('fs:trash', async (_e, p) => { await shell.trashItem(p); return true; });
+ipcMain.handle('fs:paste', (_e, items, dir, cut) => {
+  for (const src of items) {
+    if (cut && path.dirname(src) === path.resolve(dir)) continue;
+    if (path.resolve(dir).startsWith(path.resolve(src) + path.sep)) throw new Error(settings.lang === 'en' ? 'Cannot paste a folder into itself' : 'Klasör kendi içine yapıştırılamaz');
+    const dest = uniquePath(dir, path.basename(src));
+    if (cut) {
+      try { fs.renameSync(src, dest); } catch { fs.cpSync(src, dest, { recursive: true }); fs.rmSync(src, { recursive: true }); }
+    } else fs.cpSync(src, dest, { recursive: true });
+  }
+  return true;
+});
+ipcMain.handle('clip:write', (_e, text) => clipboard.writeText(text));
 ipcMain.handle('notes:path', (_e, id) => path.join(notesDir(), `${id}.txt`));
 ipcMain.handle('notes:list', () => {
   try {

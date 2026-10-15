@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.1.2 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.1.3 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -43,6 +43,9 @@ profil, normal / gizli / misafir pencere ve isteğe bağlı açılış adresi (�
   Sekmede içindeki panellerin simgeleri görünür, üzerine gelince açık olanların listesi çıkar. Ctrl+Tab ile geçiş.
 - **Kısayollar:** tıkla, aktif sekmeye panel eklenir. Sağ tık ile düzenle/sil. "＋ Kısayol ekle" ile
   tarayıcı penceresi, kurulu herhangi bir program ya da uygulama içi web sayfası eklenir.
+- **Dosyalar:** sağ tık menüsü (Windows 10 tarzı): aç, not defterinde aç, kes/kopyala/yapıştır, yolu kopyala,
+  sil (Geri Dönüşüm Kutusu'na), yeniden adlandır; boş alanda yeni klasör, yeni metin belgesi, yapıştır, yenile.
+  Kısayollar: Del, F2, Ctrl+C/X/V, Ctrl+Shift+N, F5, Enter, Backspace (üst klasör). Paneller arası kopyala-yapıştır çalışır.
 - **Favoriler (⭐ veya Ctrl+Space):** bilgisayarındaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır.
 - **Panel taşıma:** başlıktan tutup başka panelin kenarına bırak; ortasına bırakırsan yer değiştirir.
 - **Boyutlandırma:** aradaki çizgiyi sürükle, çift tık eşitler.
