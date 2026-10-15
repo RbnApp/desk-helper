@@ -109,6 +109,41 @@ function isCloaked(hwnd) {
 }
 
 // Görünür, sahipsiz, başlıklı üst düzey pencereler.
+// Görev çubuğu düğmesi: ITaskbarList (COM) ile kaldırılır/geri eklenir. Pencerenin stilini değiştirmek
+// (SetWindowLongPtr) hedef programa senkron mesaj gönderir ve takılabilir; bu yöntem yalnızca görev
+// çubuğuyla konuşur, programa hiç dokunmaz.
+let taskbar;
+function guid(str) {
+  const h = str.replace(/-/g, ''), b = Buffer.alloc(16);
+  b.writeUInt32LE(parseInt(h.slice(0, 8), 16), 0);
+  b.writeUInt16LE(parseInt(h.slice(8, 12), 16), 4);
+  b.writeUInt16LE(parseInt(h.slice(12, 16), 16), 6);
+  Buffer.from(h.slice(16), 'hex').copy(b, 8);
+  return b;
+}
+function taskbarList() {
+  if (taskbar !== undefined) return taskbar;
+  taskbar = null;
+  try {
+    const k = W.koffi, ole = k.load('ole32.dll');
+    ole.func('int32 __stdcall CoInitializeEx(void *r, uint32 f)')(null, 2); // zaten açıksa zararsız
+    const create = ole.func('int32 __stdcall CoCreateInstance(void *clsid, void *outer, uint32 ctx, void *iid, _Out_ void **ppv)');
+    const out = [null];
+    const hr = create(guid('56FDF344-FD6D-11d0-958A-006097C9A090'), null, 1, guid('56FDF342-FD6D-11d0-958A-006097C9A090'), out);
+    if (hr < 0 || !out[0]) return null;
+    const obj = out[0], vtbl = k.decode(obj, 'void *');
+    const Init = k.proto('int32 __stdcall TaskbarHrInit(void *self)');
+    const Tab = k.proto('int32 __stdcall TaskbarTab(void *self, intptr_t hwnd)');
+    const slot = (i) => k.decode(vtbl, i * k.sizeof('void *'), 'void *');
+    if (k.call(slot(3), Init, obj) < 0) return null;
+    taskbar = { add: (hwnd) => k.call(slot(4), Tab, obj, hwnd), remove: (hwnd) => k.call(slot(5), Tab, obj, hwnd) };
+  } catch { taskbar = null; }
+  return taskbar;
+}
+function taskbarTab(hwnd, show) {
+  try { const t = taskbarList(); if (t) show ? t.add(hwnd) : t.remove(hwnd); } catch {}
+}
+
 function listWindows({ includeHidden = false } = {}) {
   if (!loadWin32()) return [];
   procCache.clear();
@@ -123,7 +158,7 @@ function listWindows({ includeHidden = false } = {}) {
       W.GetWindowThreadProcessId(hwnd, pid);
       const r = rectOf(hwnd);
       out.push({ hwnd: Number(hwnd), owner: Number(owner), pid: pid[0], title, cls: wstr(W.GetClassNameW, hwnd), exe: procPath(pid[0]),
-        width: r.right - r.left, height: r.bottom - r.top, visible: !!W.IsWindowVisible(hwnd) });
+        x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top, visible: !!W.IsWindowVisible(hwnd) });
     } catch {}
     return true;
   }, 0);
@@ -254,7 +289,7 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
       return;
     }
     const returning = e.shown === false;
-    if (!W.IsWindowVisible(e.hwnd)) setShown(e.hwnd, true); // tepsiye küçülmüş uygulama
+    if (!W.IsWindowVisible(e.hwnd)) { setShown(e.hwnd, true); taskbarTab(e.hwnd, false); } // tepsiye küçülmüş uygulama
     if (W.IsIconic(e.hwnd) || W.IsZoomed(e.hwnd)) W.ShowWindow(e.hwnd, SW_RESTORE);
     const t = toScreenRect(e.rect);
     // Windows 10/11'de pencerelerin görünmez kenarları var; hedefi buna göre genişlet.
@@ -327,6 +362,8 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     if (W.IsIconic(w.hwnd) || W.IsZoomed(w.hwnd)) W.ShowWindow(w.hwnd, SW_RESTORE);
     // Park edilmiş (önceki çökmeden kalmış) pencerenin eski konumu ekran dışıdır; ortalanmış bir konum kullan.
     if (e.orig.rect.left <= PARK_X + 100) e.orig.rect = { left: 100, top: 100, right: 1300, bottom: 900 };
+    // Panele yerleşen pencerenin görev çubuğunda ayrı simgesi olmasın.
+    taskbarTab(w.hwnd, false);
     docked.set(panelId, e);
     place(e);
     hookForeground();
@@ -341,9 +378,12 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     docked.delete(panelId);
     if (!W.IsWindow(e.hwnd)) return;
     if (close && e.closeOnRelease) { W.PostMessageW(e.hwnd, WM_CLOSE, 0, 0); return; }
+    if (W.IsHungAppWindow(e.hwnd)) return;
     const r = e.orig.rect;
-    W.SetWindowPos(e.hwnd, 0, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+    // Park yerinden asenkron taşıma uygulanmayabiliyor; serbest bırakırken senkron taşı.
+    W.SetWindowPos(e.hwnd, 0, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_NOZORDER | SWP_NOACTIVATE);
     setShown(e.hwnd, true);
+    taskbarTab(e.hwnd, true);
     if (e.orig.zoomed) W.ShowWindow(e.hwnd, 3);
   }
 
@@ -433,4 +473,18 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
   };
 }
 
-module.exports = { isWin, browsers, createDocker, APPS, listWindows };
+// Önceki oturumdan ekran dışında (park yerinde) kalmış pencereleri geri getir: Desk Helper
+// beklenmedik kapanırsa WhatsApp/Telegram gibi pencereler görünmez kalmasın.
+function rescueParked() {
+  if (!loadWin32()) return 0;
+  let n = 0;
+  for (const w of listWindows({ includeHidden: true })) {
+    if (w.x > PARK_X + 1000 || w.y > PARK_Y + 1000 || W.IsHungAppWindow(w.hwnd)) continue;
+    W.SetWindowPos(w.hwnd, 0, 120 + n * 30, 120 + n * 30, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    taskbarTab(w.hwnd, true);
+    n++;
+  }
+  return n;
+}
+
+module.exports = { isWin, browsers, createDocker, APPS, listWindows, rescueParked };

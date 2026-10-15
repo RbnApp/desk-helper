@@ -41,24 +41,25 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 3;
+const STATE_SCHEMA = 4;
 
 // WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
 const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
 
-// Instagram'ın Windows uygulaması yok: kullanıcının tarayıcısında, adres çubuğu olmayan
-// uygulama penceresi olarak açılır; dar panelde Instagram kendiliğinden mobil düzene geçer.
-const instagramShortcut = () => ({ id: 'ig', name: 'Instagram', emo: '📷', kind: 'native', narrow: true,
-  native: { type: 'browser', browser: 'ask', url: 'https://www.instagram.com/', appMode: true, remember: true } });
+// WhatsApp, Telegram ve Instagram Desk Helper'ın içinde, gömülü web paneli olarak açılır
+// (kalıcı oturum: bir kez giriş yapılır). Instagram dar panelde, telefon görünümünde açılır.
+const webShortcuts = () => [
+  { id: 'wa', name: 'WhatsApp', emo: '💬', kind: 'web', url: WEB_URL.whatsapp },
+  { id: 'tg', name: 'Telegram', emo: '✈️', kind: 'web', url: WEB_URL.telegram },
+  { id: 'ig', name: 'Instagram', emo: '📷', kind: 'web', url: 'https://www.instagram.com/', narrow: true, mobile: true },
+];
 const APP_INFO = {
   whatsapp: { name: 'WhatsApp', emo: '💬' },
   telegram: { name: 'Telegram', emo: '✈️' },
 };
 
 const defaultShortcuts = () => [
-  { id: 'wa', name: 'WhatsApp', emo: '💬', kind: 'native', native: { type: 'app', app: 'whatsapp' } },
-  { id: 'tg', name: 'Telegram', emo: '✈️', kind: 'native', native: { type: 'app', app: 'telegram' } },
-  instagramShortcut(),
+  ...webShortcuts(),
   { id: 'browser', name: t('Tarayıcı'), emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } },
   { id: 'notes', name: t('Not Defteri'), emo: '📝', kind: 'notes' },
   { id: 'files', name: t('Dosyalar'), emo: '📁', kind: 'files' },
@@ -67,6 +68,7 @@ const defaultShortcuts = () => [
 function leafFrom(sc) {
   const leaf = { type: 'panel', id: uid(), kind: sc.kind, title: sc.name, emo: sc.emo };
   if (sc.url) leaf.url = sc.url;
+  if (sc.mobile) leaf.mobile = true;
   if (sc.native) leaf.native = { ...sc.native };
   return leaf;
 }
@@ -90,12 +92,28 @@ const DEFAULT_SETTINGS = { lang: 'tr', theme: 'dark', startWithWindows: false, a
 function migrate(s) {
   if ((s.schema || 1) >= STATE_SCHEMA) return s;
   if ((s.schema || 1) < 2) migrateToApps(s);
-  if (!s.shortcuts.some((x) => x.id === 'ig')) {
-    const tg = s.shortcuts.findIndex((x) => x.native?.app === 'telegram');
-    s.shortcuts.splice(tg >= 0 ? tg + 1 : 0, 0, instagramShortcut());
-  }
+  if ((s.schema || 1) < 4) migrateToWeb(s);
   s.schema = STATE_SCHEMA;
   return s;
+}
+
+// 0.1.5: WhatsApp, Telegram ve Instagram dış program yerine gömülü web paneli olur
+// ve kısayol çubuğunun başına bu sırayla gelir.
+function migrateToWeb(s) {
+  const web = webShortcuts();
+  const which = (o) => {
+    if (o.id === 'ig' || /instagram\.com/.test(o.native?.url || o.url || '')) return web[2];
+    const app = o.native?.type === 'app' ? o.native.app : /web\.whatsapp\.com/.test(o.url || '') ? 'whatsapp' : /web\.telegram\.org/.test(o.url || '') ? 'telegram' : null;
+    return app === 'whatsapp' ? web[0] : app === 'telegram' ? web[1] : null;
+  };
+  const rest = (s.shortcuts || []).filter((o) => !which(o));
+  s.shortcuts = [...web, ...rest];
+  for (const ws of s.workspaces || []) for (const leaf of leaves(ws.root)) {
+    const w = which(leaf);
+    if (!w) continue;
+    leaf.kind = 'web'; leaf.url = w.url; delete leaf.native;
+    if (w.mobile) leaf.mobile = true;
+  }
 }
 
 function migrateToApps(s) {
@@ -402,10 +420,12 @@ window.desk.native.onGone((id) => {
 });
 
 // --- Uygulama içi web sayfası ---
+const MOBILE_UA = `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${(/Chrome\/([\d.]+)/.exec(navigator.userAgent) || [, '130.0.0.0'])[1]} Mobile Safari/537.36`;
 function buildWeb(p) {
   const wv = document.createElement('webview');
   wv.setAttribute('partition', 'persist:desk'); // tüm web panelleri aynı kalıcı oturumu paylaşır
   wv.setAttribute('allowpopups', '');
+  if (p.leaf.mobile) wv.setAttribute('useragent', MOBILE_UA); // Instagram: telefon görünümü
   wv.setAttribute('src', p.leaf.url);
   p.body.append(wv);
   p.tools.append(

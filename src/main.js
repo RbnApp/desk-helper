@@ -59,6 +59,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'index.html'));
   session.fromPartition('persist:desk').setUserAgent(CHROME_UA);
 
+  try { native.rescueParked(); } catch {}
   docker = native.createDocker({
     getHost: () => win,
     // Panelin pencere içi konumu (CSS px) -> ekrandaki fiziksel piksel
