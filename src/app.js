@@ -132,6 +132,7 @@ function dropExternalBrowsers(s) {
     return sc.native.url ? [{ id: sc.id, name: sc.name, emo: '🧭', kind: 'browser', url: sc.native.url }] : [];
   });
   const fix = (n) => {
+    if (!n) return; // boş sekme (root: null)
     if (n.type === 'split') { fix(n.a); fix(n.b); return; }
     if (n.kind === 'native' && n.native?.type === 'browser') {
       n.kind = 'browser'; n.url = (n.native.url && !n.native.spawned) ? n.native.url : HOME_URL; n.emo = '🧭'; delete n.native;
@@ -190,7 +191,9 @@ const layers = new Map(); // workspace id -> layer div
 
 // ---------- Kaydetme ----------
 let saveTimer;
+let saveBlocked = false; // açılış hatasında yarım durum kayıtlı düzenin üstüne yazılmasın
 function save() {
+  if (saveBlocked) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => window.desk.saveState(JSON.parse(JSON.stringify(state))), 300);
 }
@@ -498,7 +501,12 @@ window.desk.onWebLink((wcId, url, mode) => {
     return;
   }
   // WhatsApp/Telegram'daki linkler ve "Tarayıcıda aç": kendi tarayıcımızda (Chrome'a gitmez).
-  if (mode === 'browser' || !(mode === 'panel' || mode === 'tab' || src.leaf.multi)) { openInDeskBrowser(url, src.ws); return; }
+  // Tek sitelik paneller (WhatsApp, Telegram, Instagram) kendisi gezinmez, sekme açmaz: her link tarayıcı paneline gider.
+  if (mode === 'browser' || !src.leaf.multi) {
+    if (mode === 'panel') addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url });
+    else openInDeskBrowser(url, src.ws);
+    return;
+  }
   const leaf = { type: 'panel', id: uid(), kind: 'web', title: src.leaf.title, emo: src.leaf.emo, url, multi: src.leaf.multi };
   if (src.leaf.mobile) leaf.mobile = true;
   // Art arda açılan videolar sırayla dizilsin: en son açılan aynı türden panelin yanına ekle.
@@ -537,7 +545,8 @@ function buildBrowser(p) {
   const addr = h('input', { class: 'br-addr', spellcheck: false, placeholder: t('Adres yaz veya ara') });
   const prof = h('button', { class: 'br-prof', title: t('Profil') });
   const star = h('button', { class: 'br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
-  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, star), prof);
+  const cookieBtn = h('button', { class: 'br-cookie', textContent: '🍪', title: t('Bu sitenin çerezlerini temizle') });
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, star), cookieBtn, prof);
   const bmBar = h('div', { class: 'br-bm' });
   const views = h('div', { class: 'br-views' });
   p.body.append(strip, bar, bmBar, views);
@@ -713,6 +722,28 @@ function buildBrowser(p) {
     const d = bmDrag; d.list.splice(d.list.indexOf(d.bm), 1); bmList(d.key).push(d.bm); bmChanged();
   });
   bmBar.addEventListener('wheel', (e) => { if (e.deltaY) { bmBar.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+
+  // Çerez temizle: yalnızca açık sekmedeki sitenin çerezleri, bu profilde. Önce ne silineceği gösterilir.
+  cookieBtn.onclick = async () => {
+    const url = curTab()?.url || '';
+    const part = partitionFor(L.profile);
+    const info = await window.desk.siteCookies(part, url).catch(() => null);
+    if (!info) { alertBox(t('Çerez temizle'), t('Bu sayfada temizlenecek site çerezi yok (yalnızca http/https siteleri).')); return; }
+    const byDomain = {};
+    for (const c of info.cookies) (byDomain[c.domain] ||= []).push(c.name);
+    const list = Object.entries(byDomain).map(([d, names]) => `• ${d} (${names.length}): ${names.join(', ')}`).join('\n');
+    const r = await modal({
+      title: t('Çerez temizle · {site}', { site: info.base }),
+      text: t('Profil: {profile}\nSite: {site} ve alt alan adları\n\nSilinecek {n} çerez:\n{list}\n\nBu sitedeki oturumun kapanabilir. Diğer siteler ve diğer profiller etkilenmez.',
+        { profile: profileLabel(L.profile), site: info.base, n: info.cookies.length, list: list || t('(çerez yok)') }),
+      fields: [{ name: 'what', label: t('Ne silinsin?'), value: 'cookies', options: [['cookies', t('Yalnızca çerezler')], ['all', t('Çerezler ve site verileri ({origin})', { origin: new URL(url).origin })]] }],
+      okText: t('Sil'),
+    });
+    if (!r) return;
+    const n = await window.desk.clearSite(part, url, r.what === 'all');
+    try { cur().reload(); } catch {}
+    alertBox(t('Çerez temizle'), t('{site} için {n} çerez silindi.', { site: info.base, n }));
+  };
 
   function setProfile(pr) {
     if (pr === L.profile) return;
@@ -1801,7 +1832,7 @@ function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('
     openDialog((close) => {
       const ok = () => { val = fields.length ? Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value])) : true; close(); };
       const dlg = [
-        h('h3', { textContent: title }), text ? h('div', { textContent: text }) : null,
+        h('h3', { textContent: title }), text ? h('div', { class: 'mtext', textContent: text }) : null,
         ...fields.map((f) => h('label', {}, f.label, inputs[f.name] = f.options
           ? h('select', {}, ...f.options.map(([v, txt]) => h('option', { value: v, textContent: txt, selected: v === f.value })))
           : h('input', { value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
@@ -1824,8 +1855,35 @@ function translateStatic() {
 }
 
 async function init() {
+  window.desk.info().then((i) => { $('#brandVer').textContent = 'v' + i.version; });
   const saved = await window.desk.loadState();
   lang = saved?.settings?.lang === 'en' ? 'en' : 'tr';
+  // Sürüm yükseltmesinden önce kayıtlı durumun yedeği alınır (state.backup-<şema>.json).
+  if (saved?.workspaces?.length && (saved.schema || 1) < STATE_SCHEMA) await window.desk.backupState('schema' + (saved.schema || 1)).catch(() => {});
+  try {
+    await start(saved);
+  } catch (err) {
+    console.error(err);
+    startupFailed(err, saved);
+  }
+}
+
+// Açılış yarıda kalırsa boş ekran yerine ne olduğunu söyle; düzeni sıfırlarken favoriler, yer imleri ve ayarlar korunur.
+async function startupFailed(err, saved) {
+  saveBlocked = true; clearTimeout(saveTimer);
+  const r = await modal({ title: t('Desk Helper açılırken bir hata oldu'),
+    text: t('Kayıtlı düzen yüklenemedi: {err}\n\nDüzeni sıfırlarsan sekmeler ve kısayollar varsayılana döner; favoriler, alt çubuk, yer imleri, tarayıcı profilleri ve ayarlar korunur. Eski düzenin yedeği alınır.', { err: err?.message || String(err) }),
+    okText: t('Düzeni sıfırla'), cancelText: t('Kapat') });
+  if (!r) return;
+  await window.desk.backupState('broken').catch(() => {});
+  const fresh = defaultState();
+  for (const k of ['favorites', 'appbar', 'bookmarks', 'browserProfiles', 'settings']) if (saved?.[k]) fresh[k] = saved[k];
+  fresh.appbar = (fresh.appbar || []).filter((x) => x.from === 'fav');
+  await window.desk.saveState(fresh);
+  location.reload();
+}
+
+async function start(saved) {
   state = saved?.workspaces?.length ? migrate(saved) : defaultState();
   state.favorites ||= [];
   state.appbar ||= [];
@@ -1842,7 +1900,6 @@ async function init() {
   $('#addTab').onclick = newWs;
   $('#favBtn').onclick = openFavorites;
   $('#brand').onclick = () => openSettings();
-  window.desk.info().then((i) => { $('#brandVer').textContent = 'v' + i.version; });
   document.querySelectorAll('#dock button').forEach((b) => b.onclick = () => window.desk.dock(b.dataset.dock));
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key.toLowerCase() === 't') { e.preventDefault(); newWs(); }

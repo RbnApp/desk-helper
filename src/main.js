@@ -186,6 +186,34 @@ ipcMain.handle('br:clear-profile', async (_e, name) => {
   return true;
 });
 
+// Tarayıcı panelinde "Çerez temizle": yalnızca açık sekmenin sitesine (alan adı ve alt alan adları) ait çerezler.
+const brSession = (partition) => (/^persist:br-|^br-private$/.test(partition) ? session.fromPartition(partition) : null);
+const siteBase = (host) => (/^[\d.]+$|^\[|^localhost$/i.test(host) ? host : host.split('.').slice(-2).join('.'));
+async function siteCookies(ses, url) {
+  const host = new URL(url).hostname, base = siteBase(host);
+  const all = await ses.cookies.get({});
+  return { host, base, cookies: all.filter((c) => { const d = c.domain.replace(/^\./, ''); return d === base || d.endsWith('.' + base); }) };
+}
+ipcMain.handle('br:site-cookies', async (_e, partition, url) => {
+  const ses = brSession(partition);
+  if (!ses || !/^https?:/.test(url)) return null;
+  const r = await siteCookies(ses, url);
+  return { host: r.host, base: r.base, cookies: r.cookies.map((c) => ({ name: c.name, domain: c.domain })) };
+});
+ipcMain.handle('br:clear-site', async (_e, partition, url, withData) => {
+  const ses = brSession(partition);
+  if (!ses || !/^https?:/.test(url)) return 0;
+  const { cookies } = await siteCookies(ses, url);
+  for (const c of cookies) {
+    const u = (c.secure ? 'https://' : 'http://') + c.domain.replace(/^\./, '') + (c.path || '/');
+    await ses.cookies.remove(u, c.name).catch(() => {});
+  }
+  if (withData) {
+    await ses.clearStorageData({ origin: new URL(url).origin, storages: ['localstorage', 'indexdb', 'serviceworkers', 'cachestorage', 'websql', 'filesystem', 'shadercache'] }).catch(() => {});
+  }
+  return cookies.length;
+});
+
 ipcMain.handle('app:info', () => ({
   name: 'Desk Helper',
   version: app.getVersion(),
@@ -199,6 +227,11 @@ ipcMain.handle('settings:apply', (_e, s) => { applySettings(s); return true; });
 
 // --- Durum (sekmeler, düzen, kısayollar, favoriler, ayarlar) ---
 ipcMain.handle('state:load', () => readJson(statePath()));
+ipcMain.handle('state:backup', (_e, tag) => {
+  if (!fs.existsSync(statePath())) return false;
+  fs.copyFileSync(statePath(), path.join(dataDir(), `state.backup-${String(tag).replace(/\W/g, '')}-${Date.now()}.json`));
+  return true;
+});
 ipcMain.handle('state:save', (_e, state) => {
   fs.mkdirSync(dataDir(), { recursive: true });
   const tmp = statePath() + '.tmp';

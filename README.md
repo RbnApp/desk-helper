@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.8 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.2.9 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -40,6 +40,8 @@ Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık > "Yeni p
 ☆ ile açık sayfa eklenir (★ ise düzenle / kaldır), tek tıkla açılır, Ctrl+tık veya orta tık yeni sekmede açar.
 Çubuğa sağ tıklayınca yeni klasör ve Chrome'dan içe aktarma (Chrome'da Yer işaretleri yöneticisi > ⋮ > Dışa aktar ile
 alınan HTML dosyası) çıkar. Sürükle-bırak ile sıralanır, klasörün üstüne bırakılan yer imi klasöre girer.
+🍪 düğmesi yalnızca açık sekmedeki sitenin (alan adı ve alt alan adları) çerezlerini, o profilde temizler: önce hangi
+çerezlerin silineceğini listeler ve onay ister; istersen o sitenin yerel verileri de silinir. Diğer siteler ve profiller etkilenmez.
 Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 > "Bu profili sil…" profili, yer imlerini ve girişlerini siler.
 "＋ Kısayol ekle" > **Tarayıcıda bir site** ile ör. phpMyAdmin için tek tıklık kısayol eklenir; tıklayınca tarayıcı panelinde sekme açar.
 
@@ -57,6 +59,11 @@ Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üst
 
 Sınırlar: Windows başka bir programın penceresini gerçekten gömmeye izin vermez; pencere panelin üstünde durur.
 Bu yüzden Desk Helper'ın açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici gizlenir.
+
+## Açılışta sorun olursa
+Desk Helper her sürüm yükseltmesinden önce kayıtlı düzenin yedeğini alır (uygulamanın veri klasöründe `state.backup-*.json`).
+Kayıtlı düzen yüklenemezse boş ekran yerine hata penceresi çıkar; "Düzeni sıfırla" sekmeleri ve kısayolları varsayılana döndürür,
+favoriler, alt çubuk, yer imleri, tarayıcı profilleri ve ayarlar korunur.
 
 ## Kullanım
 - **Sekmeler:** ＋ veya Ctrl+T yeni sekme açar ve ad sorar. Çift tık veya sağ tık ile yeniden adlandır.

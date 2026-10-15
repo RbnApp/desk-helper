@@ -251,3 +251,5 @@ body { display: flex; flex-direction: column; }
 .br-bmi.drop { box-shadow: inset 0 0 0 1px var(--accent); }
 .br-bmi.folder.drop { background: rgba(255,255,255,.12); }
 .br-bm-hint { color: var(--muted); font-size: 11.5px; padding: 0 4px; white-space: nowrap; }
+.mtext { white-space: pre-line; max-height: 50vh; overflow-y: auto; user-select: text; }
+.br-bar > .br-cookie { font-size: 14px; padding: 3px 6px; }

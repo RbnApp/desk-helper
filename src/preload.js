@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('desk', {
   loadState: () => ipcRenderer.invoke('state:load'),
   saveState: (s) => ipcRenderer.invoke('state:save', s),
+  backupState: (tag) => ipcRenderer.invoke('state:backup', tag),
   info: () => ipcRenderer.invoke('app:info'),
   applySettings: (s) => ipcRenderer.invoke('settings:apply', s),
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
@@ -25,6 +26,8 @@ contextBridge.exposeInMainWorld('desk', {
   copyText: (text) => ipcRenderer.invoke('clip:write', text),
   notePath: (id) => ipcRenderer.invoke('notes:path', id),
   notesList: () => ipcRenderer.invoke('notes:list'),
+  siteCookies: (partition, url) => ipcRenderer.invoke('br:site-cookies', partition, url),
+  clearSite: (partition, url, withData) => ipcRenderer.invoke('br:clear-site', partition, url, withData),
   clearBrowserProfile: (name) => ipcRenderer.invoke('br:clear-profile', name),
   showWindow: () => ipcRenderer.invoke('win:reveal'),
   dock: (where) => ipcRenderer.invoke('win:dock', where),
