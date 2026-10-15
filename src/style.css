@@ -28,7 +28,9 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 
 body { display: flex; flex-direction: column; }
 #topbar { display: flex; align-items: flex-end; gap: 4px; padding: 6px 8px 0; background: var(--bar); }
-#tabs { display: flex; gap: 2px; overflow-x: auto; }
+#topbar > .icon, #dock { align-self: flex-end; }
+/* Sekmeler en fazla 2 sıra; fazlası için dikey kaydırma çubuğu */
+#tabs { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2px; max-height: 66px; overflow-y: auto; overflow-x: hidden; min-width: 0; flex: 0 1 auto; }
 .tab { display: flex; align-items: center; gap: 6px; padding: 7px 10px 7px 14px; border-radius: 8px 8px 0 0; color: var(--muted); max-width: 220px; white-space: nowrap; cursor: pointer; }
 .tab.active { background: var(--bg); color: var(--text); }
 .tab .name { overflow: hidden; text-overflow: ellipsis; }
@@ -41,11 +43,14 @@ body { display: flex; flex-direction: column; }
 #dock { display: flex; gap: 2px; margin-bottom: 4px; }
 #dock button { padding: 3px 8px; color: var(--muted); }
 
-#brand { display: flex; align-items: center; gap: 7px; padding: 3px 10px 3px 4px; margin: 0 6px 5px 0; font-weight: 600; }
-#brand img { width: 22px; height: 22px; }
+#brand { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 6px; margin: 0 6px 5px 0; align-self: center; flex: none; }
+#brand img { width: 30px; height: 30px; }
+#brand .bt { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+#brand .bt b { font-size: 14px; font-weight: 700; }
 #bar { display: flex; gap: 4px; padding: 6px 8px; background: var(--bg); border-bottom: 1px solid var(--line); align-items: center; }
 #bar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 6px; }
-#shortcuts { display: flex; gap: 4px; flex-wrap: wrap; }
+/* Kısayollar da en fazla 2 sıra */
+#shortcuts { display: flex; gap: 4px; flex-wrap: wrap; max-height: 68px; overflow-y: auto; }
 .sc.fav { background: rgba(255,196,0,.14); }
 .tab .icons { font-size: 12px; letter-spacing: 1px; opacity: .85; }
 .sc { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--panel); border-radius: 7px; }
@@ -151,7 +156,6 @@ body { display: flex; flex-direction: column; }
 
 /* Ayarlar + Hakkında tek pencere */
 #brand small { color: var(--muted); font-weight: 400; font-size: 11px; }
-#brand .gear { color: var(--muted); font-weight: 400; }
 .dtabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -4px 0 4px; }
 .dtabs button { padding: 6px 12px; border-radius: 6px 6px 0 0; color: var(--muted); }
 .dtabs button.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
@@ -160,3 +164,10 @@ body { display: flex; flex-direction: column; }
 .dialog .pane.about { align-items: center; text-align: center; }
 .dialog .pane.about img { width: 84px; height: 84px; }
 .dialog .pane.about h3 { margin: 0; }
+
+/* İnce, temaya uyan kaydırma çubukları */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+::-webkit-scrollbar-corner { background: transparent; }

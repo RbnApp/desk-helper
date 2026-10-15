@@ -863,6 +863,7 @@ function renderTabs() {
     tab.addEventListener('contextmenu', (e) => { e.preventDefault(); rename(); });
     return tab;
   }));
+  $('#tabs .tab.active')?.scrollIntoView({ block: 'nearest' }); // 2 sırayı aşınca aktif sekme görünür kalsın
 }
 
 function switchWs(id) { state.activeWs = id; layout(); renderTabs(); save(); }
