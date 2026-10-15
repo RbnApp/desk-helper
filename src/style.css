@@ -71,7 +71,12 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .panel.active { border-color: var(--accent); }
 .panel.dragging { opacity: .45; }
 .phead { display: flex; align-items: center; gap: 2px; height: 30px; padding: 0 4px 0 10px; background: var(--head); cursor: grab; flex: none; }
-.phead .title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.phead .title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; overflow: hidden; white-space: nowrap; color: var(--muted); }
+.phead .ptxt { overflow: hidden; text-overflow: ellipsis; }
+.phead .pic { flex: none; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+.phead .pic img { width: 16px; height: 16px; object-fit: contain; }
+.phead .pic .ab-emo { font-size: 13px; }
+.phead .pic .letter-ic { width: 16px; height: 16px; font-size: 10px; }
 .panel.active .phead .title { color: var(--text); }
 .phead button { padding: 2px 7px; color: var(--muted); }
 .phead button:hover { color: var(--text); }

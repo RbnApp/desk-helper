@@ -381,9 +381,12 @@ function createPanel(ws, leaf) {
   return p;
 }
 
+// Panel başlığı: sekme ve alt çubukla aynı gerçek simge (kısayolun simgesi / özel simge / tarayıcıda sayfanın simgesi).
 function setTitle(p, text) {
-  p.title.textContent = (p.leaf.emo ? p.leaf.emo + '  ' : '') + text;
+  p.title.replaceChildren(h('span', { class: 'pic' }, leafIcon(p.leaf)), h('span', { class: 'ptxt', textContent: text }));
+  p.title.title = text;
 }
+const refreshPanelIcon = (p) => p.title.querySelector('.pic')?.replaceChildren(leafIcon(p.leaf));
 
 async function renamePanel(p) {
   const r = await modal({ title: t('Paneli yeniden adlandır'), fields: [{ name: 'title', label: t('Ad'), value: p.leaf.title }] });
@@ -489,7 +492,7 @@ window.desk.native.onGone((id) => {
 window.desk.native.onSpawn((srcId, w) => {
   const src = panels.get(srcId);
   if (!src) return;
-  const leaf = { type: 'panel', id: uid(), kind: 'native', title: src.leaf.title, emo: src.leaf.emo,
+  const leaf = { type: 'panel', id: uid(), kind: 'native', title: src.leaf.title, emo: src.leaf.emo, sc: src.leaf.sc,
     native: { ...src.leaf.native, hwnd: w.hwnd, pid: w.pid, spawned: true } };
   const el = src.el;
   insertNear(src.ws, srcId, leaf, el && el.offsetHeight > el.offsetWidth ? 'bottom' : 'right');
@@ -545,7 +548,7 @@ function routeWebLink(wcId, url, mode) {
     else openInDeskBrowser(url, src.ws);
     return;
   }
-  const leaf = { type: 'panel', id: uid(), kind: 'web', title: src.leaf.title, emo: src.leaf.emo, url, multi: src.leaf.multi };
+  const leaf = { type: 'panel', id: uid(), kind: 'web', title: src.leaf.title, emo: src.leaf.emo, sc: src.leaf.sc, url, multi: src.leaf.multi };
   if (src.leaf.mobile) leaf.mobile = true;
   // Art arda açılan videolar sırayla dizilsin: en son açılan aynı türden panelin yanına ekle.
   const last = panels.get(src.ws.active);
@@ -624,6 +627,7 @@ function buildBrowser(p) {
     wv.addEventListener('page-title-updated', (e) => { tab.title = e.title; renderStrip(); if (tab.id === L.activeTab) setTitle(p, L.title + ' · ' + e.title); save(); });
     wv.addEventListener('page-favicon-updated', (e) => {
       tab.icon = e.favicons[0]; renderStrip();
+      if (tab.id === L.activeTab) { refreshPanelIcon(p); renderTabs(); }
       const bm = bmFind(bmKey(L.profile), tab.url); // yer iminin simgesi yoksa sayfanınkini al
       if (bm && !bm.icon && tab.icon) { bm.icon = tab.icon; bmChanged(); }
     });
@@ -1457,8 +1461,9 @@ const SERVICES = [
   { id: 'tg', name: 'Telegram', re: /(^|\.)(telegram\.org|t\.me)$/, app: 'telegram' },
   { id: 'ig', name: 'Instagram', re: /(^|\.)instagram\.com$/ },
   { id: 'x', name: 'X', re: /(^|\.)(x|twitter)\.com$/ },
-  { id: 'yt', name: 'YouTube', re: /(^|\.)youtube\.com$/ },
+  { id: 'yt', name: 'YouTube', re: /(^|\.)youtube\.com$/, noCount: true }, // girişsiz kullanılıyor: sayaç yok
 ];
+const counted = (sv) => sv && !SERVICES.find((s) => s.id === sv)?.noCount;
 function serviceOf(leaf) {
   if (leaf.kind === 'native' && leaf.native?.type === 'app') return SERVICES.find((s) => s.app === leaf.native.app)?.id || null;
   if (leaf.kind !== 'web') return null;
@@ -1470,12 +1475,15 @@ function unreadOf(list) {
   const per = new Map(); let other = 0;
   for (const p of list) {
     const sv = serviceOf(p.leaf), n = p.unread || 0;
+    if (sv && !counted(sv)) continue;
     if (sv) per.set(sv, Math.max(per.get(sv) || 0, n)); else other += n;
   }
   return [...per.values()].reduce((a, b) => a + b, 0) + other;
 }
-const serviceUnread = (sv) => Math.max(0, ...[...panels.values()].filter((p) => serviceOf(p.leaf) === sv).map((p) => p.unread || 0));
+const serviceUnread = (sv) => !counted(sv) ? 0 : Math.max(0, ...[...panels.values()].filter((p) => serviceOf(p.leaf) === sv).map((p) => p.unread || 0));
 function setUnread(p, n) {
+  const sv = serviceOf(p.leaf);
+  if (sv && !counted(sv)) n = 0;
   p.unread = n;
   setTitle(p, p.leaf.title + (n ? `  (${n})` : '') + (p.titleExtra || ''));
   renderTabs(); renderBell();
@@ -1486,6 +1494,7 @@ function shortcutForLeaf(l) {
   if (l.sc) { const sc = state.shortcuts.find((s) => s.id === l.sc); if (sc) return sc; }
   const sv = serviceOf(l);
   if (sv) return state.shortcuts.find((s) => s.id === sv) || null;
+  if (l.native?.exe) return state.shortcuts.find((s) => s.native?.exe === l.native.exe) || null;
   if (l.kind === 'notes' || l.kind === 'files') return state.shortcuts.find((s) => s.id === l.kind) || null;
   if (l.kind === 'browser') return state.shortcuts.find((s) => s.id === 'deskbrowser') || null;
   return null;
@@ -1521,7 +1530,7 @@ function openBell() {
   const endOfDay = () => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); };
   PopMenu.open($('#bell'), [
     { header: t('Bildirimler') },
-    ...SERVICES.filter((s) => state.shortcuts.some((x) => x.id === s.id) || [...panels.values()].some((p) => serviceOf(p.leaf) === s.id)).map((s) => {
+    ...SERVICES.filter((s) => !s.noCount).filter((s) => state.shortcuts.some((x) => x.id === s.id) || [...panels.values()].some((p) => serviceOf(p.leaf) === s.id)).map((s) => {
       const sc = state.shortcuts.find((x) => x.id === s.id);
       const n = serviceUnread(s.id);
       return { icon: sc ? iconEl(sc, 'sc') : '🌐', label: sc?.name || s.name, key: n ? String(n) : '', bold: !!n, action: () => goService(s.id) };
@@ -1822,7 +1831,7 @@ function iconDialog(src, from, onDone) {
     ];
   } });
 }
-function iconsChanged() { save(); renderShortcuts(); renderAppbar(); renderTabs(); }
+function iconsChanged() { save(); renderShortcuts(); renderAppbar(); renderTabs(); for (const p of panels.values()) refreshPanelIcon(p); }
 
 // Program simgelerini yeniden üret (eski sürümler bazı programlarda jenerik simge kaydetmişti).
 // 0.3.5: Chrome uygulamaları (ör. Chrome Uzak Masaüstü) ve boş beyaz sayfa simgesi alanlar için bir kez daha.

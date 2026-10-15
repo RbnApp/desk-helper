@@ -3,6 +3,21 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.3.6 · 2026-10-15
+
+**Değişiklikler**
+- YouTube panelde girişsiz kullanılır. Google hesabıyla giriş (YouTube, Gmail) Desk Helper'da desteklenmiyor: Google,
+  uygulama içine gömülü tarayıcılarda girişe izin vermiyor. Gmail için Desk Helper'da ayrı bir panel yok.
+- Bildirim merkezinde YouTube satırı ve sayacı kaldırıldı (girişsiz sayaç anlamsızdı); WhatsApp, Telegram, Instagram ve X
+  sayaçları aynen duruyor.
+
+**Düzeltmeler**
+- Panel başlıklarında hâlâ eski emoji simgeler (▶️ gibi) görünüyordu. Artık başlıklar da sekmeler ve alt çubukla aynı
+  gerçek logoları ve özel simgeleri gösteriyor; tarayıcı panelinde açık sitenin simgesi çıkıyor.
+- WhatsApp ve Telegram'da (bazen Instagram, X, YouTube'da da) logo yerine eski emoji çıkıyordu: sitelerin simge dosyası
+  her zaman gelmiyordu. Bu beş servisin logosu artık uygulamanın içinde; başlıkta, sekmede, kısayolda ve alt çubukta
+  internetsiz de doğru logo görünür.
+
 ## 0.3.5 · 2026-10-15
 
 **Yeni**
