@@ -229,6 +229,66 @@ function ps(cmd) {
     { windowsHide: true, timeout: 15000 }, (err, out) => resolve(err ? '' : String(out).trim())));
 }
 
+// Başlat menüsündeki tüm uygulamalar (klasik programlar ve Microsoft Store / MSIX uygulamaları).
+// Store uygulamalarının logosu paket manifest'inden okunur; hepsi shell:AppsFolder\<AppID> ile açılır.
+const APPS_PS = `
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$pk = @{}; Get-AppxPackage -ErrorAction SilentlyContinue | ForEach-Object { $pk[$_.PackageFamilyName] = $_.InstallLocation }
+$list = Get-StartApps | ForEach-Object {
+  $o = [ordered]@{ n = $_.Name; id = $_.AppID; logo = $null }
+  if ($_.AppID -match '^([^!\\\\]+)!(.+)$') {
+    $loc = $pk[$matches[1]]; $aid = $matches[2]
+    if ($loc) { try {
+      [xml]$m = Get-Content -LiteralPath (Join-Path $loc 'AppxManifest.xml') -Raw
+      $app = @($m.Package.Applications.Application | Where-Object { $_.Id -eq $aid })[0]
+      $ve = $app.VisualElements; $rel = $ve.Square44x44Logo; if (-not $rel) { $rel = $ve.Square150x150Logo }
+      if ($rel) {
+        $full = Join-Path $loc $rel; $dir = Split-Path $full
+        $base = [IO.Path]::GetFileNameWithoutExtension($full); $ext = [IO.Path]::GetExtension($full)
+        $c = @(Get-ChildItem -LiteralPath $dir -Filter "$base*$ext" -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch 'contrast' })
+        $best = $c | Sort-Object @{ Expression = { if ($_.Name -match 'unplated') { 0 } else { 1 } } }, @{ Expression = { if ($_.Name -match 'targetsize-(\\d+)') { [math]::Abs([int]$matches[1] - 64) } elseif ($_.Name -match 'scale-(\\d+)') { [math]::Abs([int]$matches[1] - 200) } else { 500 } } } | Select-Object -First 1
+        if ($best) { $o.logo = $best.FullName } elseif (Test-Path -LiteralPath $full) { $o.logo = $full }
+      }
+    } catch {} }
+  }
+  [pscustomobject]$o
+}
+$list | ConvertTo-Json -Compress
+`;
+function startMenuLinks() {
+  const roots = [env('%ProgramData%\\Microsoft\\Windows\\Start Menu\\Programs'), env('%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs')];
+  const out = new Map();
+  const walk = (d, depth) => {
+    let ents = [];
+    try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of ents) {
+      const f = path.join(d, e.name);
+      if (e.isDirectory() && depth < 4) walk(f, depth + 1);
+      else if (/\.(lnk|url)$/i.test(e.name)) out.set(e.name.replace(/\.(lnk|url)$/i, '').toLowerCase(), f);
+    }
+  };
+  for (const r of roots) walk(r, 0);
+  return out;
+}
+async function installedApps() {
+  if (!isWin) return [];
+  let raw = [];
+  try { raw = JSON.parse(await new Promise((resolve) => execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', APPS_PS],
+    { windowsHide: true, timeout: 60000, maxBuffer: 32 * 1024 * 1024 }, (err, out) => resolve(err ? '[]' : String(out).trim() || '[]')))); } catch {}
+  if (!Array.isArray(raw)) raw = [raw];
+  const links = startMenuLinks();
+  const seen = new Set();
+  const skip = (n) => /^(uninstall|kaldır)|uninstall$/i.test(n);
+  const apps = raw.filter((a) => a && a.n && a.id && !skip(a.n) && !seen.has(a.n.toLowerCase()) && seen.add(a.n.toLowerCase()))
+    .map((a) => ({ name: a.n, aumid: a.id, logo: a.logo || null, lnk: links.get(a.n.toLowerCase()) || null }));
+  // PowerShell'e ulaşılamazsa ya da listede olmayan kısayollar için Başlat menüsü kısayolları da eklenir.
+  for (const [key, lnk] of links) {
+    const name = path.basename(lnk).replace(/\.(lnk|url)$/i, '');
+    if (!seen.has(key) && !skip(name)) { seen.add(key); apps.push({ name, aumid: null, logo: null, lnk }); }
+  }
+  return apps.sort((x, y) => x.name.localeCompare(y.name, 'tr'));
+}
+
 const startAppCache = new Map();
 async function startAppId(name) {
   if (startAppCache.has(name)) return startAppCache.get(name);
@@ -529,4 +589,4 @@ function rescueParked() {
   return n;
 }
 
-module.exports = { isWin, browsers, createDocker, APPS, listWindows, rescueParked };
+module.exports = { isWin, browsers, createDocker, APPS, listWindows, rescueParked, installedApps };

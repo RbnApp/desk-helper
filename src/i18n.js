@@ -174,4 +174,12 @@ window.I18N_EN = {
   'Yeni tarayıcı profili': 'New browser profile',
   'Her profilin girişleri ve çerezleri ayrı tutulur.': 'Each profile keeps its own sign-ins and cookies.',
   'Profil adı': 'Profile name',
+  'Uygulama ara…': 'Search apps…',
+  'Kurulu uygulamalar okunuyor…': 'Reading installed apps…',
+  'Eşleşen uygulama yok': 'No matching apps',
+  'Kurulu uygulama bulunamadı': 'No installed apps found',
+  'Kurulu uygulamalar': 'Installed apps',
+  'Tıklayınca alt çubuğa eklenir veya kaldırılır.': 'Click to add to or remove from the bottom bar.',
+  'Tıklayınca Favorilere eklenir veya çıkarılır.': 'Click to add to or remove from Favorites.',
+  'Kurulu uygulama': 'Installed app',
 };

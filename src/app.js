@@ -1217,7 +1217,7 @@ const appbarIcon = iconEl;
 // Program simgelerini yeniden üret (eski sürümler bazı programlarda jenerik simge kaydetmişti).
 async function refreshIcons() {
   if (state.iconsRev === 2 || !isWin) return;
-  for (const f of state.favorites) if (f.type !== 'url') { const ic = await window.desk.iconFor(f.target); f.icon = ic || null; }
+  for (const f of state.favorites) if (f.type === 'file' || f.type === 'folder') { const ic = await window.desk.iconFor(f.target); f.icon = ic || null; }
   for (const sc of state.shortcuts) if (sc.native?.type === 'program') { const ic = await window.desk.iconFor(sc.native.exe); if (ic) sc.icon = ic; }
   state.iconsRev = 2;
   save(); renderShortcuts(); renderAppbar();
@@ -1321,6 +1321,7 @@ function appbarPicker() {
       h('div', { class: 'hint', textContent: t('Tıklayınca eklenir veya kaldırılır. Simgeleri alt çubukta sürükleyerek sıralayabilirsin.') }),
       grid,
       h('div', { class: 'fav-add' },
+        h('button', { class: 'primary', textContent: '＋ ' + t('Kurulu uygulama'), onclick: () => { close(); pickInstalledApps({ toAppbar: true, onClose: () => setTimeout(appbarPicker) }); } }),
         h('button', { textContent: '＋ ' + t('Program / dosya'), onclick: () => { close(); addNew('file'); } }),
         h('button', { textContent: '＋ ' + t('Klasör'), onclick: () => { close(); addNew('folder'); } }),
         h('button', { textContent: '＋ ' + t('Web sitesi'), onclick: () => { close(); addNew('url'); } }),
@@ -1328,6 +1329,42 @@ function appbarPicker() {
         h('button', { textContent: t('Kapat'), onclick: close })),
     ];
   }, { wide: true });
+}
+
+// Başlat menüsündeki kurulu uygulamalardan seç (Microsoft Store uygulamaları dahil; exe aramaya gerek yok).
+function pickInstalledApps({ toAppbar = false, onClose = null } = {}) {
+  openDialog((close) => {
+    const search = h('input', { placeholder: t('Uygulama ara…') });
+    const grid = h('div', { class: 'fav-grid apps' }, h('div', { class: 'fav-empty', textContent: '⏳ ' + t('Kurulu uygulamalar okunuyor…') }));
+    let apps = [];
+    const render = () => {
+      const q = search.value.trim().toLocaleLowerCase('tr');
+      const list = apps.filter((a) => !q || a.name.toLocaleLowerCase('tr').includes(q));
+      grid.replaceChildren(...(list.length ? list.map((a) => {
+        const fav = state.favorites.find((f) => (a.aumid ? f.type === 'app' && f.target === a.aumid : f.target === a.lnk));
+        const on = toAppbar ? !!(fav && inAppbar('fav', fav.id)) : !!fav;
+        const it = h('button', { class: 'fav-item' + (on ? ' docked' : ''), title: a.name },
+          h('span', { class: 'ph' }, a.icon ? h('img', { src: a.icon, alt: '' }) : letterIcon(a.name)),
+          h('span', { class: 'n', textContent: a.name }), h('span', { class: 'chk', textContent: on ? '✓' : '＋' }));
+        it.onclick = () => {
+          let f = fav;
+          if (!f) { f = a.aumid ? { id: uid(), type: 'app', target: a.aumid, name: a.name, icon: a.icon } : { id: uid(), type: 'file', target: a.lnk, name: a.name, icon: a.icon }; state.favorites.push(f); }
+          if (toAppbar) { inAppbar('fav', f.id) ? appbarRemove('fav', f.id) : appbarAdd('fav', f.id); }
+          else if (fav) { state.favorites = state.favorites.filter((x) => x !== fav); appbarRemove('fav', fav.id); }
+          save(); render();
+        };
+        return it;
+      }) : [h('div', { class: 'fav-empty', textContent: apps.length ? t('Eşleşen uygulama yok') : t('Kurulu uygulama bulunamadı') })]));
+    };
+    search.addEventListener('input', render);
+    window.desk.installedApps().then((list) => { apps = list || []; render(); });
+    return [
+      h('h3', { textContent: '🖥 ' + t('Kurulu uygulamalar') }),
+      h('div', { class: 'hint', textContent: toAppbar ? t('Tıklayınca alt çubuğa eklenir veya kaldırılır.') : t('Tıklayınca Favorilere eklenir veya çıkarılır.') }),
+      search, grid,
+      h('div', { class: 'btns' }, h('button', { class: 'primary', textContent: t('Tamam'), onclick: close })),
+    ];
+  }, { wide: true, onClose });
 }
 
 // ---------- Favoriler ----------
@@ -1384,6 +1421,7 @@ function openFavorites() {
       h('div', { class: 'hint', textContent: t('Tıkla: aç · Sağ tık: alt çubuğa ekle, yeniden adlandır · ✕: çıkar') }),
       grid,
       h('div', { class: 'fav-add' },
+        h('button', { class: 'primary', textContent: '＋ ' + t('Kurulu uygulama'), onclick: () => pickInstalledApps({ onClose: () => setTimeout(render) }) }),
         h('button', { textContent: '＋ ' + t('Program / dosya'), onclick: async () => { await addFavoritePath(await window.desk.pick('file'), 'file'); render(); } }),
         h('button', { textContent: '＋ ' + t('Klasör'), onclick: async () => { await addFavoritePath(await window.desk.pick('folder'), 'folder'); render(); } }),
         h('button', { textContent: '＋ ' + t('Web sitesi'), onclick: async () => {

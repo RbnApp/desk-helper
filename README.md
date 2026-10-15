@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.3 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.2.4 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -67,7 +67,9 @@ profil, normal / gizli / misafir pencere ve isteğe bağlı açılış adresi (�
   Kısayollar: Del, F2, Ctrl+C/X/V, Ctrl+Shift+N, F5, Enter, Backspace (üst klasör). Paneller arası kopyala-yapıştır çalışır.
 - **Alt çubuk:** en altta, her sekmede görünen tek sıralık uygulama rafı (Android'deki ana ekran gibi). Bir kısayola
   veya favoriye sağ tık > **Alt çubuğa ekle**; çubuktaki simgeye sağ tık > **Alt çubuktan kaldır**. "＋" ile kısayol ve
-  favorilerden seçebilir ya da yeni program, klasör, web sitesi ekleyebilirsin. Simgeler sürükleyerek sıralanır,
+  favorilerden seçebilir ya da yeni program, klasör, web sitesi ekleyebilirsin. **Kurulu uygulama** düğmesi Başlat
+  menüsündeki tüm uygulamaları (Microsoft Store uygulamaları dahil, ör. Claude) simgeleriyle ve arama kutusuyla listeler;
+  exe dosyasını bulmana gerek kalmaz. Simgeler sürükleyerek sıralanır,
   sığmayınca fare tekerleği veya ‹ › ile yana kayar, üstüne gelinen simge büyür.
 - **Favoriler (⭐ veya Ctrl+Space):** bilgisayarındaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır.
 - **Panel taşıma:** başlıktan tutup başka panelin kenarına bırak; ortasına bırakırsan yer değiştirir.

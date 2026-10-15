@@ -244,8 +244,26 @@ async function iconFor(p) {
 }
 ipcMain.handle('fav:icon', (_e, p) => iconFor(p));
 
+// Başlat menüsündeki kurulu uygulamalar, simgeleriyle (oturum boyunca önbellekte).
+let appsCache = null;
+ipcMain.handle('apps:list', async (_e, refresh) => {
+  if (appsCache && !refresh) return appsCache;
+  const { nativeImage } = require('electron');
+  const apps = await native.installedApps();
+  await Promise.all(apps.map(async (a) => {
+    if (a.logo) { try { const img = nativeImage.createFromPath(a.logo); if (!img.isEmpty()) a.icon = img.resize({ width: 48, height: 48, quality: 'best' }).toDataURL(); } catch {} }
+    if (!a.icon && a.lnk) a.icon = await iconFor(a.lnk);
+  }));
+  appsCache = apps.map(({ name, aumid, lnk, icon }) => ({ name, aumid, lnk, icon: icon || null }));
+  return appsCache;
+});
+
 ipcMain.handle('fav:launch', async (_e, item) => {
   if (item.type === 'url') { await shell.openExternal(item.target); return ''; }
+  if (item.type === 'app') { // Başlat menüsü uygulaması (Store uygulamaları dahil)
+    require('child_process').spawn('explorer.exe', ['shell:AppsFolder\\' + item.target], { detached: true, stdio: 'ignore' }).unref();
+    return '';
+  }
   return shell.openPath(item.target); // hata varsa metin döner
 });
 
