@@ -87,6 +87,7 @@ function createWindow() {
   });
 }
 
+const SITE_FAMILY = new Set(['whatsapp.com', 'whatsapp.net', 'telegram.org', 't.me', 'instagram.com', 'facebook.com', 'youtube.com', 'google.com', 'youtu.be', 'gstatic.com']);
 // Web panellerinden açılan yeni pencereler: giriş pencereleri (window.open, ör. Google ile giriş) aynı
 // oturumla uygulama içinde açılır. Normal linkleri (yeni sekmede aç, orta tık) panel karar verir:
 // YouTube gibi çoklu paneller yeni panel açar, diğerleri Desk Helper'ın tarayıcı panelinde açılır.
@@ -103,6 +104,16 @@ app.on('web-contents-created', (_e, wc) => {
     });
   }
   if (wc.getType() === 'webview') wc.on('context-menu', (_ev, p) => webContextMenu(wc, p));
+  // WhatsApp/Telegram/Instagram/YouTube panelleri (persist:desk) başka siteye gezinmez: o link tarayıcı paneline gider.
+  // Aynı site ve giriş sayfaları (Google, Facebook...) serbest.
+  if (wc.getType() === 'webview') wc.on('will-navigate', (ev, url) => {
+    if (wc.session !== session.fromPartition('persist:desk') || !/^https?:/.test(url)) return;
+    const base = (u) => { try { return new URL(u).hostname.split('.').slice(-2).join('.'); } catch { return ''; } };
+    const to = base(url), from = base(wc.getURL());
+    if (!from || to === from || SITE_FAMILY.has(to)) return;
+    ev.preventDefault();
+    win?.webContents.send('web:link', wc.id, url, 'browser');
+  });
   // Tüm web panellerine bildirim tıklamasını yakalayan küçük betik
   if (wc.getType() === 'window') wc.on('will-attach-webview', (_ev, prefs) => { prefs.preload = path.join(__dirname, 'webview-preload.js'); });
 });

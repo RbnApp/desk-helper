@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.2.7 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.2.8 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -25,7 +25,9 @@ girişe izin vermez, video izlemek için giriş gerekmez.
 
 **Chrome, Opera veya Edge hiç kullanılmaz.** WhatsApp, Telegram ve diğer panellerdeki linkler, ↗ düğmesi,
 sağ tık > "Tarayıcı panelinde aç" ve Favorilerdeki siteler Desk Helper'ın kendi tarayıcı panelinde yeni sekme olarak açılır
-(sekmede tarayıcı paneli yoksa yanına açılır). Tüm web panellerinde sağ tık menüsü vardır: yeni sekmede aç, yeni panelde aç,
+(sekmede tarayıcı paneli yoksa yanına açılır).
+WhatsApp, Telegram ve Instagram panelleri tek sitelik "uygulama" panelidir: sekme ve adres çubuğu yoktur, başka siteye
+gitmezler; içlerindeki her link (yeni sekmede / yeni panelde aç dahil) tarayıcı paneline gider. Tüm web panellerinde sağ tık menüsü vardır: yeni sekmede aç, yeni panelde aç,
 tarayıcı panelinde aç, bağlantıyı kopyala, kes/kopyala/yapıştır.
 
 ## Tarayıcı (Desk Helper'ın kendi tarayıcısı)
