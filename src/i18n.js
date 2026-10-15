@@ -128,4 +128,9 @@ window.I18N_EN = {
   'İndirme sayfası': 'Download page',
   'İçindeki paneller de kapanır.': 'Its panels will be closed too.',
   'Açık:': 'Open:',
+  '{name} hangi tarayıcıyla açılsın?': 'Which browser should open {name}?',
+  'Seçimin hatırlanır; değiştirmek için kısayola sağ tıkla.': 'Your choice is remembered; right-click the shortcut to change it.',
+  "Chrome, Edge ve Brave'de çalışır; Opera ve Firefox normal pencere açar.": 'Works in Chrome, Edge and Brave; Opera and Firefox open a normal window.',
+  'Uygulama penceresi (adres çubuğu ve sekmeler olmadan)': 'App window (no address bar or tabs)',
+  'Tarayıcıyı değiştir': 'Change browser',
 };

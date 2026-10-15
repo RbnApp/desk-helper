@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.1.1 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.1.2 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -26,6 +26,12 @@ Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üst
 Sınırlar: pencere gerçekten Desk Helper'ın "içine" gömülmez, panelin üstünde durur. Bu yüzden
 Desk Helper'ın kendi açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici gizlenir.
 Program kurulu değilse panel Microsoft Store'dan kurmayı önerir.
+
+### Instagram
+Instagram'ın resmi Windows uygulaması yok. Instagram kısayolu ilk tıklamada hangi tarayıcı ve
+profille açılacağını sorar ve seçimi hatırlar (değiştirmek için kısayola sağ tık > Tarayıcıyı değiştir).
+Chrome, Edge veya Brave seçilirse adres çubuğu olmayan bir uygulama penceresi açılır; panel dar
+eklendiği için Instagram mobil düzende görünür. Opera ve Firefox normal pencere açar.
 
 ### Tarayıcı ve profil
 "Tarayıcı" kısayolu her seferinde sorar: hangi tarayıcı (bilgisayardakiler otomatik bulunur), hangi

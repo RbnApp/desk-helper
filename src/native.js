@@ -358,10 +358,16 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
           if (spec.mode === 'guest' && def.guestFlag) args.push(def.guestFlag);
           else {
             if (spec.profile) args.push(`--profile-directory=${spec.profile}`);
-            args.push(spec.mode === 'private' ? def.privateFlag : '--new-window');
+            if (spec.mode === 'private') args.push(def.privateFlag);
           }
         }
-        if (spec.url) args.push(spec.url);
+        // Uygulama penceresi: adres çubuğu/sekme olmadan (Chrome, Edge, Brave). Opera ve Firefox desteklemiyor.
+        const appMode = spec.appMode && spec.url && !def.firefox && !b.id.startsWith('opera');
+        if (appMode) args.push(`--app=${spec.url}`);
+        else {
+          if (!def.firefox && spec.mode !== 'private' && spec.mode !== 'guest') args.push('--new-window');
+          if (spec.url) args.push(spec.url);
+        }
         launch([b.exe, args]);
         const w = await waitForWindow((x) => same(x) && !before.has(x.hwnd) && !taken.has(x.hwnd));
         if (!w) return { error: 'no-window' };

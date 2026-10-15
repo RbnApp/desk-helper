@@ -41,7 +41,12 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 2;
+const STATE_SCHEMA = 3;
+
+// Instagram'ın Windows uygulaması yok: kullanıcının tarayıcısında, adres çubuğu olmayan
+// uygulama penceresi olarak açılır; dar panelde Instagram kendiliğinden mobil düzene geçer.
+const instagramShortcut = () => ({ id: 'ig', name: 'Instagram', emo: '📷', kind: 'native', narrow: true,
+  native: { type: 'browser', browser: 'ask', url: 'https://www.instagram.com/', appMode: true, remember: true } });
 const APP_INFO = {
   whatsapp: { name: 'WhatsApp', emo: '💬' },
   telegram: { name: 'Telegram', emo: '✈️' },
@@ -50,6 +55,7 @@ const APP_INFO = {
 const defaultShortcuts = () => [
   { id: 'wa', name: 'WhatsApp', emo: '💬', kind: 'native', native: { type: 'app', app: 'whatsapp' } },
   { id: 'tg', name: 'Telegram', emo: '✈️', kind: 'native', native: { type: 'app', app: 'telegram' } },
+  instagramShortcut(),
   { id: 'browser', name: t('Tarayıcı'), emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } },
   { id: 'notes', name: t('Not Defteri'), emo: '📝', kind: 'notes' },
   { id: 'files', name: t('Dosyalar'), emo: '📁', kind: 'files' },
@@ -63,7 +69,7 @@ function leafFrom(sc) {
 }
 
 function defaultState() {
-  const [wa, tg, , notes, files] = defaultShortcuts().map(leafFrom);
+  const [wa, tg, , , notes, files] = defaultShortcuts().map(leafFrom);
   const ws = {
     id: uid(), name: t('Masam'), active: wa.id,
     root: {
@@ -80,6 +86,16 @@ const DEFAULT_SETTINGS = { lang: 'tr', theme: 'dark', startWithWindows: false, a
 // Önceki sürümlerden gelen durum: WhatsApp/Telegram web panellerini kurulu uygulamalara çevir.
 function migrate(s) {
   if ((s.schema || 1) >= STATE_SCHEMA) return s;
+  if ((s.schema || 1) < 2) migrateToApps(s);
+  if (!s.shortcuts.some((x) => x.id === 'ig')) {
+    const tg = s.shortcuts.findIndex((x) => x.native?.app === 'telegram');
+    s.shortcuts.splice(tg >= 0 ? tg + 1 : 0, 0, instagramShortcut());
+  }
+  s.schema = STATE_SCHEMA;
+  return s;
+}
+
+function migrateToApps(s) {
   const toApp = (o) => {
     const m = /web\.whatsapp\.com|web\.telegram\.org/.exec(o.url || '');
     if (o.kind === 'web' && m) {
@@ -92,8 +108,6 @@ function migrate(s) {
   if (!s.shortcuts.some((x) => x.native?.type === 'browser')) {
     s.shortcuts.splice(2, 0, { id: 'browser', name: 'Tarayıcı', emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } });
   }
-  s.schema = STATE_SCHEMA;
-  return s;
 }
 
 let state;
@@ -508,9 +522,14 @@ function openInNotes(fromPanel, file) {
 // ---------- Panel ekleme ----------
 async function addPanel(sc) {
   if (sc.kind === 'native' && sc.native.type === 'browser' && sc.native.browser === 'ask') {
-    const choice = await askBrowser();
+    const choice = await askBrowser(sc.native, sc.native.remember ? sc : null);
     if (!choice) return;
-    sc = choice;
+    if (sc.native.remember) {
+      // Instagram gibi hazır kısayollar seçimi kendinde saklar, bir daha sormaz.
+      Object.assign(sc.native, choice.native, { remember: true });
+      renderShortcuts(); save();
+      sc = { ...sc, native: { ...sc.native } };
+    } else sc = choice;
   }
   const ws = curWs();
   const leaf = leafFrom(sc);
@@ -521,13 +540,15 @@ async function addPanel(sc) {
     if (el && el.offsetHeight > el.offsetWidth) zone = 'bottom';
   }
   insertNear(ws, target, leaf, zone);
+  // Dar panel (ör. Instagram mobil görünüm): yeni panel bölmenin üçte birini alır.
+  if (sc.narrow && target) { const pi = findParent(ws.root, leaf.id); if (pi?.parent) pi.parent.ratio = pi.key === 'b' ? 0.68 : 0.32; }
   ws.active = leaf.id;
   layout(); renderTabs(); save();
 }
 
 // Tarayıcı, profil ve pencere türünü sor. Seçim kısayol olarak da kaydedilebilir.
 let browserCache = null;
-async function askBrowser(preset = {}) {
+async function askBrowser(preset = {}, fixedFor = null) {
   if (!isWin) { await alertBox(t('Tarayıcı'), t('Kurulu programları panele yerleştirme yalnızca Windows\'ta çalışır.')); return null; }
   browserCache ||= await window.desk.native.browsers();
   const list = browserCache;
@@ -540,6 +561,7 @@ async function askBrowser(preset = {}) {
       const mode = h('select');
       const url = h('input', { value: preset.url || '', placeholder: 'http://localhost:3000' });
       const remember = h('input', { type: 'checkbox' });
+      const appMode = h('input', { type: 'checkbox', checked: !!preset.appMode });
       const name = h('input', { value: '' });
       const fill = () => {
         const b = list.find((x) => x.id === bSel.value);
@@ -562,20 +584,21 @@ async function askBrowser(preset = {}) {
         result = {
           id: uid(), kind: 'native', emo: '🌐',
           name: name.value.trim() || b.name + profTxt + modeTxt,
-          native: { type: 'browser', browser: b.id, profile: mode.value === 'guest' ? '' : pSel.value, mode: mode.value, url: u },
+          native: { type: 'browser', browser: b.id, profile: mode.value === 'guest' ? '' : pSel.value, mode: mode.value, url: u, appMode: appMode.checked },
         };
-        if (remember.checked) { state.shortcuts.push({ ...result, native: { ...result.native } }); renderShortcuts(); save(); }
+        if (remember.checked && !fixedFor) { state.shortcuts.push({ ...result, native: { ...result.native } }); renderShortcuts(); save(); }
         close();
       };
       return [
-        h('h3', { textContent: '🌐 ' + t('Tarayıcı penceresi aç') }),
-        h('div', { class: 'hint', textContent: t('Kendi tarayıcın kendi profilinle açılır ve bu panele yerleşir; sekmeleri, girişleri ve eklentileri olduğu gibi çalışır.') }),
+        h('h3', { textContent: fixedFor ? fixedFor.emo + ' ' + t('{name} hangi tarayıcıyla açılsın?', { name: fixedFor.name }) : '🌐 ' + t('Tarayıcı penceresi aç') }),
+        h('div', { class: 'hint', textContent: fixedFor ? t('Seçimin hatırlanır; değiştirmek için kısayola sağ tıkla.') : t('Kendi tarayıcın kendi profilinle açılır ve bu panele yerleşir; sekmeleri, girişleri ve eklentileri olduğu gibi çalışır.') }),
         h('label', { class: 'row' }, t('Tarayıcı'), bSel),
         h('label', { class: 'row' }, t('Profil'), pSel),
         h('label', { class: 'row' }, t('Pencere'), mode),
         h('label', {}, t('Açılış adresi (boş bırakılabilir)'), url),
-        h('label', { class: 'row' }, t('Bu seçimi kısayol olarak kaydet'), remember),
-        h('label', {}, t('Kısayol adı'), name),
+        h('label', { class: 'row', title: t('Chrome, Edge ve Brave\'de çalışır; Opera ve Firefox normal pencere açar.') }, t('Uygulama penceresi (adres çubuğu ve sekmeler olmadan)'), appMode),
+        fixedFor ? null : h('label', { class: 'row' }, t('Bu seçimi kısayol olarak kaydet'), remember),
+        fixedFor ? null : h('label', {}, t('Kısayol adı'), name),
         h('div', { class: 'btns' },
           h('button', { textContent: t('Vazgeç'), onclick: close }),
           h('button', { class: 'primary', textContent: t('Aç'), onclick: ok })),
@@ -743,9 +766,11 @@ async function editShortcut(sc) {
   const fields = [{ name: 'name', label: t('Ad'), value: sc.name }, { name: 'emo', label: t('Simge (emoji)'), value: sc.emo || '🌐' }];
   if (sc.kind === 'web') fields.splice(1, 0, { name: 'url', label: t('Adres (web sitesi)'), value: sc.url });
   if (sc.native?.type === 'browser' && sc.native.browser !== 'ask') fields.splice(1, 0, { name: 'url', label: t('Açılış adresi (boş bırakılabilir)'), value: sc.native.url || '' });
-  const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil') });
+  const canReset = sc.native?.remember && sc.native.browser !== 'ask';
+  const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil'), extra: canReset ? t('Tarayıcıyı değiştir') : null });
   if (!r) return;
   if (r === 'danger') state.shortcuts = state.shortcuts.filter((s) => s !== sc);
+  else if (r === 'extra') sc.native.browser = 'ask';
   else {
     sc.name = r.name || sc.name; sc.emo = r.emo;
     if (sc.kind === 'web') sc.url = r.url;
@@ -914,7 +939,7 @@ function openDialog(build, { wide = false, cls = '', onClose = null } = {}) {
   return close;
 }
 
-function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('Vazgeç'), danger = null, noCancel = false }) {
+function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('Vazgeç'), danger = null, extra = null, noCancel = false }) {
   return new Promise((resolve) => {
     let val = null;
     const inputs = {};
@@ -925,6 +950,7 @@ function modal({ title, text, fields = [], okText = t('Tamam'), cancelText = t('
         ...fields.map((f) => h('label', {}, f.label, inputs[f.name] = h('input', { value: f.value || '', onkeydown: (e) => { if (e.key === 'Enter') ok(); } }))),
         h('div', { class: 'btns' },
           danger ? h('button', { class: 'danger', textContent: danger, onclick: () => { val = 'danger'; close(); } }) : null,
+          extra ? h('button', { textContent: extra, onclick: () => { val = 'extra'; close(); } }) : null,
           noCancel ? null : h('button', { textContent: cancelText, onclick: close }),
           h('button', { class: 'primary', textContent: okText, onclick: ok })),
       ];
