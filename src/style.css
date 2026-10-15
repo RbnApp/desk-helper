@@ -171,3 +171,4 @@ body { display: flex; flex-direction: column; }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 ::-webkit-scrollbar-corner { background: transparent; }
+.dialog .hint.warn { color: #e0a040; }

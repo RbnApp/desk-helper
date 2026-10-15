@@ -46,7 +46,7 @@ function loadWin32() {
     ShowWindow: user32.func('bool __stdcall ShowWindowAsync(intptr_t hwnd, int cmd)'),
     GetWindowRect: user32.func('bool __stdcall GetWindowRect(intptr_t hwnd, _Out_ RECT *rect)'),
     SetForegroundWindow: user32.func('bool __stdcall SetForegroundWindow(intptr_t hwnd)'),
-    PostMessageW: user32.func('bool __stdcall PostMessageW(intptr_t hwnd, uint32 msg, uintptr_t w, intptr_t l)'),
+    SendMessageTimeoutW: user32.func('intptr_t __stdcall SendMessageTimeoutW(intptr_t hwnd, uint32 msg, intptr_t w, intptr_t l, uint32 flags, uint32 timeout, _Out_ intptr_t *res)'),
     OpenProcess: kernel32.func('intptr_t __stdcall OpenProcess(uint32 access, bool inherit, uint32 pid)'),
     CloseHandle: kernel32.func('bool __stdcall CloseHandle(intptr_t h)'),
     QueryFullProcessImageNameW: kernel32.func('bool __stdcall QueryFullProcessImageNameW(intptr_t h, uint32 flags, void *buf, _Inout_ uint32 *size)'),
@@ -68,6 +68,9 @@ const SWP_SHOWWINDOW = 0x40, SWP_HIDEWINDOW = 0x80;
 // pencerenin "kaybolmasına" yol açıyordu; park etmek uygulamanın görünürlük durumunu hiç değiştirmez.
 const PARK_X = -30000, PARK_Y = -30000;
 const setShown = (hwnd, on) => W.SetWindowPos(hwnd, 0, 0, 0, 0, 0, (on ? SWP_SHOWWINDOW : SWP_HIDEWINDOW) | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+// Pencereyi kapat: en fazla yarım saniye bekler, donmuş programı hiç beklemez.
+const SMTO_ABORTIFHUNG = 0x2;
+const closeWindow = (hwnd) => { try { W.SendMessageTimeoutW(hwnd, WM_CLOSE, 0, 0, SMTO_ABORTIFHUNG, 500, [0]); } catch {} };
 const WM_CLOSE = 0x10, DWMWA_EXTENDED_FRAME_BOUNDS = 9, DWMWA_CLOAKED = 14;
 const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 
@@ -270,7 +273,7 @@ async function waitForWindow(match, timeout = 45000) {
 }
 
 // ---------- Yerleştirme ----------
-function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
+function createDocker({ getHost, toScreenRect, onGone, onTitle, onSpawn = () => {} }) {
   const docked = new Map(); // panelId -> kayıt
   let suspended = false;
   let poll = null;
@@ -327,12 +330,27 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
   }
 
   let hook = null, hookCb = null;
+  let lastFg = 0;
+  const known = new Set(); // Desk Helper'ın gördüğü pencereler; yalnızca yeni açılanlar panele alınır
+  function adopt(srcId, src, hwnd) {
+    if (!W.IsWindow(hwnd) || attachedHwnds().has(hwnd)) return;
+    const w = listWindows().find((x) => x.hwnd === hwnd);
+    if (!w || w.pid !== src.pid || !bigEnough(w)) return;
+    onSpawn(srcId, { hwnd: w.hwnd, pid: w.pid, title: w.title });
+  }
   function hookForeground() {
     if (hook) return;
     hookCb = W.koffi.register((_h, _ev, hwnd) => {
       try {
-        const fg = Number(hwnd);
-        if (fg === hostHandle() || [...docked.values()].some((e) => e.hwnd === fg)) stack(fg);
+        const fg = Number(hwnd), prev = lastFg;
+        lastFg = fg;
+        if (fg === hostHandle() || [...docked.values()].some((e) => e.hwnd === fg)) { stack(fg); return; }
+        // Paneldeki tarayıcıdan yeni pencere açıldı mı (ör. YouTube'da sağ tık > Bağlantıyı yeni pencerede aç)?
+        // Öyleyse yanına yeni panel olarak al. Önceden görülmüş pencereler (kullanıcının kendi açtıkları) alınmaz.
+        const src = [...docked.entries()].find(([, e]) => e.hwnd === prev && e.closeOnRelease);
+        const isNew = !known.has(fg);
+        known.add(fg);
+        if (src && isNew) setTimeout(() => adopt(src[0], src[1], fg), 400);
       } catch {}
     }, W.WinEventProc);
     hook = W.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, 0, hookCb, 0, 0, WINEVENT_OUTOFCONTEXT);
@@ -364,6 +382,7 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     if (e.orig.rect.left <= PARK_X + 100) e.orig.rect = { left: 100, top: 100, right: 1300, bottom: 900 };
     // Panele yerleşen pencerenin görev çubuğunda ayrı simgesi olmasın.
     taskbarTab(w.hwnd, false);
+    for (const x of listWindows({ includeHidden: true })) known.add(x.hwnd);
     docked.set(panelId, e);
     place(e);
     hookForeground();
@@ -377,7 +396,7 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     if (!e) return;
     docked.delete(panelId);
     if (!W.IsWindow(e.hwnd)) return;
-    if (close && e.closeOnRelease) { W.PostMessageW(e.hwnd, WM_CLOSE, 0, 0); return; }
+    if (close && e.closeOnRelease) { closeWindow(e.hwnd); return; }
     if (W.IsHungAppWindow(e.hwnd)) return;
     const r = e.orig.rect;
     // Park yerinden asenkron taşıma uygulanmayabiliyor; serbest bırakırken senkron taşı.
@@ -470,6 +489,8 @@ function createDocker({ getHost, toScreenRect, onGone, onTitle }) {
     focus(panelId) { const e = docked.get(panelId); if (e) W.SetForegroundWindow(e.hwnd); },
     release,
     releaseAll() { for (const id of [...docked.keys()]) release(id); },
+    // Desk Helper kapanırken: panel için açılan tarayıcı pencereleri kapanır, diğerleri serbest kalır.
+    closeAll() { for (const id of [...docked.keys()]) release(id, { close: true }); },
   };
 }
 

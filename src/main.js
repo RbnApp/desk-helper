@@ -70,6 +70,7 @@ function createWindow() {
     },
     onGone: (id) => win.webContents.send('native:gone', id),
     onTitle: (id, title) => win.webContents.send('native:title', id, title),
+    onSpawn: (id, w) => win.webContents.send('native:spawn', id, w),
   });
   for (const ev of ['move', 'resize', 'minimize', 'restore', 'maximize', 'unmaximize', 'show', 'hide', 'enter-full-screen', 'leave-full-screen']) {
     win.on(ev, () => docker.refreshAll());
@@ -78,7 +79,7 @@ function createWindow() {
   if (settings.startDock && settings.startDock !== 'last') dock(settings.startDock);
   applySettings(settings);
   win.on('close', () => {
-    docker.releaseAll();
+    docker.closeAll(); // Desk Helper kapanınca panellerdeki tarayıcı pencereleri de kapanır
     try { fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(boundsPath(), JSON.stringify(win.getBounds())); } catch {}
   });
   win.webContents.on('before-input-event', (e, input) => {
@@ -105,7 +106,7 @@ app.on('web-contents-created', (_e, wc) => {
 for (const ev of ['uncaughtException', 'unhandledRejection']) {
   process.on(ev, (err) => { console.error(err); try { docker?.releaseAll(); } catch {} });
 }
-app.on('before-quit', () => { try { docker?.releaseAll(); } catch {} });
+app.on('before-quit', () => { try { docker?.closeAll(); } catch {} });
 
 // --- Gerçek programları panele oturtma ---
 ipcMain.handle('native:browsers', () => native.browsers());

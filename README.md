@@ -4,7 +4,7 @@ Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, 
 dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
 sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
 
-Sürüm: 0.1.6 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.1.7 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
@@ -17,6 +17,13 @@ instagram.com). Oturum kalıcıdır: bir kez giriş yaparsın (WhatsApp ve Teleg
 Sekme değiştirme, panel taşıma ve boyutlandırma hiç sorun çıkarmaz, görev çubuğunda ayrı simge oluşmaz.
 Instagram dar panelde telefon görünümünde açılır. Desk Helper kapalıyken bu üçünden bildirim gelmez.
 
+## YouTube
+YouTube kısayolu ilk tıklamada hangi tarayıcı ve profille açılacağını sorar; o profildeki YouTube hesabın gelir.
+Chrome, Edge veya Brave seçilirse yalnızca YouTube görünür (adres çubuğu, sekmeler, yer imleri yok). Opera ve Firefox
+bu pencere türünü desteklemez, normal pencere açar. Seçim hatırlanır; değiştirmek için kısayola sağ tık > Tarayıcıyı değiştir.
+Her tıklama yeni bir YouTube paneli açar. Bir videoya sağ tıklayıp "Bağlantıyı yeni pencerede aç" dersen
+yeni pencere otomatik olarak yanına yeni panel olarak yerleşir.
+
 ## Tarayıcı ve diğer programlar panelde
 "Tarayıcı" kısayolu ve "Kısayol ekle" ile eklenen programlar bilgisayardaki **gerçek programlardır**.
 Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üstüne oturtur:
@@ -25,7 +32,7 @@ Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üst
 - Paneldeki pencerenin görev çubuğunda ayrı simgesi olmaz; panelden ayrılınca (⇱) simge geri gelir.
 - Program kendi oturumu, profili, sekmeleri ve eklentileriyle çalışır.
 - ⇱ pencereyi panelden ayırır, ✕ paneli kapatır (panel için açılan tarayıcı penceresi de kapanır).
-- Desk Helper kapanınca tüm pencereler serbest bırakılır. Beklenmedik kapanmada ekran dışında kalan
+- Desk Helper kapanınca panel için açılan tarayıcı pencereleri de kapanır, diğer programlar serbest bırakılır. Beklenmedik kapanmada ekran dışında kalan
   pencereler bir sonraki açılışta geri getirilir.
 - Doğru pencere bulunamazsa panel başlığındaki 🗗 düğmesi açık pencerelerden seçtirir.
 

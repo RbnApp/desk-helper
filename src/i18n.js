@@ -155,4 +155,5 @@ window.I18N_EN = {
   'Açık pencere bulunamadı': 'No open windows found',
   'Yeniden bağla': 'Reconnect',
   'Ayarlar ve Hakkında': 'Settings and About',
+  'Opera ve Firefox adres çubuğu olmayan pencereyi desteklemez; sayfa normal pencerede açılır. Sadece sayfanın görünmesi için Chrome, Edge veya Brave seç.': 'Opera and Firefox don\'t support windows without an address bar; the page opens in a normal window. To see only the page, choose Chrome, Edge or Brave.',
 };

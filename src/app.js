@@ -41,7 +41,7 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 4;
+const STATE_SCHEMA = 5;
 
 // WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
 const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
@@ -58,8 +58,14 @@ const APP_INFO = {
   telegram: { name: 'Telegram', emo: '✈️' },
 };
 
+// YouTube: kullanıcının tarayıcısında, seçtiği profilin hesabıyla, adres çubuğu ve sekmeler olmadan
+// (Chrome/Edge/Brave uygulama penceresi). Seçim kısayolda saklanır; her tıklama yeni bir panel açar.
+const youtubeShortcut = () => ({ id: 'yt', name: 'YouTube', emo: '▶️', kind: 'native',
+  native: { type: 'browser', browser: 'ask', url: 'https://www.youtube.com/', appMode: true, remember: true } });
+
 const defaultShortcuts = () => [
   ...webShortcuts(),
+  youtubeShortcut(),
   { id: 'browser', name: t('Tarayıcı'), emo: '🌐', kind: 'native', native: { type: 'browser', browser: 'ask' } },
   { id: 'notes', name: t('Not Defteri'), emo: '📝', kind: 'notes' },
   { id: 'files', name: t('Dosyalar'), emo: '📁', kind: 'files' },
@@ -74,7 +80,7 @@ function leafFrom(sc) {
 }
 
 function defaultState() {
-  const [wa, tg, , , notes, files] = defaultShortcuts().map(leafFrom);
+  const [wa, tg, , , , notes, files] = defaultShortcuts().map(leafFrom);
   const ws = {
     id: uid(), name: t('Masam'), active: wa.id,
     root: {
@@ -93,6 +99,10 @@ function migrate(s) {
   if ((s.schema || 1) >= STATE_SCHEMA) return s;
   if ((s.schema || 1) < 2) migrateToApps(s);
   if ((s.schema || 1) < 4) migrateToWeb(s);
+  if ((s.schema || 1) < 5 && !s.shortcuts.some((x) => x.id === 'yt')) {
+    const ig = s.shortcuts.findIndex((x) => x.id === 'ig');
+    s.shortcuts.splice(ig + 1, 0, youtubeShortcut());
+  }
   s.schema = STATE_SCHEMA;
   return s;
 }
@@ -411,12 +421,25 @@ window.desk.native.onTitle((id, title) => { const p = panels.get(id); if (p) onN
 window.desk.native.onGone((id) => {
   const p = panels.get(id);
   if (!p) return;
+  if (p.leaf.native.spawned) { closePanel(p.ws, p.leaf.id); return; } // kendiliğinden açılmış pencere kapandı
   p.attached = false;
   delete p.leaf.native.hwnd;
   p.body.querySelector('.native-msg').replaceChildren(
     h('div', { textContent: t('Pencere kapatıldı.') }),
     h('div', { class: 'fav-add' }, h('button', { class: 'primary', textContent: t('Yeniden aç'), onclick: () => p.reconnect() })));
   save();
+});
+
+// Paneldeki tarayıcıdan yeni pencere açıldı (ör. sağ tık > Bağlantıyı yeni pencerede aç): yanına yeni panel.
+window.desk.native.onSpawn((srcId, w) => {
+  const src = panels.get(srcId);
+  if (!src) return;
+  const leaf = { type: 'panel', id: uid(), kind: 'native', title: src.leaf.title, emo: src.leaf.emo,
+    native: { ...src.leaf.native, hwnd: w.hwnd, pid: w.pid, spawned: true } };
+  const el = src.el;
+  insertNear(src.ws, srcId, leaf, el && el.offsetHeight > el.offsetWidth ? 'bottom' : 'right');
+  src.ws.active = leaf.id;
+  layout(); renderTabs(); save();
 });
 
 // --- Uygulama içi web sayfası ---
@@ -722,13 +745,19 @@ async function askBrowser(preset = {}, fixedFor = null) {
   return new Promise((resolve) => {
     let result = null;
     openDialog((close) => {
-      const bSel = h('select', {}, ...list.map((b) => h('option', { value: b.id, textContent: b.name, selected: b.id === (preset.browser || list[0].id) })));
+      // Uygulama penceresi isteniyorsa (YouTube) bunu destekleyen bir tarayıcıyı öne al.
+      const appCapable = (id) => !/^opera|^firefox/.test(id);
+      const defaultBrowser = list.some((b) => b.id === preset.browser) ? preset.browser
+        : (preset.appMode && list.find((b) => appCapable(b.id))?.id) || list[0].id;
+      const bSel = h('select', {}, ...list.map((b) => h('option', { value: b.id, textContent: b.name, selected: b.id === defaultBrowser })));
       const pSel = h('select');
       const mode = h('select');
       const url = h('input', { value: preset.url || '', placeholder: 'http://localhost:3000' });
       const remember = h('input', { type: 'checkbox' });
       const appMode = h('input', { type: 'checkbox', checked: !!preset.appMode });
       const name = h('input', { value: '' });
+      const appWarn = h('div', { class: 'hint warn', textContent: t('Opera ve Firefox adres çubuğu olmayan pencereyi desteklemez; sayfa normal pencerede açılır. Sadece sayfanın görünmesi için Chrome, Edge veya Brave seç.') });
+      appMode.onchange = () => fill();
       const fill = () => {
         const b = list.find((x) => x.id === bSel.value);
         pSel.replaceChildren(...b.profiles.map((pr) => h('option', { value: pr.id, textContent: t(pr.name), selected: pr.id === preset.profile })));
@@ -738,6 +767,7 @@ async function askBrowser(preset = {}, fixedFor = null) {
           b.guest ? h('option', { value: 'guest', textContent: t('Misafir modu') }) : null);
         if (preset.mode) mode.value = preset.mode;
         name.placeholder = b.name;
+        appWarn.hidden = !(appMode.checked && !appCapable(b.id));
       };
       bSel.onchange = fill; fill();
       mode.onchange = () => { pSel.disabled = mode.value === 'guest'; };
@@ -763,6 +793,7 @@ async function askBrowser(preset = {}, fixedFor = null) {
         h('label', { class: 'row' }, t('Pencere'), mode),
         h('label', {}, t('Açılış adresi (boş bırakılabilir)'), url),
         h('label', { class: 'row', title: t('Chrome, Edge ve Brave\'de çalışır; Opera ve Firefox normal pencere açar.') }, t('Uygulama penceresi (adres çubuğu ve sekmeler olmadan)'), appMode),
+        appWarn,
         fixedFor ? null : h('label', { class: 'row' }, t('Bu seçimi kısayol olarak kaydet'), remember),
         fixedFor ? null : h('label', {}, t('Kısayol adı'), name),
         h('div', { class: 'btns' },
