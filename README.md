@@ -1,27 +1,36 @@
 # Desk Helper — rbnbilisim
 
-Bilgisayarında kurulu WhatsApp, Telegram ve tarayıcılarını (Opera, Chrome, Edge, Brave, Firefox),
-dahili not defterini, dosya gezginini ve favori programlarını tek pencerede toplar: tarayıcı gibi
-sekmeler, istediğin gibi bölünüp boyutlandırılan paneller.
+WhatsApp, Telegram, Instagram, X ve YouTube'u, kendi sekmeli tarayıcısını, not defterini, dosya gezginini ve
+favori programlarını tek pencerede toplayan Windows masaüstü uygulaması: tarayıcı gibi sekmeler, istediğin gibi bölünüp
+boyutlandırılan paneller, tek bir bildirim merkezi.
 
-Sürüm: 0.3.3 — sürüm kuralı için [VERSIONING.md](VERSIONING.md).
+Sürüm: 0.3.7 · sürüm notları [CHANGELOG.md](CHANGELOG.md) · sürüm kuralı [VERSIONING.md](VERSIONING.md) ·
+iletişim info@rbnbilisim.com.tr
 
 ## Kurulum
 `release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
 (rbnbilisim klasörü) "Desk Helper" kısayolu ekler. Kaldırmak için: Ayarlar > Uygulamalar > Desk Helper.
 Kurulum dosyası imzasız olduğu için SmartScreen "Yine de çalıştır" isteyebilir.
+Kurulum dosyası GitHub'daki Releases sayfasındadır. Desk Helper açılışta yeni sürümü kendisi denetler, sürüm notlarını
+gösterip onay isteyerek indirir ve kurar (Ayarlar > Hakkında > Güncellemeleri denetle).
 
-## WhatsApp, Telegram, Instagram
-Üçü de Desk Helper'ın içinde gömülü web paneli olarak açılır (web.whatsapp.com, web.telegram.org,
-instagram.com). Oturum kalıcıdır: bir kez giriş yaparsın (WhatsApp ve Telegram'da QR ile), sonra hep açık kalır.
+## WhatsApp, Telegram, Instagram, X
+Hepsi Desk Helper'ın içinde gömülü web paneli olarak açılır (web.whatsapp.com, web.telegram.org,
+instagram.com, x.com). Oturum kalıcıdır: bir kez giriş yaparsın (WhatsApp ve Telegram'da QR ile), sonra hep açık kalır.
 Sekme değiştirme, panel taşıma ve boyutlandırma hiç sorun çıkarmaz, görev çubuğunda ayrı simge oluşmaz.
-Instagram dar panelde telefon görünümünde açılır. Desk Helper kapalıyken bu üçünden bildirim gelmez.
+Instagram dar panelde telefon görünümünde açılır. X'e e-posta ve şifreyle girilir. Desk Helper kapalıyken bunlardan
+bildirim gelmez.
+
+## Bildirim merkezi ve Rahatsız etme
+Sağ üstteki 🔔 zil WhatsApp, Telegram, Instagram ve X'teki okunmamış sayısının toplamını gösterir; tıklayınca servisler
+ayrı ayrı sayılarıyla listelenir, birine tıklayınca açık paneline geçilir (açık değilse yeni sekmede açılır). Zilin
+menüsündeki **Rahatsız etme** 1 saat, bugün boyunca ya da kapatana kadar bildirimleri ve sesleri susturur.
 
 ## YouTube
 YouTube varsayılan olarak Desk Helper'ın içinde açılır; aynı anda birkaç video yan yana izlenebilir:
 bir videoya sağ tıklayıp **Yeni panelde aç** dersen (veya orta tıklarsan) video yanına yeni panel olarak açılır.
-Hesabınla giriş yapmak için paneldeki YouTube'un "Oturum aç" düğmesini kullan; Google bazen gömülü pencerelerde
-girişe izin vermez, video izlemek için giriş gerekmez.
+YouTube girişsiz kullanılır: Google, uygulama içine gömülü tarayıcılarda hesap girişine izin vermediği için Google
+hesabıyla giriş (YouTube, Gmail) desteklenmez. Video izlemek için giriş gerekmez.
 
 **Chrome, Opera veya Edge hiç kullanılmaz.** WhatsApp, Telegram ve diğer panellerdeki linkler, ↗ düğmesi,
 sağ tık > "Tarayıcı panelinde aç" ve Favorilerdeki siteler Desk Helper'ın kendi tarayıcı panelinde yeni sekme olarak açılır
@@ -91,10 +100,14 @@ favoriler, alt çubuk, yer imleri, tarayıcı profilleri ve ayarlar korunur.
   exe dosyasını bulmana gerek kalmaz. Simgeler sürükleyerek sıralanır,
   sığmayınca fare tekerleği veya ‹ › ile yana kayar, üstüne gelinen simge büyür.
 - **Favoriler (⭐ veya Ctrl+Space):** bilgisayarındaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır.
+- **Simgeler:** sekmelerde, panel başlıklarında, kısayollarda ve alt çubukta gerçek logolar görünür. Beğenmediğin simgeye
+  sağ tık > **Simgeyi değiştir…** ile kendi resmini, bir emoji ya da harf + renk verebilirsin; "Varsayılana dön" geri alır.
+- **Sekme sırası:** üstteki sekmeler sürükle-bırak ile sıralanır.
 - **Panel taşıma:** başlıktan tutup başka panelin kenarına bırak; ortasına bırakırsan yer değiştirir.
 - **Boyutlandırma:** aradaki çizgiyi sürükle, çift tık eşitler.
 - **Ayarlar ve Hakkında:** sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Ayarlar sekmesinde dil
-  (Türkçe / English), tema, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü; Hakkında sekmesinde sürüm bilgisi.
+  (Türkçe / English), tema ve tema rengi, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü,
+açılışta güncelleme denetimi; Hakkında'da sürüm bilgisi, iletişim, GitHub deposu ve **Yenilikler** (sürüm notları).
 
 ## Geliştirme
 Node.js gerekli. Bu klasörde:
@@ -102,6 +115,9 @@ Node.js gerekli. Bu klasörde:
 - `npm start` — geliştirme modunda aç (F12: geliştirici araçları)
 - `npm run bump` — sürümü kurala göre artır
 - `npm run dist` — `dist\` içine kurulum dosyası üret
+
+Yayın: her sürümün `DeskHelper-Setup-<sürüm>.exe`, `.blockmap` ve `latest.yml` dosyaları GitHub Release'e yüklenir;
+uygulama güncellemeyi buradan bulur (package.json > build.publish).
 
 Dosyalar: `src\main.js` (pencere, dosya sistemi, ayarlar), `src\native.js` (gerçek program
 pencerelerini panele yerleştirme, Win32), `src\preload.js` (köprü), `src\app.js` (arayüz),

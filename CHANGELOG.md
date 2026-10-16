@@ -3,6 +3,41 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.3.7 · 2026-10-17
+
+**Değişiklikler**
+- WhatsApp, Telegram, Instagram ve X zaten açıksa kısayola ya da alt çubuktaki simgeye tıklamak yeni panel açmaz, açık
+  paneline götürür. YouTube, tarayıcı, not defteri, dosyalar ve programlar eskisi gibi her tıklamada yeni panel açar.
+  Kısayola sağ tık > "Yeni panelde aç" ile yine ikinci bir panel açılabilir; "Birden fazla açılabilir" ile her kısayol
+  için bu davranış değiştirilebilir.
+- Desk Helper açıkken kısayoldan yeniden başlatılınca ikinci kopya açılmaz (zaten böyleydi); artık açık pencere küçültülmüş
+  olsa da kesin olarak öne gelir.
+- Dosya gezgini açık klasördeki değişiklikleri kendiliğinden gösterir: başka bir programın (ör. bir yapay zekâ ajanının)
+  yazdığı rapor, silinen ya da yeniden adlandırılan dosyalar klasörden çıkıp girmeden görünür. Araç çubuğunda ⟳ Yenile
+  düğmesi; F5 de çalışır.
+- Paneli yeni sekmede tek başına aç: panel başlığındaki ⤢ düğmesi (ya da başlığa sağ tık) paneli kendi sekmesine taşır,
+  tam boy okursun. Tarayıcı panelinin sekmeleri ve oturumları korunur.
+- X, WhatsApp, Telegram ve Instagram'da bir linke Ctrl+tık ya da orta tık yapınca (veya sağ tık > Yeni sekmede aç) link
+  yeni sekmede tam boy tarayıcıda açılır. Normal tık eskisi gibi yanına tarayıcı paneli açar.
+- Tarayıcıda ⋮ menüsü: profil düğmesinin yanında; Geçmiş, yer imine ekle, kayıtlı şifreler, çerez temizleme ve profil.
+- Tarayıcı geçmişi: ⋮ > Geçmiş sayfanın sağında açılır. Günlere göre gruplu ziyaretler, arama, tek tek silme ve
+  "Geçmişi temizle"; tıklayınca o sekmede açılır. Her profilin geçmişi ayrıdır, gizli pencere geçmiş tutmaz.
+- Yeni uygulama simgesi ve logo: panellerden oluşan bir "D"; görev çubuğunda, kurulumda, sol üstte ve Hakkında'da.
+- Sayfa kaynağını görüntüle: tarayıcıda sağ tık ya da Ctrl+U; kaynak yanındaki sekmede satır numaralı açılır.
+- Tarayıcıda Masaüstü / Tablet / Mobil görünüm: ⋮ menüsünün yanındaki 3 simgeyle seçilir. Tablet ve mobilde sayfa o
+  genişlikte ortada açılır ve site kendini tablet ya da telefonda sanıp mobil sürümünü verir. Seçim her tarayıcı panelinde
+  ayrı hatırlanır.
+
+**Düzeltmeler**
+- Dosya gezgininde çift tık Windows Gezgini gibi: .txt, .md, .log, .json gibi düz metin dosyaları ve betikler (.bat, .ps1,
+  .js…) not defterinde açılır; .html, .pdf, resim, Word/Excel, .csv ve diğer her şey Windows'un varsayılan programıyla
+  (html varsayılan tarayıcıda) açılır. Önceden .html ve .xml de not defterine gidiyordu. Sağ tıkta ikisi de seçilebilir:
+  "Not defterinde aç" ve "Varsayılan programla aç".
+- Not defterinde, adres çubuğunda ve uygulamanın diğer yazı kutularında (pencerelerdeki kutular, sekme ve panel adı
+  düzenleme) sağ tık menüsü yoktu; yazı sağ tıkla kopyalanıp yapıştırılamıyordu.
+  Artık Kes / Kopyala / Yapıştır / Tümünü seç ve adres çubuğunda "Yapıştır ve git" var. Sayfada boş bir yere sağ tık >
+  "Sayfa adresini kopyala".
+
 ## 0.3.6 · 2026-10-15
 
 **Değişiklikler**

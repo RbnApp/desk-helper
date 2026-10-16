@@ -104,6 +104,10 @@ app.on('web-contents-created', (_e, wc) => {
     });
   }
   if (wc.getType() === 'webview') wc.on('context-menu', (_ev, p) => webContextMenu(wc, p));
+  // Ctrl+U: sayfa kaynağı (web sayfasının içindeyken tuşlar Desk Helper'a ulaşmaz, burada yakalanır)
+  if (wc.getType() === 'webview') wc.on('before-input-event', (ev, i) => {
+    if (i.type === 'keyDown' && (i.control || i.meta) && !i.shift && !i.alt && i.key.toLowerCase() === 'u') { ev.preventDefault(); win?.webContents.send('web:viewsource', wc.id); }
+  });
   // WhatsApp/Telegram/Instagram/YouTube panelleri (persist:desk) başka siteye gezinmez: o link tarayıcı paneline gider.
   // Aynı site ve giriş sayfaları (Google, Facebook...) serbest.
   if (wc.getType() === 'webview') wc.on('will-navigate', (ev, url) => {
@@ -176,6 +180,14 @@ ipcMain.handle('br:site-cookies', async (_e, partition, url) => {
   if (!ses || !/^https?:/.test(url)) return null;
   const r = await siteCookies(ses, url);
   return { host: r.host, base: r.base, cookies: r.cookies.map((c) => ({ name: c.name, domain: c.domain })) };
+});
+// Sayfa kaynağı: sayfanın ham HTML'i, panelin kendi oturumuyla (girişli sayfalar da) indirilir. Chromium'un view-source
+// sayfası koyu temada düz metni görünmez çiziyor ve stil eklenemiyor; bu yüzden kendi görünümümüzde gösteriyoruz.
+ipcMain.handle('br:source', async (_e, partition, url) => {
+  if (!/^https?:/.test(url)) throw new Error('http/https değil');
+  const res = await session.fromPartition(partition).fetch(url, { cache: 'force-cache' });
+  const text = await res.text();
+  return { status: res.status, text: text.length > 1500000 ? text.slice(0, 1500000) : text, cut: text.length > 1500000 };
 });
 ipcMain.handle('br:clear-site', async (_e, partition, url, withData) => {
   const ses = brSession(partition);
@@ -449,6 +461,43 @@ ipcMain.handle('fs:list', (_e, dir) => {
   return { dir: path.resolve(dir), parent: path.dirname(path.resolve(dir)), entries };
 });
 
+// Açık klasörü izle: dışarıdan (Gezgin, başka program, ajan) eklenen/silinen/değişen dosyalar dosya paneline yansısın.
+// fs.watch kısa aralıklarla çok olay atar; 250 ms toparlanıp tek "değişti" gönderilir. İzleme kurulamazsa (ağ sürücüsü,
+// bazı USB'ler) ya da hata verirse 3 sn'de bir klasörün özetine bakan hafif yoklamaya geçilir.
+const dirWatch = new Map(); // panel id -> { dir, watcher, poll, timer, sig }
+function dirSig(dir) {
+  try { return fs.readdirSync(dir).filter((n) => !n.startsWith('.') && !n.startsWith('$')).sort().map((n) => { try { const st = fs.statSync(path.join(dir, n)); return n + ':' + st.size + ':' + st.mtimeMs; } catch { return n; } }).join('|'); } catch (e) { return 'ERR:' + e.code; }
+}
+function stopWatch(id) {
+  const w = dirWatch.get(id);
+  if (!w) return;
+  try { w.watcher?.close(); } catch {}
+  clearInterval(w.poll); clearTimeout(w.timer);
+  dirWatch.delete(id);
+}
+function startWatch(id, dir) {
+  stopWatch(id);
+  const w = { dir, watcher: null, poll: 0, timer: 0, sig: '' };
+  dirWatch.set(id, w);
+  const fire = () => {
+    clearTimeout(w.timer);
+    w.timer = setTimeout(() => { w.sig = dirSig(dir); if (win && !win.isDestroyed()) win.webContents.send('fs:changed', id, dir); }, 250);
+  };
+  const usePoll = () => {
+    try { w.watcher?.close(); } catch {}
+    w.watcher = null;
+    if (w.poll) return;
+    w.sig = dirSig(dir);
+    w.poll = setInterval(() => { const sg = dirSig(dir); if (sg !== w.sig) fire(); }, 3000);
+  };
+  try {
+    w.watcher = fs.watch(dir, { persistent: false }, fire);
+    w.watcher.on('error', usePoll);
+  } catch { usePoll(); }
+}
+ipcMain.handle('fs:watch', (_e, id, dir) => { startWatch(id, dir); return true; });
+ipcMain.handle('fs:unwatch', (_e, id) => { stopWatch(id); return true; });
+
 ipcMain.handle('fs:read', (_e, p) => { try { return fs.readFileSync(p, 'utf8'); } catch (e) { if (e.code === 'ENOENT') return ''; throw e; } });
 ipcMain.handle('fs:write', (_e, p, text) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, text, 'utf8'); return true; });
 ipcMain.handle('fs:open', (_e, p) => shell.openPath(p));
@@ -485,6 +534,50 @@ ipcMain.handle('fs:paste', (_e, items, dir, cut) => {
   return true;
 });
 ipcMain.handle('clip:write', (_e, text) => clipboard.writeText(text));
+ipcMain.handle('clip:read', () => clipboard.readText());
+
+// Tarayıcı geçmişi: profil başına ayrı dosya (history/<profil>.json), son 5000 ziyaret. state.json'u şişirmesin diye ayrı.
+// Gizli pencere hiç kaydetmez (renderer göndermez). Yazma 2 sn toparlanır.
+const HIST_MAX = 5000;
+const hist = new Map(); // profil -> [{ id, url, title, ts }] (en yeni sonda)
+const histTimers = new Map();
+const histFile = (pr) => path.join(dataDir(), 'history', encodeURIComponent(pr) + '.json');
+function histOf(pr) {
+  if (!hist.has(pr)) { let l = []; try { l = JSON.parse(fs.readFileSync(histFile(pr), 'utf8')); } catch {} hist.set(pr, Array.isArray(l) ? l : []); }
+  return hist.get(pr);
+}
+function histSave(pr, now = false) {
+  clearTimeout(histTimers.get(pr));
+  const write = () => { try { fs.mkdirSync(path.dirname(histFile(pr)), { recursive: true }); fs.writeFileSync(histFile(pr), JSON.stringify(histOf(pr))); } catch {} };
+  if (now) write(); else histTimers.set(pr, setTimeout(write, 2000));
+}
+app.on('before-quit', () => { for (const pr of histTimers.keys()) histSave(pr, true); }); // yalnızca değişenler
+ipcMain.handle('hist:add', (_e, pr, url, title) => {
+  if (!pr || pr === '__private' || !/^https?:/.test(url)) return;
+  const l = histOf(pr), last = l[l.length - 1], now = Date.now();
+  if (last && last.url === url && now - last.ts < 30000) { last.ts = now; if (title) last.title = title; }
+  else l.push({ id: now.toString(36) + Math.random().toString(36).slice(2, 6), url, title: title || '', ts: now });
+  if (l.length > HIST_MAX) l.splice(0, l.length - HIST_MAX);
+  histSave(pr);
+});
+ipcMain.handle('hist:title', (_e, pr, url, title) => {
+  if (!pr || pr === '__private' || !title) return;
+  const l = histOf(pr);
+  for (let i = l.length - 1; i >= Math.max(0, l.length - 20); i--) if (l[i].url === url) { l[i].title = title; histSave(pr); return; }
+});
+ipcMain.handle('hist:list', (_e, pr, q = '', limit = 500) => {
+  const ql = String(q).toLowerCase().trim(), out = [];
+  const l = histOf(pr);
+  for (let i = l.length - 1; i >= 0 && out.length < limit; i--) {
+    const x = l[i];
+    if (!ql || x.url.toLowerCase().includes(ql) || (x.title || '').toLowerCase().includes(ql)) out.push(x);
+  }
+  return out;
+});
+ipcMain.handle('hist:remove', (_e, pr, ids) => { const set = new Set(ids); hist.set(pr, histOf(pr).filter((x) => !set.has(x.id))); histSave(pr); });
+ipcMain.handle('hist:clear', (_e, pr) => { hist.set(pr, []); histSave(pr, true); });
+// Uygulamanın kendi yazı kutuları (adres çubuğu, arama, not…) için Kes/Kopyala/Yapıştır: Chromium'un düzenleme komutları.
+ipcMain.handle('edit:cmd', (e, cmd) => { if (['cut', 'copy', 'paste', 'selectAll', 'undo', 'redo'].includes(cmd)) e.sender[cmd](); });
 ipcMain.handle('notes:path', (_e, id) => path.join(notesDir(), `${id}.txt`));
 ipcMain.handle('notes:list', () => {
   try {
@@ -496,7 +589,17 @@ ipcMain.handle('notes:list', () => {
 // Tek kopya: uygulama zaten açıksa yenisini açmak yerine mevcut pencereyi öne getir.
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  // Windows arka plandaki uygulamanın öne gelmesine izin vermeyebiliyor (yalnızca görev çubuğu yanıp söner);
+  // kısa süre "her zaman üstte" yapıp geri almak pencereyi gerçekten öne getirir.
+  app.on('second-instance', () => {
+    if (!win || win.isDestroyed()) return;
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) win.show();
+    const top = win.isAlwaysOnTop();
+    win.setAlwaysOnTop(true); win.focus(); win.moveTop();
+    if (!top) setTimeout(() => !win.isDestroyed() && win.setAlwaysOnTop(false), 300);
+    console.log('[desk] second-instance: mevcut pencere öne getirildi');
+  });
   app.whenReady().then(createWindow);
 }
 app.on('window-all-closed', () => app.quit());

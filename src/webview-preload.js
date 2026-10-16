@@ -149,3 +149,22 @@ ipcRenderer.on('pw-enable', () => {
   const go = () => { scan(); obs.observe(document.documentElement, { childList: true, subtree: true }); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true }); else go();
 });
+
+// Tek sitelik paneller (X, WhatsApp, Telegram, Instagram): Ctrl+tık ya da orta tık ile link, Desk Helper'da yeni
+// sekmede tek başına (tam boy) tarayıcı olarak açılır. Panel bu özelliği 'newtab-enable' ile açar.
+let newTabOn = false;
+ipcRenderer.on('newtab-enable', () => { newTabOn = true; });
+const linkOf = (e) => { const a = e.target?.closest?.('a[href]'); return a && /^https?:/.test(a.href) ? a.href : ''; };
+document.addEventListener('click', (e) => {
+  if (!newTabOn || !(e.ctrlKey || e.metaKey) || e.button !== 0) return;
+  const url = linkOf(e); if (!url) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  ipcRenderer.sendToHost('desk-newtab', url);
+}, true);
+document.addEventListener('mousedown', (e) => { if (newTabOn && e.button === 1 && linkOf(e)) e.preventDefault(); }, true);
+document.addEventListener('auxclick', (e) => {
+  if (!newTabOn || e.button !== 1) return;
+  const url = linkOf(e); if (!url) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  ipcRenderer.sendToHost('desk-newtab', url);
+}, true);

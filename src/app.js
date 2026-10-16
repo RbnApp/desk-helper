@@ -14,7 +14,11 @@
  */
 
 const GUTTER = 6;
-const TEXT_EXT = /\.(txt|md|log|json|csv|ini|cfg|conf|xml|yml|yaml|js|ts|py|html|css|bat|ps1|sql)$/i;
+// Metin olarak açılabilen dosyalar (sağ tık > Not defterinde aç).
+const TEXT_EXT = /\.(txt|md|log|json|csv|ini|cfg|conf|xml|yml|yaml|js|ts|py|html?|css|bat|cmd|ps1|sql|svg)$/i;
+// Çift tıkta not defterinde açılanlar: düz metin ve betikler (betikler yanlışlıkla çalışmasın diye). Geri kalan her şey
+// (html, csv, xml, pdf, resim, Office, exe…) Windows Gezgini'ndeki gibi varsayılan programla açılır.
+const NOTE_EXT = /\.(txt|md|log|json|ini|cfg|conf|yml|yaml|js|ts|py|css|bat|cmd|ps1|sql)$/i;
 const isWin = window.desk.platform === 'win32';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -161,6 +165,24 @@ function openInDeskBrowser(url, ws = curWs()) {
   addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url });
 }
 
+// Linki Desk Helper'da yeni bir sekmede, tek başına (tam boy) tarayıcı panelinde aç.
+function openInNewTab(url) { addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url }, { newTab: true }); }
+
+// Paneli kendi sekmesine taşı: yanındakilerden ayrılır, yeni sekmede tek başına tam boy açılır. Tarayıcı panelinin
+// sekmeleri, profili ve oturumları korunur (sayfalar yeniden yüklenir). Program panelleri taşınmaz.
+function canMoveToTab(p) { return p.leaf.kind !== 'native' && leaves(p.ws.root).length > 1; }
+function moveToNewTab(p) {
+  if (!canMoveToTab(p)) return;
+  const ws = p.ws, leaf = p.leaf;
+  destroyPanel(leaf.id);
+  removeLeaf(ws, leaf.id);
+  if (ws.active === leaf.id) ws.active = leaves(ws.root)[0]?.id;
+  const nw = { id: uid(), name: leaf.title, root: leaf, active: leaf.id };
+  state.workspaces.splice(state.workspaces.indexOf(ws) + 1, 0, nw);
+  state.activeWs = nw.id;
+  layout(); renderTabs(); save();
+}
+
 // 0.1.5: WhatsApp, Telegram ve Instagram dış program yerine gömülü web paneli olur
 // ve kısayol çubuğunun başına bu sırayla gelir.
 function migrateToWeb(s) {
@@ -291,6 +313,7 @@ function layoutWs(ws) {
     const r = rects.get(leaf.id);
     Object.assign(p.el.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
     p.el.classList.toggle('active', ws.active === leaf.id);
+    p.el.classList.toggle('solo', !canMoveToTab(p));
   }
   const alive = new Set(rects.keys());
   for (const [id, p] of panels) if (p.ws === ws && !alive.has(id)) destroyPanel(id);
@@ -346,6 +369,7 @@ function destroyPanel(id, { close = false } = {}) {
   const p = panels.get(id);
   if (!p) return;
   if (p.leaf.kind === 'native') window.desk.native.release(id, close);
+  if (p.leaf.kind === 'files') window.desk.unwatchDir(id);
   p.el.remove();
   panels.delete(id);
 }
@@ -360,7 +384,8 @@ function closePanel(ws, id) {
 function createPanel(ws, leaf) {
   const title = h('span', { class: 'title' });
   const tools = h('span');
-  const head = h('div', { class: 'phead' }, title, tools,
+  const toTab = h('button', { class: 'to-tab', title: t('Yeni sekmede tek başına aç'), textContent: '⤢', onclick: () => moveToNewTab(p) });
+  const head = h('div', { class: 'phead' }, title, tools, toTab,
     h('button', { title: t('Kapat'), textContent: '✕', onclick: () => closePanel(ws, leaf.id) }));
   const body = h('div', { class: 'pbody' });
   const el = h('div', { class: 'panel' }, head, body);
@@ -372,6 +397,15 @@ function createPanel(ws, leaf) {
   el.addEventListener('mousedown', () => setActive(ws, leaf.id), true);
   head.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') startMove(e, ws, p); });
   head.addEventListener('dblclick', (e) => { if (e.target.tagName !== 'BUTTON') renamePanel(p); });
+  head.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    contextMenu(e, document.body, [
+      { icon: '⤢', label: t('Yeni sekmede tek başına aç'), disabled: !canMoveToTab(p), action: () => moveToNewTab(p) },
+      { label: t('Yeniden adlandır…'), action: () => renamePanel(p) },
+      '-',
+      { label: t('Kapat'), action: () => closePanel(p.ws, p.leaf.id) },
+    ]);
+  });
 
   if (leaf.kind === 'native') buildNative(p);
   else if (leaf.kind === 'web') buildWeb(p);
@@ -519,6 +553,8 @@ window.desk.onWebCtx((wcId, q) => {
     link ? { icon: '▣', label: t('Yeni panelde aç'), action: () => routeWebLink(wcId, link, 'panel') } : null,
     link && !inBrowser ? { icon: '🧭', label: t('Tarayıcı panelinde aç'), action: () => routeWebLink(wcId, link, 'browser') } : null,
     link ? { icon: '🔗', label: t('Bağlantıyı kopyala'), action: () => window.desk.copyText(link) } : null,
+    !link && !q.isEditable && !q.selectionText ? { icon: '🔗', label: t('Sayfa adresini kopyala'), action: () => window.desk.copyText(wv.getURL()) } : null,
+    !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '</>', label: t('Sayfa kaynağını görüntüle'), key: 'Ctrl+U', action: () => viewSource(wcId) } : null,
     link ? '-' : null,
     q.isEditable ? { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: !q.editFlags.canCut, action: () => wv.cut() } : null,
     q.isEditable || q.selectionText ? { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: q.isEditable && !q.editFlags.canCopy, action: () => wv.copy() } : null,
@@ -532,6 +568,18 @@ window.desk.onWebCtx((wcId, q) => {
     { icon: '🔍', label: t('İncele'), action: () => wv.inspectElement(Math.round(q.x), Math.round(q.y)) },
   ]);
 });
+// Sayfa kaynağı (sağ tık ya da Ctrl+U): tarayıcı panelinde yanına yeni sekme; diğer panellerde tarayıcı panelinde.
+// view-source: adresi geçmişe yazılmaz (geçmiş yalnızca http/https kaydeder).
+function viewSource(wcId) {
+  const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
+  const wv = [...document.querySelectorAll('webview')].find((w) => { try { return w.getWebContentsId() === wcId; } catch { return false; } });
+  const url = wv?.getURL() || '';
+  if (!/^https?:/.test(url)) return;
+  if (src?.leaf.kind === 'browser') src.newTab('view-source:' + url);
+  else openInDeskBrowser('view-source:' + url, src?.ws);
+}
+window.desk.onViewSource?.(viewSource);
+
 function routeWebLink(wcId, url, mode) {
   const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
   if (!src) { openInDeskBrowser(url); return; }
@@ -543,6 +591,7 @@ function routeWebLink(wcId, url, mode) {
   }
   // WhatsApp/Telegram'daki linkler ve "Tarayıcıda aç": kendi tarayıcımızda (Chrome'a gitmez).
   // Tek sitelik paneller (WhatsApp, Telegram, Instagram) kendisi gezinmez, sekme açmaz: her link tarayıcı paneline gider.
+  if (mode === 'tab' && !src.leaf.multi) { openInNewTab(url); return; } // sağ tık > Yeni sekmede aç: tek başına, tam boy
   if (mode === 'browser' || !src.leaf.multi) {
     if (mode === 'panel') addPanel({ name: t('Tarayıcı'), emo: '🧭', kind: 'browser', url });
     else openInDeskBrowser(url, src.ws);
@@ -580,6 +629,19 @@ function stableUrl(u) {
   try { const x = new URL(u); return /\/cpsess\d+(\/|$)/.test(x.pathname) ? x.origin + '/' : u; } catch { return u; }
 }
 
+const ico = (d) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const DEVICES = {
+  desktop: { label: 'Masaüstü görünümü', svg: ico('<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/>') },
+  tablet: { label: 'Tablet görünümü', width: 820, svg: ico('<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/>') },
+  mobile: { label: 'Mobil görünüm', width: 390, svg: ico('<rect x="7.5" y="3" width="9" height="18" rx="2"/><path d="M11 18h2"/>') },
+};
+const CHROME_VER = (/Chrome\/([\d.]+)/.exec(navigator.userAgent) || [, '130.0.0.0'])[1];
+// Masaüstünde uygulamanın normal Chrome kimliği; tablette "Mobile" içermeyen Android tablet, mobilde Android telefon.
+function deviceUA(d) {
+  if (d === 'mobile') return `Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_VER} Mobile Safari/537.36`;
+  if (d === 'tablet') return `Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_VER} Safari/537.36`;
+  return navigator.userAgent;
+}
 function buildBrowser(p) {
   const L = p.leaf;
   if (L.profile === '__private') L.tabs = []; // gizli pencere yeniden açılınca boş başlar
@@ -596,8 +658,18 @@ function buildBrowser(p) {
   const star = h('button', { class: 'br-in br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
   const keyBtn = h('button', { class: 'br-in br-key', textContent: '🔑', title: t('Bu sitenin şifreleri') });
   const cookieBtn = h('button', { class: 'br-tool br-cookie', textContent: '🍪', title: t('Bu sitenin çerezlerini temizle') });
+  const menuBtn = h('button', { class: 'br-tool br-menu', textContent: '⋮', title: t('Tarayıcı menüsü') });
   for (const b of [back, fwd, reload]) b.classList.add('br-tool');
-  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, keyBtn, star), cookieBtn, prof);
+  // Görünüm: Masaüstü / Tablet / Mobil. Tablet ve mobilde sayfa o genişlikte ortada açılır, site de tablet/telefon
+  // tarayıcısı sanır (user agent), böylece gerçek mobil sürümünü verir. Seçim panel başına saklanır.
+  L.device = DEVICES[L.device] ? L.device : 'desktop';
+  const devBtns = Object.entries(DEVICES).map(([key, d]) => {
+    const b = h('button', { class: 'br-dev-b', title: t(d.label), 'data-dev': key, onclick: () => setDevice(key) });
+    b.innerHTML = d.svg;
+    return b;
+  });
+  const devGroup = h('div', { class: 'br-dev', title: t('Görünüm') }, ...devBtns);
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, keyBtn, star), cookieBtn, prof, devGroup, menuBtn);
   const bmBar = h('div', { class: 'br-bm' });
   const pwBar = h('div', { class: 'br-pwbar', hidden: true });
   const views = h('div', { class: 'br-views' });
@@ -612,18 +684,27 @@ function buildBrowser(p) {
     const wv = document.createElement('webview');
     wv.setAttribute('partition', partitionFor(L.profile));
     wv.setAttribute('allowpopups', '');
-    wv.setAttribute('src', tab.url || HOME_URL);
+    if (L.device !== 'desktop') wv.setAttribute('useragent', deviceUA(L.device));
+    const vsOf = (u) => (u || '').startsWith('view-source:') ? u.slice(12) : '';
+    wv.setAttribute('src', vsOf(tab.url) ? 'about:blank' : tab.url || HOME_URL);
+    if (vsOf(tab.url)) { tab.vs = vsOf(tab.url); wv.addEventListener('dom-ready', () => showSource(wv, tab), { once: true }); }
     wv.addEventListener('focus', () => setActive(p.ws, L.id));
     watchNotifications(p, wv, () => show(tab.id));
     // Şifre yöneticisi: gizli pencerede kapalı
     wv.addEventListener('dom-ready', () => { if (L.profile !== '__private') wv.send('pw-enable'); wv.send('desk-dnd', dndOn()); });
     wv.addEventListener('ipc-message', (e) => onPw(wv, e.channel, e.args[0]));
     const sync = () => {
-      tab.url = wv.getURL(); save();
+      const u = wv.getURL();
+      if (tab.vs && (u.startsWith('data:') || u === 'about:blank')) tab.url = 'view-source:' + tab.vs; // kaynak görünümü
+      else { delete tab.vs; tab.url = u; }
+      save();
       if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); updateStar(); }
     };
-    wv.addEventListener('did-navigate', sync);
-    wv.addEventListener('did-navigate-in-page', (e) => e.isMainFrame && sync());
+    // Geçmiş: gizli pencere dışında her ziyaret profilin geçmişine yazılır (aynı adres 30 sn içinde tek kayıt).
+    const record = () => { if (L.profile !== '__private') window.desk.hist.add(L.profile, wv.getURL(), wv.getTitle?.() || ''); };
+    wv.addEventListener('did-navigate', () => { sync(); record(); });
+    wv.addEventListener('did-navigate-in-page', (e) => { if (e.isMainFrame) { sync(); record(); } });
+    wv.addEventListener('page-title-updated', (e) => { if (L.profile !== '__private') window.desk.hist.title(L.profile, wv.getURL(), e.title); p.hist?.refreshSoon(); });
     wv.addEventListener('page-title-updated', (e) => { tab.title = e.title; renderStrip(); if (tab.id === L.activeTab) setTitle(p, L.title + ' · ' + e.title); save(); });
     wv.addEventListener('page-favicon-updated', (e) => {
       tab.icon = e.favicons[0]; renderStrip();
@@ -663,6 +744,30 @@ function buildBrowser(p) {
     if (!L.tabs.length) { closePanel(p.ws, L.id); return; }
     if (L.activeTab === id) show(L.tabs[Math.min(i, L.tabs.length - 1)].id); else { renderStrip(); save(); }
   }
+  // Sayfa kaynağı görünümü: satır numaralı, okunur, etiketler renkli. Adres çubuğunda view-source:… yazar.
+  async function showSource(wv, tab) {
+    let html;
+    try {
+      const r = await window.desk.pageSource(partitionFor(L.profile), tab.vs);
+      const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const hl = (x) => esc(x).replace(/(&lt;\/?[\w:-]+)([^&]*?)(\/?&gt;)/g, (m, a, b, c) => '<b>' + a + '</b>' + b.replace(/([\w:-]+)(=)("[^"]*"|'[^']*')/g, '<i>$1</i>$2<u>$3</u>') + '<b>' + c + '</b>');
+      const lines = r.text.split(/\r?\n/);
+      html = `<!doctype html><meta charset="utf-8"><title>${esc('view-source:' + tab.vs)}</title><style>
+        body{margin:0;font:12.5px/1.55 Consolas,"Cascadia Mono",Menlo,monospace;background:#fff;color:#1d1f24}
+        .top{position:sticky;top:0;background:#f3f4f6;border-bottom:1px solid #dde0e6;padding:6px 12px;font:12px system-ui,sans-serif;color:#555}
+        table{border-collapse:collapse;width:100%} td{vertical-align:top;padding:0 10px;white-space:pre-wrap;word-break:break-all}
+        td.n{width:1%;text-align:right;color:#9aa0aa;background:#f7f8fa;user-select:none;border-right:1px solid #e6e8ec;white-space:nowrap}
+        b{color:#8a2bb5;font-weight:normal} i{color:#c05621;font-style:normal} u{color:#1a6fb3;text-decoration:none}
+      </style><div class="top">${esc(tab.vs)} · ${lines.length} satır${r.cut ? ' · ilk 1,5 MB gösteriliyor' : ''}${r.status >= 400 ? ' · HTTP ' + r.status : ''}</div><table>` +
+        lines.map((l, i) => `<tr><td class="n">${i + 1}</td><td>${hl(l)}</td></tr>`).join('') + '</table>';
+    } catch (e) {
+      html = `<!doctype html><meta charset="utf-8"><body style="font:14px system-ui;padding:20px">Kaynak alınamadı: ${String(e.message || e).replace(/</g, '&lt;')}</body>`;
+    }
+    const b64 = btoa(unescape(encodeURIComponent(html)));
+    wv.loadURL('data:text/html;charset=utf-8;base64,' + b64).catch(() => {});
+    tab.title = t('Kaynak') + ': ' + (tab.vs.replace(/^https?:\/\//, '').slice(0, 40)); renderStrip();
+  }
+
   p.newTab = (url = HOME_URL, focusAddr = false) => {
     const tab = { id: uid(), url, title: '' };
     const i = L.tabs.findIndex((x) => x.id === L.activeTab);
@@ -840,9 +945,26 @@ function buildBrowser(p) {
     prof.textContent = profileLabel(pr) + ' ▾';
     p.el.classList.toggle('private', pr === '__private');
     p.renderBm();
+    p.hist?.toggle(false);
     show(L.tabs.find((x) => x.id === L.activeTab)?.id || L.tabs[0].id);
   }
   p.setProfile = setProfile;
+  function paintDevice() {
+    for (const b of devBtns) b.classList.toggle('on', b.dataset.dev === L.device);
+    views.classList.remove('dev-tablet', 'dev-mobile');
+    if (L.device !== 'desktop') views.classList.add('dev-' + L.device);
+  }
+  function setDevice(d) {
+    if (d === L.device || !DEVICES[d]) return;
+    L.device = d;
+    paintDevice(); save();
+    const ua = deviceUA(d);
+    for (const wv of wvs.values()) {
+      wv.setAttribute('useragent', ua);
+      try { wv.setUserAgent(ua); if (!wv.getURL().startsWith('data:')) wv.reload(); } catch {} // henüz yüklenmediyse öznitelik yeter
+    }
+  }
+  p.setDevice = setDevice;
   // Profil menüsü: profiller, yeni profil; bu sitenin şifre ve çerezleri; en altta kırmızı "Profili sil".
   prof.onclick = () => {
     state.browserProfiles ||= ['default'];
@@ -866,6 +988,21 @@ function buildBrowser(p) {
     ], { align: 'right' });
   };
 
+  // ⋮ Tarayıcı menüsü: yeni özellikler buraya eklenir (Geçmiş; ileride İndirilenler…).
+  menuBtn.onclick = () => {
+    const priv = L.profile === '__private';
+    contextMenu(menuBtn, p.body, [
+      { icon: '🕘', label: t('Geçmiş'), disabled: priv, title: priv ? t('Gizli pencerede geçmiş tutulmaz') : '', action: () => p.hist.toggle(true) },
+      { icon: '☆', label: t('Bu sayfayı yer imlerine ekle'), action: () => star.click() },
+      priv ? null : { icon: '🔑', label: t('Kayıtlı şifreler…'), action: () => openPasswords(L.profile) },
+      { icon: '🍪', label: t('Bu sitenin çerezlerini temizle…'), action: () => clearCookies() },
+      '-',
+      { icon: '👤', label: t('Profil: {name}', { name: profileName(L.profile) }), action: () => prof.click() },
+    ], { align: 'right' });
+  };
+  p.hist = historyDrawer(p, () => L.profile, (url) => { const wv = cur(); if (wv) { wv.loadURL(url).catch(() => {}); wv.focus(); } });
+  p.body.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key.toLowerCase() === 'h' && L.profile !== '__private') { e.preventDefault(); p.hist.toggle(); } });
+
   back.onclick = () => { try { cur().goBack(); } catch {} };
   fwd.onclick = () => { try { cur().goForward(); } catch {} };
   reload.onclick = () => { try { cur().reload(); } catch {} };
@@ -877,6 +1014,7 @@ function buildBrowser(p) {
   prof.textContent = profileLabel(L.profile) + ' ▾';
   p.el.classList.toggle('private', L.profile === '__private');
   p.renderBm();
+  paintDevice();
   for (const tab of L.tabs) tab.loading = false;
   show(L.activeTab);
 }
@@ -1002,6 +1140,55 @@ function bmImport(key) {
   };
   inp.click();
 }
+// Geçmiş çekmecesi: tarayıcı panelinin sağında açılır. Günlere göre gruplu, arama, tek tek silme, tümünü temizle.
+function historyDrawer(p, profileOf, openUrl) {
+  const search = h('input', { type: 'search', class: 'hd-search', placeholder: t('Geçmişte ara'), spellcheck: false });
+  const list = h('div', { class: 'hd-list' });
+  const drawer = h('div', { class: 'hist-drawer', hidden: true },
+    h('div', { class: 'hd-head' }, h('b', { textContent: '🕘 ' + t('Geçmiş') }),
+      h('button', { class: 'hd-clear', textContent: t('Geçmişi temizle'), onclick: async () => {
+        const ok = await modal({ title: t('Geçmişi temizle'), text: t('"{name}" profilinin bütün geçmişi silinsin mi?', { name: profileName(profileOf()) }), okText: t('Temizle'), tone: 'danger' });
+        if (ok) { await window.desk.hist.clear(profileOf()); render(); }
+      } }),
+      h('button', { textContent: '✕', title: t('Kapat'), onclick: () => toggle(false) })),
+    search, list);
+  (p.body.querySelector('.br-views') || p.body).append(drawer); // araç çubuğunu örtmesin: sayfa alanının sağında
+  const dayName = (ts) => {
+    const d = new Date(ts), today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+    return diff === 0 ? t('Bugün') : diff === 1 ? t('Dün') : d.toLocaleDateString(state.settings.lang === 'en' ? 'en-GB' : 'tr-TR', { weekday: 'long', day: 'numeric', month: 'long' });
+  };
+  async function render() {
+    if (drawer.hidden) return;
+    const items = await window.desk.hist.list(profileOf(), search.value, 500);
+    const rows = []; let day = '';
+    for (const x of items) {
+      const dn = dayName(x.ts);
+      if (dn !== day) { day = dn; rows.push(h('div', { class: 'hd-day', textContent: dn })); }
+      let host = ''; try { host = new URL(x.url).host; } catch {}
+      const ic = h('img', { src: siteIcon(x.url), alt: '' }); ic.onerror = () => ic.replaceWith(h('span', { textContent: '🌐' }));
+      const row = h('div', { class: 'hd-row', title: x.url },
+        h('span', { class: 'hd-ic' }, ic),
+        h('span', { class: 'hd-txt' }, h('span', { class: 'hd-title', textContent: x.title || host || x.url }), h('span', { class: 'hd-host', textContent: host })),
+        h('span', { class: 'hd-time', textContent: new Date(x.ts).toLocaleTimeString(state.settings.lang === 'en' ? 'en-GB' : 'tr-TR', { hour: '2-digit', minute: '2-digit' }) }),
+        h('button', { class: 'hd-del', textContent: '✕', title: t('Geçmişten kaldır'), onclick: async (e) => { e.stopPropagation(); await window.desk.hist.remove(profileOf(), [x.id]); row.remove(); } }));
+      row.addEventListener('click', () => openUrl(x.url));
+      row.addEventListener('auxclick', (e) => { if (e.button === 1) p.newTab?.(x.url); });
+      rows.push(row);
+    }
+    list.replaceChildren(...(rows.length ? rows : [h('div', { class: 'hd-empty', textContent: search.value ? t('Eşleşen kayıt yok.') : t('Henüz geçmiş yok.') })]));
+  }
+  let tmr = 0;
+  search.addEventListener('input', () => { clearTimeout(tmr); tmr = setTimeout(render, 150); });
+  drawer.addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
+  function toggle(open = drawer.hidden) {
+    drawer.hidden = !open;
+    if (open) { search.value = ''; render(); setTimeout(() => search.focus(), 30); }
+  }
+  let soon = 0;
+  return { toggle, refreshSoon: () => { if (!drawer.hidden) { clearTimeout(soon); soon = setTimeout(render, 400); } } };
+}
+
 async function deleteProfile(name) {
   const n = bmList(name).length;
   const ok = await modal({ title: t('Profili sil'), text: t('"{name}" profili, yer imleri ({n}), kayıtlı şifreleri ve bu profildeki girişler/çerezler silinsin mi?', { name, n }), okText: t('Sil'), tone: 'danger' });
@@ -1011,6 +1198,7 @@ async function deleteProfile(name) {
   for (const p of panels.values()) if (p.leaf.kind === 'browser' && p.leaf.profile === name) p.setProfile?.('default');
   save();
   window.desk.clearBrowserProfile(name).catch(() => {});
+  window.desk.hist.clear(name).catch(() => {});
 }
 
 // --- Kayıtlı şifreler penceresi (profil başına) ---
@@ -1117,8 +1305,8 @@ function buildWeb(p) {
   // Şifre yöneticisi web panellerinde de (ör. X girişi); bu paneller ortak '__web' kayıtlarını kullanır.
   const pwBar = h('div', { class: 'br-pwbar', hidden: true });
   const onPw = pwSupport(pwBar, () => '__web');
-  wv.addEventListener('dom-ready', () => { wv.send('pw-enable'); applyDndTo(p); });
-  wv.addEventListener('ipc-message', (e) => onPw(wv, e.channel, e.args[0]));
+  wv.addEventListener('dom-ready', () => { wv.send('pw-enable'); if (!p.leaf.multi) wv.send('newtab-enable'); applyDndTo(p); });
+  wv.addEventListener('ipc-message', (e) => { if (e.channel === 'desk-newtab') openInNewTab(e.args[0]); else onPw(wv, e.channel, e.args[0]); });
   p.body.append(pwBar, wv);
   p.wv = wv;
   p.ownsWc = (id) => { try { return wv.getWebContentsId() === id; } catch { return false; } };
@@ -1205,15 +1393,17 @@ async function buildFiles(p) {
   p.body.append(
     h('div', { class: 'files-bar' },
       h('button', { textContent: '⬆', title: t('Üst klasör'), onclick: () => parent && go(parent) }),
+      h('button', { textContent: '⟳', title: t('Yenile') + ' (F5)', onclick: () => refresh() }),
       pathIn, placeSel,
       h('button', { textContent: '↗', title: t('Windows Gezgini\'nde aç'), onclick: () => window.desk.open(p.leaf.dir) })),
     list);
 
   const fmt = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
-  async function go(dir, { keep = false, select = null, rename = false } = {}) {
+  async function go(dir, { keep = false, select = null, rename = false, quiet = false } = {}) {
     try {
       const scroll = list.scrollTop;
       const res = await window.desk.list(dir);
+      if (res.dir !== watched) { watched = res.dir; window.desk.watchDir(p.leaf.id, res.dir); }
       entries = res.entries;
       sel = null;
       p.leaf.dir = res.dir; parent = res.parent !== res.dir ? res.parent : null;
@@ -1234,7 +1424,8 @@ async function buildFiles(p) {
       markCut();
       if (select) {
         const row = [...list.children].find((r) => r.en?.path === select);
-        if (row) { pick(row); row.scrollIntoView({ block: 'nearest' }); if (rename) startRename(row); }
+        if (row && quiet) { row.classList.add('sel'); sel = row; } // dış değişiklikte odağı çalma
+        else if (row) { pick(row); row.scrollIntoView({ block: 'nearest' }); if (rename) startRename(row); }
       }
       save();
     } catch (err) {
@@ -1243,14 +1434,22 @@ async function buildFiles(p) {
   }
   function openEntry(en) {
     if (en.isDir) return go(en.path);
-    if (TEXT_EXT.test(en.name)) return openInNotes(p, en.path);
+    if (NOTE_EXT.test(en.name)) return openInNotes(p, en.path);
     window.desk.open(en.path);
   }
   pathIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(pathIn.value.trim()); });
   placeSel.addEventListener('change', () => { if (placeSel.value) go(placeSel.value); placeSel.value = ''; });
 
   // --- Sağ tık menüsü ve dosya işlemleri (Windows 10 tarzı, sade) ---
-  const refresh = (opts) => go(p.leaf.dir, { keep: true, ...opts });
+  const refresh = (opts) => go(p.leaf.dir, { keep: true, select: sel?.en?.path, ...opts });
+  // Klasör dışarıdan değişti: seçim ve kaydırma korunur; ad düzenlenirken bekler, bitince tazeler.
+  let watched = '', pendingExt = false;
+  p.onDirChanged = (dir) => {
+    if (dir !== p.leaf.dir) return;
+    if (list.querySelector('input.rename')) { pendingExt = true; return; }
+    pendingExt = false;
+    refresh({ quiet: true });
+  };
   function pick(row) { sel?.classList.remove('sel'); row.classList.add('sel'); sel = row; list.focus({ preventScroll: true }); }
   async function run(fn) {
     try { await fn(); } catch (err) { alertBox(t('İşlem yapılamadı'), String(err.message || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); }
@@ -1278,7 +1477,7 @@ async function buildFiles(p) {
     const finish = (ok) => {
       if (done) return; done = true;
       const name = inp.value.trim();
-      if (!ok || !name || name === en.name) { inp.replaceWith(nameEl); list.focus(); return; }
+      if (!ok || !name || name === en.name) { inp.replaceWith(nameEl); list.focus(); if (pendingExt) p.onDirChanged(p.leaf.dir); return; }
       run(async () => refresh({ select: await window.desk.rename(en.path, name) })).then(() => list.focus());
     };
     inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
@@ -1324,8 +1523,7 @@ async function buildFiles(p) {
     if (e.target !== list) return;
     const en = sel?.en, k = e.key;
     const stop = () => { e.preventDefault(); e.stopPropagation(); };
-    if (k === 'F5') { stop(); refresh(); }
-    else if (e.ctrlKey && e.shiftKey && k.toLowerCase() === 'n') { stop(); newFolder(); }
+    if (e.ctrlKey && e.shiftKey && k.toLowerCase() === 'n') { stop(); newFolder(); }
     else if (e.ctrlKey && k.toLowerCase() === 'v') { stop(); doPaste(); }
     else if (k === 'Backspace') { stop(); if (parent) go(parent); }
     else if (!en) return;
@@ -1340,15 +1538,44 @@ async function buildFiles(p) {
       if (next) { pick(next); next.scrollIntoView({ block: 'nearest' }); }
     }
   });
+  p.body.addEventListener('keydown', (e) => { if (e.key === 'F5') { e.preventDefault(); e.stopPropagation(); refresh(); } });
   p.onFileClip = markCut;
   go(p.leaf.dir);
 }
 
 // Kes/kopyala panoları tüm dosya panelleri arasında ortak: bir panelde kopyala, ötekinde yapıştır.
 const fileClip = { items: [], cut: false };
+window.desk.onDirChanged((id, dir) => panels.get(id)?.onDirChanged?.(dir));
 
 // Bütün sağ tık / açılır menüler tek bileşenden (src/menu.js). Menü verilen alanın (panel) dışına taşmaz.
 const contextMenu = (e, bounds, items, opts = {}) => PopMenu.open(e, items, { bounds, ...opts });
+
+// Uygulamanın kendi yazı kutularında sağ tık (adres çubuğu, arama, not defteri, ad düzenleme…): Kes / Kopyala /
+// Yapıştır / Tümünü seç. Electron bu kutulara kendiliğinden menü koymuyor; 0.3.6'ya kadar sağ tıkla yapıştırılamıyordu.
+// Adres çubuğunda ayrıca "Yapıştır ve git".
+const TEXT_INPUT = 'textarea, input:not([type]), input[type=text], input[type=search], input[type=url], input[type=email], input[type=password], input[type=number]';
+// Yakalama aşamasında çalışır: sekme ya da panel başlığındaki ad kutusu gibi kendi sağ tık menüsü olan bir yerin
+// içindeki kutuda da önce bu menü çıkar.
+document.addEventListener('contextmenu', (e) => {
+  const el = e.target?.closest?.(TEXT_INPUT);
+  if (!el || el.disabled) return;
+  e.preventDefault(); e.stopPropagation();
+  const ro = el.readOnly, pass = el.type === 'password';
+  const s0 = el.selectionStart ?? 0, s1 = el.selectionEnd ?? 0, hasSel = s1 > s0;
+  const run = (cmd) => { el.focus(); try { el.setSelectionRange(s0, s1); } catch {} window.desk.editCmd(cmd); };
+  const isAddr = el.classList.contains('br-addr');
+  contextMenu(e, document.body, [
+    { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: ro || pass || !hasSel, action: () => run('cut') },
+    { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: pass || !hasSel, action: () => run('copy') },
+    { icon: '📋', label: t('Yapıştır'), key: 'Ctrl+V', disabled: ro, action: () => run('paste') },
+    isAddr ? { icon: '↵', label: t('Yapıştır ve git'), action: async () => {
+      const text = (await window.desk.readText() || '').trim(); if (!text) return;
+      el.focus(); el.value = text; el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    } } : null,
+    '-',
+    { label: t('Tümünü seç'), key: 'Ctrl+A', action: () => { el.focus(); el.select(); } },
+  ]);
+}, true);
 
 // Metin dosyasını aynı sekmedeki bir not defteri panelinde aç (yoksa yanına yeni panel ekle).
 function openInNotes(fromPanel, file) {
@@ -1362,6 +1589,21 @@ function openInNotes(fromPanel, file) {
 }
 
 // ---------- Panel ekleme ----------
+// Tek oturumlu servisler (WhatsApp, Telegram, Instagram, X) zaten açıksa tıklayınca o panele gidilir, ikinci kez açılmaz.
+// Diğerleri (YouTube, tarayıcı, not, dosyalar, programlar) her tıklamada yeni panel açar. Kısayolun sağ tık menüsündeki
+// "Birden fazla açılabilir" ile kullanıcı her kısayol için bunu değiştirebilir (sc.multiOpen: true/false).
+const SINGLE_DEFAULT = ['wa', 'tg', 'ig', 'x'];
+const allowsMulti = (sc) => (typeof sc.multiOpen === 'boolean' ? sc.multiOpen : !SINGLE_DEFAULT.includes(sc.id));
+function openPanelOf(sc) {
+  return [...panels.values()].find((p) => p.leaf.sc === sc.id || (!p.leaf.sc && serviceOf(p.leaf) === sc.id && SERVICES.some((v) => v.id === sc.id)));
+}
+function openShortcut(sc) {
+  const open = sc.id && !allowsMulti(sc) ? openPanelOf(sc) : null;
+  if (!open) return addPanel(sc);
+  if (state.activeWs !== open.ws.id) switchWs(open.ws.id);
+  setActive(open.ws, open.leaf.id);
+  setTimeout(() => open.wv?.focus(), 50);
+}
 async function addPanel(sc, { newTab = false } = {}) {
   if (sc.kind === 'browser' && sc.url && sc.id) { openInDeskBrowser(sc.url); return; } // site kısayolu: tarayıcıda sekme
   const scId = sc.id;
@@ -1508,7 +1750,7 @@ function leafIcon(l) {
   }
   const sc = shortcutForLeaf(l);
   if (sc) return iconEl(sc, 'sc');
-  if (l.kind === 'web' && l.url) { const img = h('img', { src: siteIcon(l.url), alt: '' }); img.onerror = () => img.replaceWith(emo()); return img; }
+  if (l.kind === 'web' && l.url) { const img = h('img', { src: BRAND[serviceOf(l)] || siteIcon(l.url), alt: '' }); img.onerror = () => img.replaceWith(emo()); return img; }
   return emo();
 }
 
@@ -1679,13 +1921,16 @@ function renderShortcuts() {
   box.replaceChildren(
     ...state.shortcuts.map((sc) => {
       const desc = sc.native ? (sc.native.type === 'app' ? (sc.open === 'web' ? t('Uygulama içi web') : t('Kurulu uygulama')) : sc.native.type === 'browser' ? t('Tarayıcı penceresi') : sc.native.exe) : (sc.url || '');
-      const b = h('button', { class: 'sc', title: sc.name + (desc ? ' · ' + desc : '') + '\n' + t('Tıkla: panel ekle · Sağ tık: düzenle') },
+      const b = h('button', { class: 'sc', title: sc.name + (desc ? ' · ' + desc : '') + '\n' + t('Tıkla: aç · Sağ tık: düzenle') },
         h('span', { class: 'emo' }, iconEl(sc, 'sc')), sc.name);
-      b.addEventListener('click', () => addPanel(sc));
+      b.addEventListener('click', () => openShortcut(sc));
       b.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         contextMenu(e, document.body, [
-          { label: t('Panel ekle'), bold: true, action: () => addPanel(sc) },
+          { label: t('Aç'), bold: true, action: () => openShortcut(sc) },
+          { label: t('Yeni panelde aç'), action: () => addPanel(sc) },
+          { label: t('Birden fazla açılabilir'), checked: allowsMulti(sc), title: t('Kapalıysa zaten açık olan panele gidilir'),
+            action: () => { sc.multiOpen = !allowsMulti(sc); save(); } },
           inAppbar('sc', sc.id) ? { label: t('Alt çubuktan kaldır'), action: () => appbarRemove('sc', sc.id) } : { label: t('Alt çubuğa ekle'), action: () => appbarAdd('sc', sc.id) },
           '-',
           { icon: '🎨', label: t('Simgeyi değiştir…'), action: () => iconDialog(sc, 'sc') },
@@ -1759,6 +2004,17 @@ function appbarSource(x) {
 }
 const siteIcon = (url) => { try { return new URL(url).origin + '/favicon.ico'; } catch { return ''; } };
 
+// Bilinen servislerin logoları uygulamanın içinde: sitenin /favicon.ico'su her zaman gelmiyor (WhatsApp, Telegram
+// HTML döndürüp emojiye düşüyordu), internetsiz de çalışsın.
+const svgIcon = (body) => 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`);
+const BRAND = {
+  wa: svgIcon('<path fill="#25D366" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/><path fill="#fff" d="M9.2 7.4c-.2-.5-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.9 4.5 3.9 2.2.9 2.7.7 3.2.7.5-.1 1.6-.7 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.6-.3l-1.9-.9c-.3-.1-.4-.1-.6.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.1-.4-2.1-1.3-.8-.7-1.3-1.5-1.5-1.8-.2-.3 0-.4.1-.6l.4-.5.3-.5c.1-.2 0-.4 0-.5z"/>'),
+  tg: svgIcon('<circle cx="12" cy="12" r="10" fill="#2AABEE"/><path fill="#fff" d="M5.5 11.6 17.3 7c.6-.2 1.1.1.9 1l-2 9.4c-.2.7-.6.9-1.2.5l-3.1-2.3-1.5 1.5c-.2.2-.3.3-.6.3l.2-3.2 5.8-5.2c.3-.2-.1-.4-.4-.2l-7.2 4.5-3.1-1c-.7-.2-.7-.7.1-1z"/>'),
+  ig: svgIcon('<defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset=".35" stop-color="#FA7E1E"/><stop offset=".6" stop-color="#D62976"/><stop offset=".8" stop-color="#962FBF"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="6" fill="url(#g)"/><rect x="6" y="6" width="12" height="12" rx="3.6" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="2.9" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="15.9" cy="8.1" r="1" fill="#fff"/>'),
+  x: svgIcon('<rect x="2" y="2" width="20" height="20" rx="5" fill="#000"/><path fill="#fff" d="M13.3 11.1 17.9 6h-1.1l-4 4.4L9.6 6H6l4.8 6.7L6 18h1.1l4.2-4.7 3.4 4.7H18.3zm-1.5 1.6-.5-.7L7.5 6.8h1.6l3.1 4.3.5.7 4 5.5h-1.6z"/>'),
+  yt: svgIcon('<rect x="1.5" y="5" width="21" height="14.5" rx="4" fill="#FF0000"/><path fill="#fff" d="m10 9 5.2 3.2-5.2 3.2z"/>'),
+};
+
 async function launchFavorite(f) {
   if (f.type === 'url') { // siteler her zaman Desk Helper'ın içinde açılır
     if (f.inApp) addPanel({ name: f.name, emo: '🌐', kind: 'web', url: f.target }); else openInDeskBrowser(f.target);
@@ -1785,7 +2041,8 @@ function iconEl(src, from) {
   if (src.customIcon) return customIconEl(src.customIcon); // kullanıcının "Simgeyi değiştir" ile verdiği
   let url = '', fallback;
   if (from === 'sc') {
-    url = src.icon || (scSiteUrl(src) ? siteIcon(scSiteUrl(src)) : '');
+    const brand = BRAND[src.id];
+    url = (src.kind === 'web' && brand) || src.icon || brand || (scSiteUrl(src) ? siteIcon(scSiteUrl(src)) : '');
     fallback = () => (src.native?.type === 'program' && !src.emo ? letterIcon(src.name) : h('span', { class: 'ab-emo', textContent: src.emo || '🌐' }));
   } else {
     url = src.icon || (src.type === 'url' ? siteIcon(src.target) : '');
@@ -1855,7 +2112,7 @@ function renderAppbar() {
     const src = appbarSource(x);
     const b = h('button', { class: 'ab-item', draggable: true, title: src.name },
       h('span', { class: 'ab-ic' }, appbarIcon(src, x.from)), h('span', { class: 'ab-label', textContent: src.name }));
-    b.addEventListener('click', () => (x.from === 'sc' ? addPanel(src) : launchFavorite(src)));
+    b.addEventListener('click', () => (x.from === 'sc' ? openShortcut(src) : launchFavorite(src)));
     b.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       contextMenu(e, document.body, [
