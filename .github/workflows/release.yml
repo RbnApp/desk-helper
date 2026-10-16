@@ -1,0 +1,66 @@
+# Sürüm yayımlama: main'e package.json'daki sürümü değiştiren bir push gelince Windows kurucusunu derler,
+# vX.Y.Z etiketini ve GitHub Release'ini kendisi oluşturur, exe + .blockmap + latest.yml yükler.
+# Uygulamanın otomatik güncellemesi bu Release'teki latest.yml'e bakar. Release notu CHANGELOG.md'deki
+# "## X.Y.Z" bölümünden alınır. O sürümün Release'i zaten varsa hiçbir şey yapmaz.
+# Elle çalıştırmak için: Actions > Release > Run workflow.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json, .github/workflows/release.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sürümü oku
+        id: v
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if gh release view "v$V" >/dev/null 2>&1; then
+            echo "v$V zaten yayımlanmış, atlanıyor."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.v.outputs.exists != 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bağımlılıklar
+        if: steps.v.outputs.exists != 'true'
+        run: npm ci
+
+      - name: Derle
+        if: steps.v.outputs.exists != 'true'
+        run: npx electron-builder --win nsis --publish never
+
+      - name: Release oluştur
+        if: steps.v.outputs.exists != 'true'
+        run: |
+          V=${{ steps.v.outputs.version }}
+          awk -v v="$V" '$0 ~ "^## " v "( |$)" {f=1; next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Desk Helper $V" > notes.md
+          gh release create "v$V" \
+            "dist/DeskHelper-Setup-$V.exe" \
+            "dist/DeskHelper-Setup-$V.exe.blockmap" \
+            dist/latest.yml \
+            --title "Desk Helper $V" --notes-file notes.md --target "$GITHUB_SHA"
