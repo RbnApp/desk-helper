@@ -6,8 +6,9 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 ## Sıradaki sürüm (0.3.8) için
 
 - Yayın: depo github.com/RbnCore/desk-helper (herkese açık; RbnCore takım hesabı, rbnbilisim marka). Güncelleme kaynağı
-  package.json > build.publish. Bu oturum GitHub'a etiket ve Release gönderemiyor: main'e kod gönderilir, Release'i
-  kullanıcı açar (etiket vX.Y.Z, açıklama CHANGELOG bölümü, exe + .blockmap + latest.yml).
+  package.json > build.publish. Release otomatik (0.3.7'den beri): .github/workflows/release.yml, main'e sürümü değişen
+  package.json gelince windows-latest'te derler, vX.Y.Z Release'ini açar, exe + .blockmap + latest.yml yükler, notu
+  CHANGELOG'daki bölümden alır. Yani "derle" = sürüm artır, CHANGELOG'u tarihle, main'e gönder. Elle Release yok.
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
