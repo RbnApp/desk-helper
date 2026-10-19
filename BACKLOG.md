@@ -31,8 +31,8 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
   leaf.list/idx/pos/vol/rate/repeat/hideList saklanır, main media:pick (çoklu seçim), sürükle-bırak webUtils.getPathForFile,
   dosya gezgininde sağ tık > Medya oynatıcıda aç (openInMedia: aynı sekmedeki oynatıcıya ekler). Test (xvfb, ffmpeg ile üretilen
   dosyalar): Türkçe adlı mp4 ve mp3 çaldı, bitince sonrakine geçti; H.264 mkv çaldı; xvid avi hata mesajı gösterdi; yeniden
-  açılışta liste, sıra, konum (1,5 sn) ve ses (0,4) korundu. Açık soru: oynatılamayan biçimler için ffmpeg gömmek (kurucuya
-  yaklaşık +30–40 MB) kullanıcıya soruldu.
+  açılışta liste, sıra, konum (1,5 sn) ve ses (0,4) korundu. ffmpeg gömmek (kurucuya ~+35 MB) 2026-10-19'da
+  kullanıcı istemedi: mp3/mp4 çalması yeterli.
 
 ## 0.3.7'de çıktı (2026-10-17)
 
