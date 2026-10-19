@@ -45,7 +45,7 @@ const t = (s, vars) => {
   return out;
 };
 
-const STATE_SCHEMA = 9;
+const STATE_SCHEMA = 10;
 
 // WhatsApp/Telegram "uygulama içi web" seçildiğinde açılacak adresler
 const WEB_URL = { whatsapp: 'https://web.whatsapp.com/', telegram: 'https://web.telegram.org/a/' };
@@ -105,7 +105,8 @@ function defaultState() {
       b: { type: 'split', dir: 'col', ratio: 0.6, a: tg, b: notes },
     },
   };
-  return { schema: STATE_SCHEMA, shortcuts: defaultShortcuts(), workspaces: [ws], activeWs: ws.id, favorites: [], settings: { ...DEFAULT_SETTINGS } };
+  const sp = { id: uid(), name: t('Çalışma alanı {n}', { n: 1 }), workspaces: [ws], activeWs: ws.id };
+  return { schema: STATE_SCHEMA, shortcuts: defaultShortcuts(), spaces: [sp], activeSpace: sp.id, workspaces: sp.workspaces, activeWs: ws.id, favorites: [], settings: { ...DEFAULT_SETTINGS } };
 }
 
 const DEFAULT_SETTINGS = { lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
@@ -132,6 +133,11 @@ function migrate(s) {
   if ((s.schema || 1) < 9 && !s.shortcuts.some((x) => x.id === 'x')) { // X kısayolu Instagram'ın arkasına (yoksa sona)
     const ig = s.shortcuts.findIndex((x) => x.id === 'ig');
     s.shortcuts.splice(ig >= 0 ? ig + 1 : s.shortcuts.length, 0, xShortcut());
+  }
+  // 0.3.9: çalışma alanları. Mevcut sekmeler ve düzen "Çalışma alanı 1" olur.
+  if ((s.schema || 1) < 10 && !s.spaces?.length) {
+    const sp = { id: uid(), name: t('Çalışma alanı {n}', { n: 1 }), workspaces: s.workspaces, activeWs: s.activeWs };
+    s.spaces = [sp]; s.activeSpace = sp.id;
   }
   s.schema = STATE_SCHEMA;
   return s;
@@ -226,8 +232,71 @@ let saveTimer;
 let saveBlocked = false; // açılış hatasında yarım durum kayıtlı düzenin üstüne yazılmasın
 function save() {
   if (saveBlocked) return;
+  const sp = curSpace(); if (sp) sp.activeWs = state.activeWs;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => window.desk.saveState(JSON.parse(JSON.stringify(state))), 300);
+}
+
+// ---------- Çalışma alanları ----------
+// Her çalışma alanının kendi sekmeleri ve panel düzeni var; kısayollar, favoriler, alt çubuk, yer imleri, şifreler,
+// profiller ve ayarlar hepsinde ortak. state.workspaces / state.activeWs her zaman etkin alanınkilerdir (aynı dizi),
+// bu yüzden sekme ve panel kodu çalışma alanlarından habersiz çalışır. Yalnızca etkin alanın panelleri canlıdır;
+// alan değişince paneller kapatılıp yeni alanınkiler kurulur (oturumlar profillerde kalır).
+const curSpace = () => state.spaces?.find((x) => x.id === state.activeSpace) || state.spaces?.[0];
+function linkSpace() {
+  const sp = curSpace();
+  state.activeSpace = sp.id;
+  if (!sp.workspaces?.length) sp.workspaces = [{ id: uid(), name: t('Masam'), root: null }];
+  state.workspaces = sp.workspaces;
+  state.activeWs = sp.workspaces.some((w) => w.id === sp.activeWs) ? sp.activeWs : sp.workspaces[0].id;
+}
+function switchSpace(id) {
+  if (id === state.activeSpace || !state.spaces.some((x) => x.id === id)) return;
+  curSpace().activeWs = state.activeWs;
+  for (const pid of [...panels.keys()]) destroyPanel(pid);
+  state.activeSpace = id;
+  linkSpace();
+  layout(); renderTabs(); renderSpaces(); save();
+}
+async function newSpace() {
+  const r = await modal({ title: t('Yeni çalışma alanı'), text: t('Boş bir alan açılır; kendi sekmeleri ve düzeni olur. Kısayollar, favoriler ve ayarlar tüm alanlarda ortaktır.'),
+    fields: [{ name: 'name', label: t('Adı (ör. İş, Ev, Müşteriler)'), value: '' }], okText: t('Oluştur') });
+  if (!r) return;
+  const ws = { id: uid(), name: t('Masam'), root: null };
+  const sp = { id: uid(), name: r.name.trim() || t('Çalışma alanı {n}', { n: state.spaces.length + 1 }), workspaces: [ws], activeWs: ws.id };
+  state.spaces.push(sp);
+  switchSpace(sp.id);
+}
+async function renameSpace(sp) {
+  const r = await modal({ title: t('Çalışma alanını yeniden adlandır'), fields: [{ name: 'name', label: t('Adı'), value: sp.name }], okText: t('Kaydet') });
+  if (!r || !r.name.trim()) return;
+  sp.name = r.name.trim(); renderSpaces(); save();
+}
+async function deleteSpace(sp) {
+  if (state.spaces.length < 2) return;
+  const ok = await modal({ title: t('"{name}" çalışma alanı silinsin mi?', { name: sp.name }), text: t('İçindeki sekmeler ve paneller kapanır. Kısayollar, favoriler ve ayarlar etkilenmez.'), okText: t('Sil'), tone: 'danger' });
+  if (!ok) return;
+  const i = state.spaces.indexOf(sp);
+  if (sp.id === state.activeSpace) switchSpace(state.spaces[i ? i - 1 : 1].id);
+  state.spaces.splice(state.spaces.indexOf(sp), 1);
+  renderSpaces(); save();
+}
+function renderSpaces() {
+  const b = $('#spaceBtn');
+  if (!b || !state) return;
+  b.replaceChildren(h('span', { class: 'emo', textContent: '🗂' }), h('span', { class: 'sp-name', textContent: curSpace().name }), h('span', { class: 'sp-caret', textContent: '▾' }));
+  b.title = t('Çalışma alanı: {name}', { name: curSpace().name }) + '\n' + t('Tıkla: alanlar arasında geç');
+}
+function openSpaces() {
+  const cur = curSpace();
+  PopMenu.open($('#spaceBtn'), [
+    { header: t('Çalışma alanları') },
+    ...state.spaces.map((sp, i) => ({ label: sp.name, checked: sp.id === cur.id, key: i < 9 ? 'Ctrl+Alt+' + (i + 1) : '', action: () => switchSpace(sp.id) })),
+    '-',
+    { icon: '＋', label: t('Yeni çalışma alanı…'), action: newSpace },
+    { icon: '✎', label: t('"{name}" adını değiştir…', { name: cur.name }), action: () => renameSpace(cur) },
+    { icon: '🗑', label: t('"{name}" alanını sil…', { name: cur.name }), danger: true, disabled: state.spaces.length < 2, title: state.spaces.length < 2 ? t('Son çalışma alanı silinemez') : '', action: () => deleteSpace(cur) },
+  ]);
 }
 
 // ---------- Ağaç yardımcıları ----------
@@ -2856,6 +2925,7 @@ async function startupFailed(err, saved) {
 
 async function start(saved) {
   state = saved?.workspaces?.length ? migrate(saved) : defaultState();
+  linkSpace();
   state.favorites ||= [];
   state.appbar ||= [];
   state.bookmarks ||= {};
@@ -2867,8 +2937,11 @@ async function start(saved) {
   refreshIcons();
   layout();
   renderTabs();
+  renderSpaces();
   new ResizeObserver(() => layout()).observe($('#stage'));
   $('#addTab').onclick = newWs;
+  $('#addSpace').onclick = newSpace;
+  $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
   applyDnd();
   $('#favBtn').onclick = openFavorites;
@@ -2877,6 +2950,7 @@ async function start(saved) {
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key.toLowerCase() === 't') { e.preventDefault(); newWs(); }
     if (e.ctrlKey && e.key === ' ') { e.preventDefault(); openFavorites(); }
+    if (e.ctrlKey && e.altKey && /^Digit[1-9]$/.test(e.code)) { const sp = state.spaces[+e.code.slice(5) - 1]; if (sp) { e.preventDefault(); switchSpace(sp.id); } }
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
       const i = state.workspaces.findIndex((w) => w.id === state.activeWs);

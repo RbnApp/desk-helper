@@ -3,6 +3,19 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.3.9 · hazırlanıyor
+
+**Yeni**
+- Çalışma alanları: birbirinden ayrı, her biri kendi sekmeleri ve panel düzeniyle sıfırdan başlayan alanlar (ör. İş, Ev,
+  Müşteriler). Kısayol çubuğunun sağındaki "＋ Çalışma alanı" ile yenisi açılır; üstte sekmelerin solundaki 🗂 düğmesinden
+  alanlar arasında geçilir, ad değiştirilir ya da silinir (Ctrl+Alt+1…9 ile de geçilir). Kısayollar, favoriler, alt çubuk,
+  yer imleri, şifreler, tarayıcı profilleri ve ayarlar tüm alanlarda ortak. Mevcut düzenin "Çalışma alanı 1" olarak kalır;
+  yükseltmeden önce yedeği alınır. Kapatıp açınca alanlar ve en son hangisinde olduğun hatırlanır.
+
+**Değişiklikler**
+- "＋ Sekme" ve 🔔 bildirimler kısayol çubuğunun en sağına taşındı (sırayla ＋ Sekme, ＋ Çalışma alanı, 🔔). Pencere
+  yerleşim düğmeleri üstte kaldı.
+
 ## 0.3.8 · 2026-10-19
 
 **Yeni**

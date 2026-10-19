@@ -13,6 +13,19 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
+## Kodda hazır (0.3.9'da çıkacak)
+
+- Çalışma alanları (kullanıcı: "farklı çalışma alanları olacak, her workspace sıfırdan başlangıç"). state.spaces
+  [{id,name,workspaces,activeWs}] + activeSpace; şema 10 (mevcut düzen "Çalışma alanı 1", backup-schema9 alınır).
+  state.workspaces/activeWs her zaman etkin alanın dizisiyle aynı nesne (linkSpace), sekme/panel kodu değişmedi.
+  Yalnızca etkin alanın panelleri canlı: switchSpace tüm panelleri destroyPanel (close:false) edip yeni alanı kurar.
+  Bedeli: başka alandaki WhatsApp vb. o alana geçene kadar çalışmaz, bildirim de gelmez (kullanıcıya söylendi).
+  UI: üstte sekmelerin solunda #spaceBtn (🗂 ad ▾, PopMenu: alanlar ✓, yeni, adlandır, sil; son alan silinemez),
+  kısayol çubuğu sağında #barRight: ＋ Sekme, ＋ Çalışma alanı, 🔔 (kullanıcının istediği sıra). Ctrl+Alt+1…9.
+  Test: 0.3.8 durumundan yükseltme (2 sekme korunup "Çalışma alanı 1"), yeni "İş" boş başladı, oraya panel ve sekme
+  eklendi, menüyle ve Ctrl+Alt+2 ile geçişte paneller doğru kuruldu, yeniden açılışta "İş" etkin geldi, etkin alan
+  silinince 1'e dönüldü, tek alan kalınca Sil soluk.
+
 ## 0.3.8'de çıktı (2026-10-19)
 
 - Gezginde çift tık + "Birlikte aç ▸" (kullanıcı: "videolar da bizim içimizde açılsın", "uygun olmayan disabled ama ismi

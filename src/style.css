@@ -353,6 +353,14 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 #bell .bell-ic { font-size: 15px; }
 #bell .badge { position: absolute; top: -4px; right: -4px; background: #e5534b; color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 16px; min-width: 16px; text-align: center; }
 #bell.dnd { color: var(--muted); }
+/* Kısayol çubuğunun sağı: ＋ Sekme, ＋ Çalışma alanı, 🔔 (en sağda) */
+#barRight { display: flex; gap: 4px; align-items: center; flex: none; margin-left: 8px; }
+#bar #bell { align-self: center; margin: 0; padding: 5px 10px; }
+#barRight .sc.add { white-space: nowrap; }
+/* Üstte sekmelerin solunda etkin çalışma alanı seçici */
+#spaceBtn { display: flex; align-items: center; gap: 6px; align-self: center; flex: none; max-width: 200px; margin: 0 6px 5px 0; padding: 5px 10px; background: var(--panel); border-radius: 7px; }
+#spaceBtn .sp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+#spaceBtn .sp-caret { color: var(--muted); font-size: 10px; }
 .tab .icons { display: inline-flex; align-items: center; gap: 3px; }
 .tab .icons img { width: 14px; height: 14px; object-fit: contain; }
 .tab .icons .ab-emo { font-size: 12px; }
