@@ -185,6 +185,9 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .pm-key { color: var(--muted); font-size: 11px; padding-left: 12px; }
 .pm-item.checked .pm-key { color: var(--accent); font-size: 13px; }
 .pm-sep { height: 1px; margin: 5px 6px; background: var(--line); }
+.pm-item.has-sub .pm-key { font-size: 14px; }
+.pm-item.open { background: var(--panel); }
+.pm-item.disabled { cursor: not-allowed; }
 .files-list:focus { outline: none; }
 .frow.cut { opacity: .5; }
 .frow input.rename { flex: 1; min-width: 0; padding: 0 4px; height: 20px; user-select: text; }

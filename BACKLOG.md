@@ -15,6 +15,15 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.8'de çıkacak)
 
+- Gezginde çift tık + "Birlikte aç ▸" (kullanıcı: "videolar da bizim içimizde açılsın", "uygun olmayan disabled ama ismi
+  orda yazsın", "txt dosyaları da aynı şekilde"). openEntry: NOTE_EXT > IMAGE_EXT > MEDIA_EXT > desk.open. Alt menü:
+  Varsayılan program, Fotoğraf görüntüleyici (IMAGE_EXT), Medya oynatıcı (MEDIA_EXT), Not defteri (TEXT_EXT); uymayan
+  disabled + title. Üst düzeydeki ayrı "Not defterinde aç / Varsayılan programla aç / …da aç" satırları alt menüye taşındı.
+  menu.js'e alt menü desteği (item.sub): üstüne gelince 160 ms sonra açılır, tıklayınca hemen; ekran kenarında sola döner;
+  →/← klavye. addMedia: listede zaten olan tek dosya tekrar eklenmez, ona geçilir. Test: 5 dosya türünde alt menü durumları
+  doğru, soluk satıra tıklama menüyü kapatmadı, klavyeyle gif görüntüleyicide açıldı, çift tıkla jpg→görüntüleyici,
+  mp4/mp3→oynatıcı (ikinci çift tık kopya eklemedi), txt/bat→not defteri, html/pdf→varsayılan program.
+
 - Fotoğraf görüntüleyici (kullanıcı: "hareketli resimleri de oynatan, ileri geri ok ile klasördeki resimleri gösterebilen").
   kind 'photo', buildPhoto: <img> (Chromium hareketli gif/webp/apng'yi kendisi oynatır, bağımlılık yok), CSP img-src'ye file:
   eklendi. Klasör fs:list ile, IMAGE_EXT süzgeci, ad sırası. leaf: file, dir, rot. Dosya gezgininde yalnızca sağ tık seçeneği;

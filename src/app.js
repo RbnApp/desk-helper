@@ -14,7 +14,7 @@
  */
 
 const GUTTER = 6;
-// Metin olarak açılabilen dosyalar (sağ tık > Not defterinde aç).
+// Metin olarak açılabilen dosyalar (sağ tık > Birlikte aç > Not defteri).
 const TEXT_EXT = /\.(txt|md|log|json|csv|ini|cfg|conf|xml|yml|yaml|js|ts|py|html?|css|bat|cmd|ps1|sql|svg)$/i;
 // Çift tıkta not defterinde açılanlar: düz metin ve betikler (betikler yanlışlıkla çalışmasın diye). Geri kalan her şey
 // (html, csv, xml, pdf, resim, Office, exe…) Windows Gezgini'ndeki gibi varsayılan programla açılır.
@@ -1446,6 +1446,8 @@ async function buildFiles(p) {
   function openEntry(en) {
     if (en.isDir) return go(en.path);
     if (NOTE_EXT.test(en.name)) return openInNotes(p, en.path);
+    if (IMAGE_EXT.test(en.name)) return openInPhoto(p, en.path);
+    if (MEDIA_EXT.test(en.name)) return openInMedia(p, [en.path]);
     window.desk.open(en.path);
   }
   pathIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(pathIn.value.trim()); });
@@ -1496,14 +1498,22 @@ async function buildFiles(p) {
     inp.addEventListener('dblclick', (e) => e.stopPropagation());
   }
 
+  // "Birlikte aç ▸": dosya türüne uymayan seçenek görünür ama soluk ve tıklanamaz.
+  function openWithItems(en) {
+    const img = IMAGE_EXT.test(en.name), media = MEDIA_EXT.test(en.name), text = TEXT_EXT.test(en.name), no = t('Bu dosya türünü açamaz');
+    return [
+      { label: t('Varsayılan program'), icon: '🪟', action: () => window.desk.open(en.path) },
+      '-',
+      { label: t('Fotoğraf görüntüleyici'), icon: '🖼', disabled: !img, title: img ? '' : no, action: () => openInPhoto(p, en.path) },
+      { label: t('Medya oynatıcı'), icon: '🎬', disabled: !media, title: media ? '' : no, action: () => openInMedia(p, [en.path]) },
+      { label: t('Not defteri'), icon: '📝', disabled: !text, title: text ? '' : no, action: () => openInNotes(p, en.path) },
+    ];
+  }
+
   function itemMenu(e, en, row) {
-    const isText = !en.isDir && TEXT_EXT.test(en.name);
     contextMenu(e, p.body, [
       { label: t('Aç'), bold: true, action: () => openEntry(en) },
-      isText ? { label: t('Not defterinde aç'), action: () => openInNotes(p, en.path) } : null,
-      !en.isDir ? { label: t('Varsayılan programla aç'), action: () => window.desk.open(en.path) } : null,
-      !en.isDir && MEDIA_EXT.test(en.name) ? { label: t('Medya oynatıcıda aç'), action: () => openInMedia(p, [en.path]) } : null,
-      !en.isDir && IMAGE_EXT.test(en.name) ? { label: t('Fotoğraf görüntüleyicide aç'), action: () => openInPhoto(p, en.path) } : null,
+      !en.isDir ? { label: t('Birlikte aç'), sub: openWithItems(en) } : null,
       { label: t('Dosya konumunu Gezgin\'de göster'), action: () => window.desk.reveal(en.path) },
       '-',
       { label: t('Kes'), key: 'Ctrl+X', action: () => setClip(en, true) },
@@ -1683,6 +1693,8 @@ function buildMedia(p) {
   p.addMedia = (files, playNow = true) => {
     files = files.filter(Boolean);
     if (!files.length) return;
+    // Listede zaten olan tek dosya (ör. gezginde ikinci kez çift tık) yeniden eklenmez, ona geçilir
+    if (files.length === 1 && L.list.includes(files[0])) { L.idx = L.list.indexOf(files[0]); L.pos = 0; load(true); save2(); return; }
     const first = L.list.length;
     L.list.push(...files);
     if (playNow || !L.list[L.idx] || first === 0) { L.idx = first; L.pos = 0; load(true); } else renderList();

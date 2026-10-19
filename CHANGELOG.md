@@ -9,16 +9,21 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Medya oynatıcı: Kısayol ekle > "Medya oynatıcı" ile Desk Helper'ın içinde ses ve video paneli. Dosya ekle ya da sürükle-bırak;
   oynatma listesi, önceki/sonraki, listeyi tekrarla, hız (0,5×–2×), ses, tam ekran; klavye: boşluk, ←/→ 5 sn, ↑/↓ ses, F, N/P.
   Liste, kaldığın yer ve ses düzeyi hatırlanır. mp4, webm, mkv (H.264/VP9), mp3, m4a, wav, ogg, flac çalar. Dosya gezgininde
-  ses/video dosyasına sağ tık > "Medya oynatıcıda aç". Oynatılamayan dosyada (ör. eski avi/xvid) açık bir mesaj, sonrakine geç
+  ses/video dosyasına çift tık ya da sağ tık > Birlikte aç > "Medya oynatıcı". Oynatılamayan dosyada (ör. eski avi/xvid) açık bir mesaj, sonrakine geç
   ve son çare "Varsayılan programda aç".
 - Fotoğraf görüntüleyici: Kısayol ekle > "Fotoğraf görüntüleyici" ile Desk Helper'ın içinde resim paneli. jpg, png, gif,
   webp, avif, bmp, ico, svg açar; hareketli gif/webp/apng oynar. ←/→ (ya da kenardaki oklar) aynı klasördeki diğer resimlere
   geçer, sayaç "3 / 27" gösterir, sonda başa döner. Tekerlekle imlecin olduğu yere yakınlaştır, sürükleyerek kaydır, çift tık
   sığdır / gerçek boyut; ⤢ sığdır, 1:1, sola/sağa döndür, tam ekran. Klavye: +/−, 0, 1, R, F, Home/End. Sürükle-bırak ile açılır;
-  dosya gezgininde resme sağ tık > "Fotoğraf görüntüleyicide aç". Son açılan resim ve döndürme hatırlanır. Açılamayan dosyada
+  dosya gezgininde resme çift tık ya da sağ tık > Birlikte aç. Son açılan resim ve döndürme hatırlanır. Açılamayan dosyada
   mesaj ve "Varsayılan programda aç".
+- Dosya gezgininde "Birlikte aç ▸": sağ tıkta yana açılan listede Varsayılan program, Fotoğraf görüntüleyici, Medya oynatıcı
+  ve Not defteri. Dosya türüne uymayan seçenek görünür ama soluk ve tıklanamaz (videoda Fotoğraf görüntüleyici, resimde Medya
+  oynatıcı gibi). Klavyede → alt menüyü açar, ← kapatır.
 
 **Değişiklikler**
+- Dosya gezgininde çift tık: resimler Fotoğraf görüntüleyicide, ses ve video Medya oynatıcıda (uygulamanın içinde) açılır.
+  Metin dosyaları yine Not defterinde, diğerleri (html, pdf…) Windows'taki varsayılan programda.
 - Desk Helper artık MIT lisanslı açık kaynak (LICENSE dosyası).
 - Ayarlar > Yenilikler artık yalnızca kurulu sürümün notlarını gösterir; önceki sürümler için en altta GitHub'daki
   sürümler sayfasına bağlantı var.

@@ -3,7 +3,8 @@
 //
 //   PopMenu.open(eventOrPointOrButton, items, { bounds, align: 'left'|'right' })
 //   items: '-' (ayraç) | { header } | { label, icon, checked, danger, disabled, bold, key, title,
-//                                     action(ev), middle(), ctx(ev) }
+//                                     action(ev), middle(), ctx(ev), sub: [items] }
+//   sub: yana açılan alt menü (üstüne gelince ya da tıklayınca; klavyede → açar, ← kapatır).
 // Klavye: ↑ ↓ ile gez, Enter ile seç, Esc ile kapat.
 (() => {
   let current = null;
@@ -12,38 +13,87 @@
   function close() {
     if (!current) return;
     const c = current; current = null;
-    c.menu.remove();
+    clearTimeout(c.timer);
+    for (const lv of c.levels) lv.menu.remove();
     window.removeEventListener('mousedown', c.outside, true);
     window.removeEventListener('keydown', c.keys, true);
     window.removeEventListener('blur', close);
     window.removeEventListener('resize', close);
   }
 
-  function open(at, items, { bounds = document.body, align = 'left' } = {}) {
-    close();
-    const menu = el('div', 'pm');
+  // Bir menü katmanı (ana menü ya da alt menü) kurar; satır olaylarını o katmanın sırasına bağlar.
+  function render(items, depth) {
+    const menu = el('div', 'pm' + (depth ? ' pm-subm' : ''));
     menu.setAttribute('role', 'menu');
-    const rows = [];
+    const lv = { menu, rows: [], sel: -1, depth };
     let lastSep = true;
     for (const it of items.filter(Boolean)) {
       if (it === '-') { if (!lastSep) { menu.append(el('div', 'pm-sep')); lastSep = true; } continue; }
       lastSep = false;
       if (it.header) { menu.append(el('div', 'pm-head', it.header)); continue; }
-      const row = el('div', 'pm-item' + (it.disabled ? ' disabled' : '') + (it.danger ? ' danger' : '') + (it.bold ? ' bold' : '') + (it.checked ? ' checked' : ''));
+      const row = el('div', 'pm-item' + (it.disabled ? ' disabled' : '') + (it.danger ? ' danger' : '') + (it.bold ? ' bold' : '') + (it.checked ? ' checked' : '') + (it.sub ? ' has-sub' : ''));
       row.setAttribute('role', 'menuitem');
+      row.it = it;
       if (it.title) row.title = it.title;
       const ic = el('span', 'pm-ic');
       if (it.icon instanceof Node) ic.append(it.icon); else if (it.icon) ic.textContent = it.icon;
-      row.append(ic, el('span', 'pm-lbl', it.label), el('span', 'pm-key', it.checked ? '✓' : it.key || ''));
-      row.addEventListener('click', (ev) => { if (it.disabled) return; close(); it.action?.(ev); });
+      row.append(ic, el('span', 'pm-lbl', it.label), el('span', 'pm-key', it.sub ? '›' : it.checked ? '✓' : it.key || ''));
+      row.addEventListener('click', (ev) => {
+        if (it.disabled) return;
+        if (it.sub) { openSub(lv, row); return; }
+        close(); it.action?.(ev);
+      });
       row.addEventListener('auxclick', (ev) => { if (ev.button === 1 && it.middle && !it.disabled) { close(); it.middle(); } });
       row.addEventListener('contextmenu', (ev) => { ev.preventDefault(); if (it.ctx) { close(); it.ctx(ev); } });
-      row.addEventListener('mousemove', () => focusRow(rows.indexOf(row)));
+      row.addEventListener('mouseenter', () => hover(lv, row));
       menu.append(row);
-      if (!it.disabled) rows.push(row);
+      if (!it.disabled) lv.rows.push(row);
     }
     if (menu.lastChild?.className === 'pm-sep') menu.lastChild.remove();
     document.body.append(menu);
+    return lv;
+  }
+
+  const focusRow = (lv, i) => { lv.rows[lv.sel]?.classList.remove('sel'); lv.sel = i; lv.rows[lv.sel]?.classList.add('sel'); };
+  // Bu katmanın altındaki (daha derin) katmanları kapatır.
+  function trim(lv) {
+    const c = current; if (!c) return;
+    while (c.levels.length > lv.depth + 1) c.levels.pop().menu.remove();
+    for (const r of lv.menu.querySelectorAll('.pm-item.open')) r.classList.remove('open');
+  }
+  function hover(lv, row) {
+    const c = current; if (!c) return;
+    clearTimeout(c.timer);
+    focusRow(lv, lv.rows.indexOf(row));
+    if (c.levels[lv.depth + 1]?.owner === row) return;
+    // Alt menüye çaprazlama giderken başka satırın üstünden geçmek menüyü hemen kapatmasın
+    c.timer = setTimeout(() => { if (row.it.sub && !row.it.disabled) openSub(lv, row); else trim(lv); }, 160);
+  }
+  function openSub(lv, row, keyboard) {
+    const c = current; if (!c) return;
+    clearTimeout(c.timer);
+    if (c.levels[lv.depth + 1]?.owner === row) return;
+    trim(lv);
+    row.classList.add('open');
+    const sub = render(row.it.sub, lv.depth + 1);
+    sub.owner = row;
+    c.levels.push(sub);
+    const r = row.getBoundingClientRect(), m = sub.menu.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+    let x = r.right + 2;
+    if (x + m.width > vw - 2) x = Math.max(2, r.left - m.width - 2);
+    let y = r.top - 5;
+    if (y + m.height > vh - 2) y = Math.max(2, vh - m.height - 2);
+    Object.assign(sub.menu.style, { left: x + 'px', top: y + 'px' });
+    requestAnimationFrame(() => sub.menu.classList.add('in'));
+    if (keyboard) focusRow(sub, 0);
+  }
+
+  function open(at, items, { bounds = document.body, align = 'left' } = {}) {
+    close();
+    current = { levels: [], timer: 0 };
+    const lv = render(items, 0);
+    const menu = lv.menu;
+    current.levels.push(lv);
 
     // Konum: menü verilen alanın (panel) dışına taşmaz
     // Bir düğmeye bağlı menü: düğmenin altına hizalanır
@@ -56,17 +106,25 @@
     Object.assign(menu.style, { left: x + 'px', top: y + 'px' });
     requestAnimationFrame(() => menu.classList.add('in'));
 
-    let sel = -1;
-    const focusRow = (i) => { rows[sel]?.classList.remove('sel'); sel = i; rows[sel]?.classList.add('sel'); };
-    const outside = (ev) => { if (!menu.contains(ev.target)) close(); };
+    const outside = (ev) => { if (!current?.levels.some((l) => l.menu.contains(ev.target))) close(); };
     const keys = (ev) => {
-      if (ev.key === 'Escape') { ev.stopPropagation(); ev.preventDefault(); close(); }
-      else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); ev.stopPropagation(); focusRow(rows.length ? (sel + (ev.key === 'ArrowDown' ? 1 : rows.length - 1)) % rows.length : -1); }
-      else if (ev.key === 'Enter' && sel >= 0) { ev.preventDefault(); ev.stopPropagation(); rows[sel].click(); }
+      const c = current; if (!c) return;
+      const top = c.levels[c.levels.length - 1];
+      const k = ev.key;
+      if (!['Escape', 'ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(k)) return;
+      ev.preventDefault(); ev.stopPropagation();
+      if (k === 'Escape' || (k === 'ArrowLeft' && top.depth)) {
+        if (top.depth) { const parent = c.levels[top.depth - 1]; trim(parent); } else close();
+      } else if (k === 'ArrowDown' || k === 'ArrowUp') {
+        focusRow(top, top.rows.length ? (top.sel + (k === 'ArrowDown' ? 1 : top.rows.length - 1)) % top.rows.length : -1);
+      } else if ((k === 'ArrowRight' || k === 'Enter') && top.sel >= 0) {
+        const row = top.rows[top.sel];
+        if (row.it.sub) openSub(top, row, true); else if (k === 'Enter') row.click();
+      }
     };
-    current = { menu, outside, keys };
+    Object.assign(current, { outside, keys });
     setTimeout(() => {
-      if (current?.menu !== menu) return;
+      if (current?.levels[0]?.menu !== menu) return;
       window.addEventListener('mousedown', outside, true);
       window.addEventListener('keydown', keys, true);
       window.addEventListener('blur', close);
