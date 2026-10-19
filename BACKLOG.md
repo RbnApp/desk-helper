@@ -15,6 +15,13 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.8'de çıkacak)
 
+- Fotoğraf görüntüleyici (kullanıcı: "hareketli resimleri de oynatan, ileri geri ok ile klasördeki resimleri gösterebilen").
+  kind 'photo', buildPhoto: <img> (Chromium hareketli gif/webp/apng'yi kendisi oynatır, bağımlılık yok), CSP img-src'ye file:
+  eklendi. Klasör fs:list ile, IMAGE_EXT süzgeci, ad sırası. leaf: file, dir, rot. Dosya gezgininde yalnızca sağ tık seçeneği;
+  resme çift tık hâlâ Windows varsayılanı (değiştirmeden önce kullanıcıya soruldu). Test: 6 dosyalı klasörde 1/6→6/6 ve başa
+  dönüş, gif ve webp kareleri değişiyor, bozuk jpg'de hata mesajı, zoom 60→94→100→60%, döndürme 90° ve yeniden açılışta korundu,
+  gezginden ikinci açışta aynı panel kullanıldı.
+
 - Görünüm sekme başına (kullanıcı: "Mobil seçince tüm sekmelere uyguluyor, yalnızca bastığım sekmeye uygulamalı"). 0.3.7'de
   panel başınaydı (leaf.device); artık tab.device. Düğmeler ve noktalı zemin etkin sekmeye göre, genişlik her webview'ın
   kendi sınıfında (arka plan sekmeleri geçişte yeniden dizilmez). Değiştirince yalnızca o sekme yeniden yüklenir. Yeni sekme

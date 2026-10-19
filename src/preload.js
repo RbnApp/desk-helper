@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('desk', {
   },
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
   pickMedia: () => ipcRenderer.invoke('media:pick'),
+  pickImage: () => ipcRenderer.invoke('photo:pick'),
   describe: (p) => ipcRenderer.invoke('fav:describe', p),
   installedApps: (refresh) => ipcRenderer.invoke('apps:list', refresh),
   iconFor: (p) => ipcRenderer.invoke('fav:icon', p),

@@ -11,6 +11,12 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   Liste, kaldığın yer ve ses düzeyi hatırlanır. mp4, webm, mkv (H.264/VP9), mp3, m4a, wav, ogg, flac çalar. Dosya gezgininde
   ses/video dosyasına sağ tık > "Medya oynatıcıda aç". Oynatılamayan dosyada (ör. eski avi/xvid) açık bir mesaj, sonrakine geç
   ve son çare "Varsayılan programda aç".
+- Fotoğraf görüntüleyici: Kısayol ekle > "Fotoğraf görüntüleyici" ile Desk Helper'ın içinde resim paneli. jpg, png, gif,
+  webp, avif, bmp, ico, svg açar; hareketli gif/webp/apng oynar. ←/→ (ya da kenardaki oklar) aynı klasördeki diğer resimlere
+  geçer, sayaç "3 / 27" gösterir, sonda başa döner. Tekerlekle imlecin olduğu yere yakınlaştır, sürükleyerek kaydır, çift tık
+  sığdır / gerçek boyut; ⤢ sığdır, 1:1, sola/sağa döndür, tam ekran. Klavye: +/−, 0, 1, R, F, Home/End. Sürükle-bırak ile açılır;
+  dosya gezgininde resme sağ tık > "Fotoğraf görüntüleyicide aç". Son açılan resim ve döndürme hatırlanır. Açılamayan dosyada
+  mesaj ve "Varsayılan programda aç".
 
 **Değişiklikler**
 - Desk Helper artık MIT lisanslı açık kaynak (LICENSE dosyası).

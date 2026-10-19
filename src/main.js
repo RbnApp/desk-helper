@@ -303,6 +303,15 @@ ipcMain.handle('dialog:pick', async (_e, kind) => {
   return r.canceled ? null : r.filePaths[0];
 });
 
+// Fotoğraf görüntüleyici: bir resim seç (klasördeki diğerleri ←/→ ile).
+ipcMain.handle('photo:pick', async () => {
+  const en = settings.lang === 'en';
+  const r = await dialog.showOpenDialog(win, { title: en ? 'Open image' : 'Resim aç', properties: ['openFile'],
+    filters: [{ name: en ? 'Images' : 'Resimler', extensions: ['jpg', 'jpeg', 'jfif', 'png', 'apng', 'gif', 'webp', 'avif', 'bmp', 'ico', 'svg'] },
+      { name: en ? 'All files' : 'Tüm dosyalar', extensions: ['*'] }] });
+  return r.canceled ? null : r.filePaths[0];
+});
+
 // Medya oynatıcı: birden fazla ses/video dosyası seç.
 ipcMain.handle('media:pick', async () => {
   const en = settings.lang === 'en';

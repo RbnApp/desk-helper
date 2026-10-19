@@ -414,6 +414,7 @@ function createPanel(ws, leaf) {
   else if (leaf.kind === 'notes') buildNotes(p);
   else if (leaf.kind === 'files') buildFiles(p);
   else if (leaf.kind === 'media') buildMedia(p);
+  else if (leaf.kind === 'photo') buildPhoto(p);
   return p;
 }
 
@@ -1502,6 +1503,7 @@ async function buildFiles(p) {
       isText ? { label: t('Not defterinde aç'), action: () => openInNotes(p, en.path) } : null,
       !en.isDir ? { label: t('Varsayılan programla aç'), action: () => window.desk.open(en.path) } : null,
       !en.isDir && MEDIA_EXT.test(en.name) ? { label: t('Medya oynatıcıda aç'), action: () => openInMedia(p, [en.path]) } : null,
+      !en.isDir && IMAGE_EXT.test(en.name) ? { label: t('Fotoğraf görüntüleyicide aç'), action: () => openInPhoto(p, en.path) } : null,
       { label: t('Dosya konumunu Gezgin\'de göster'), action: () => window.desk.reveal(en.path) },
       '-',
       { label: t('Kes'), key: 'Ctrl+X', action: () => setClip(en, true) },
@@ -1737,6 +1739,164 @@ function buildMedia(p) {
   p.onDestroy = () => { try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
   load(false);
 }
+// --- Fotoğraf görüntüleyici paneli ---
+// Bir resmi açar, ←/→ ile aynı klasördeki diğer resimlere geçer. Hareketli resimler (gif, hareketli webp/png) kendiliğinden
+// oynar (Chromium'un <img>'i). Tekerlekle imlecin olduğu yere yakınlaştırma, sürükleyerek kaydırma, çift tık = sığdır / gerçek
+// boyut, döndürme, tam ekran. Açık dosya, döndürme ve klasör panelde saklanır; klasör değişirse liste yenilenir.
+const IMAGE_EXT = /\.(jpe?g|jfif|png|apng|gif|webp|avif|bmp|ico|svg)$/i;
+const dirOf = (f) => f.replace(/[\\/][^\\/]*$/, '') || f;
+function buildPhoto(p) {
+  const L = p.leaf;
+  const img = h('img', { class: 'ph-img', alt: '', draggable: false });
+  const err = h('div', { class: 'ph-msg', hidden: true });
+  const empty = h('div', { class: 'ph-msg' },
+    h('div', { class: 'md-big', textContent: '🖼' }),
+    h('div', { textContent: t('Bir resim aç ya da buraya sürükle') }),
+    h('button', { class: 'primary', textContent: t('Resim aç…'), onclick: () => pickImage() }));
+  const prevB = h('button', { class: 'ph-nav prev', textContent: '‹', title: t('Önceki') + ' (←)', onclick: () => step(-1) });
+  const nextB = h('button', { class: 'ph-nav next', textContent: '›', title: t('Sonraki') + ' (→)', onclick: () => step(1) });
+  const stage = h('div', { class: 'ph-stage', tabIndex: 0 }, img, err, empty, prevB, nextB);
+  const name = h('span', { class: 'ph-name' });
+  const count = h('span', { class: 'ph-count' });
+  const zoomL = h('span', { class: 'ph-zoom' });
+  const tb = (txt, title, fn) => h('button', { class: 'md-tool', textContent: txt, title, onclick: fn });
+  const bar = h('div', { class: 'md-bar' },
+    tb('📂', t('Resim aç…'), () => pickImage()),
+    name, count,
+    tb('−', t('Uzaklaştır'), () => zoomBy(1 / 1.25)), zoomL, tb('+', t('Yakınlaştır'), () => zoomBy(1.25)),
+    tb('⤢', t('Sığdır') + ' (0)', () => fit()), tb('1:1', t('Gerçek boyut') + ' (1)', () => actual()),
+    tb('⟲', t('Sola döndür'), () => rotate(-90)), tb('⟳', t('Sağa döndür') + ' (R)', () => rotate(90)),
+    tb('⛶', t('Tam ekran') + ' (F)', () => (document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen?.())));
+  p.body.append(bar, stage);
+  p.body.classList.add('photo');
+
+  let files = [], idx = -1, v = { s: 1, x: 0, y: 0 }, fitMode = true;
+  L.rot ||= 0;
+  const natural = () => {
+    const w = img.naturalWidth || 1, hh = img.naturalHeight || 1;
+    return L.rot % 180 ? [hh, w] : [w, hh];
+  };
+  const fitScale = () => { const [w, hh] = natural(); return Math.min(stage.clientWidth / w, stage.clientHeight / hh, 1); };
+  function apply() {
+    img.style.transform = `translate(-50%, -50%) translate(${v.x}px, ${v.y}px) rotate(${L.rot}deg) scale(${v.s})`;
+    zoomL.textContent = Math.round(v.s * 100) + '%';
+    stage.classList.toggle('pannable', !fitMode);
+  }
+  function fit() { fitMode = true; v = { s: fitScale(), x: 0, y: 0 }; apply(); }
+  function actual() { fitMode = false; v = { s: 1, x: 0, y: 0 }; apply(); }
+  function zoomBy(k, cx = 0, cy = 0) {
+    const s = Math.min(32, Math.max(0.02, v.s * k)); k = s / v.s;
+    v = { s, x: cx - (cx - v.x) * k, y: cy - (cy - v.y) * k };
+    fitMode = false; apply();
+  }
+  function rotate(d) { L.rot = ((L.rot + d) % 360 + 360) % 360; save(); fit(); }
+  function paint() {
+    const f = files[idx] || L.file;
+    empty.hidden = !!f; err.hidden = true; img.hidden = !f;
+    prevB.hidden = nextB.hidden = files.length < 2;
+    name.textContent = f ? baseName(f) : '';
+    count.textContent = files.length ? `${idx + 1} / ${files.length}` : '';
+    setTitle(p, L.title + (f ? ' · ' + baseName(f) : ''));
+  }
+  function show(f, keepRot) {
+    if (!keepRot && f !== L.file) L.rot = 0;
+    L.file = f; save();
+    idx = files.indexOf(f);
+    paint();
+    if (!f) { img.removeAttribute('src'); return; }
+    img.src = fileUrl(f);
+  }
+  img.addEventListener('load', () => { err.hidden = true; img.hidden = false; fit(); });
+  img.addEventListener('error', () => {
+    if (!img.getAttribute('src')) return;
+    img.hidden = true;
+    err.replaceChildren(h('div', { class: 'md-big', textContent: '⚠' }),
+      h('div', { textContent: t('Bu resim açılamadı (desteklenmeyen biçim ya da dosya silinmiş olabilir).') }),
+      h('div', { class: 'md-err-f', textContent: baseName(L.file || '') }),
+      h('div', { class: 'md-err-b' }, h('button', { textContent: t('Varsayılan programda aç'), onclick: () => window.desk.open(L.file) })));
+    err.hidden = false;
+  });
+  // Klasördeki resimler (ad sırasıyla, Gezgin gibi). Açılan resim listede yoksa (ör. gizli) yine de gösterilir.
+  async function open(f) {
+    if (!f) return show(null);
+    try {
+      const r = await window.desk.list(dirOf(f));
+      files = r.entries.filter((e) => !e.isDir && IMAGE_EXT.test(e.name)).map((e) => e.path);
+      if (!files.includes(f)) { const want = baseName(f).toLowerCase(); f = files.find((x) => baseName(x).toLowerCase() === want) || f; }
+      if (!files.includes(f)) files.unshift(f);
+    } catch { files = [f]; }
+    L.dir = dirOf(f);
+    show(f, f === L.file);
+  }
+  p.openImage = (f) => open(f);
+  function step(d) {
+    if (files.length < 2) return;
+    idx = (idx + d + files.length) % files.length;
+    show(files[idx]);
+  }
+  async function pickImage() { const f = await window.desk.pickImage(); if (f) open(f); }
+
+  // Fare: tekerlek = imlecin olduğu yere yakınlaştır, sürükle = kaydır, çift tık = sığdır / gerçek boyut.
+  stage.addEventListener('wheel', (e) => {
+    if (img.hidden) return;
+    e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2);
+  }, { passive: false });
+  stage.addEventListener('dblclick', (e) => {
+    if (e.target.closest('.ph-nav, button')) return;
+    if (fitMode && Math.abs(v.s - 1) > 0.01) {
+      const r = stage.getBoundingClientRect();
+      zoomBy(1 / v.s, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2);
+    } else fit();
+  });
+  stage.addEventListener('mousedown', (e) => {
+    if (e.button !== 0 || e.target.closest('.ph-nav, button') || img.hidden) return;
+    e.preventDefault(); stage.focus();
+    const sx = e.clientX, sy = e.clientY, ox = v.x, oy = v.y;
+    stage.classList.add('dragging');
+    const mv = (ev) => { v.x = ox + ev.clientX - sx; v.y = oy + ev.clientY - sy; if (Math.abs(ev.clientX - sx) + Math.abs(ev.clientY - sy) > 3) fitMode = false; apply(); };
+    const up = () => { stage.classList.remove('dragging'); window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); };
+    window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
+  });
+  p.body.addEventListener('keydown', (e) => {
+    if (e.target.closest('input, select, textarea')) return;
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); step(1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); step(-1); }
+    else if (k === 'Home' && files.length) show(files[0]);
+    else if (k === 'End' && files.length) show(files[files.length - 1]);
+    else if (k === '+' || k === '=') zoomBy(1.25);
+    else if (k === '-') zoomBy(1 / 1.25);
+    else if (k === '0') fit();
+    else if (k === '1') actual();
+    else if (k.toLowerCase() === 'r') rotate(e.shiftKey ? -90 : 90);
+    else if (k.toLowerCase() === 'f') { if (document.fullscreenElement) document.exitFullscreen(); else stage.requestFullscreen?.(); }
+  });
+  new ResizeObserver(() => { if (fitMode && !img.hidden) fit(); }).observe(stage);
+  // Sürükle-bırak: resim dosyası (birden fazlaysa ilki; klasördeki diğerleri ←/→ ile).
+  p.body.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); p.body.classList.add('md-drop'); } });
+  p.body.addEventListener('dragleave', (e) => { if (!p.body.contains(e.relatedTarget)) p.body.classList.remove('md-drop'); });
+  p.body.addEventListener('drop', (e) => {
+    p.body.classList.remove('md-drop');
+    const f = [...(e.dataTransfer?.files || [])].map((x) => window.desk.pathForFile(x)).find((x) => x && IMAGE_EXT.test(x));
+    if (!f) return;
+    e.preventDefault(); e.stopPropagation(); open(f);
+  });
+  // Klasör izlenir: resim eklenip silinince sayaç ve liste güncellenir.
+  p.onDirChanged = () => { if (L.file) open(L.file); };
+  open(L.file || null);
+}
+function openInPhoto(fromPanel, file) {
+  const ws = fromPanel.ws;
+  const existing = [...panels.values()].find((q) => q.ws === ws && q.leaf.kind === 'photo' && q.openImage);
+  if (existing) { existing.openImage(file); setActive(ws, existing.leaf.id); return; }
+  const leaf = { type: 'panel', id: uid(), kind: 'photo', title: t('Fotoğraflar'), emo: '🖼', file };
+  insertNear(ws, fromPanel.leaf.id, leaf, 'right');
+  ws.active = leaf.id;
+  layout(); renderTabs(); save();
+}
+
 // Dosyaları aynı sekmedeki medya oynatıcıda aç (yoksa yanına yeni panel).
 function openInMedia(fromPanel, files) {
   const ws = fromPanel.ws;
@@ -2120,7 +2280,13 @@ async function newShortcut() {
     ['program', '🖥 ' + t('Kurulu bir program')],
     ['web', '🔗 ' + t('Uygulama içi web sayfası')],
     ['media', '🎬 ' + t('Medya oynatıcı')],
+    ['photo', '🖼 ' + t('Fotoğraf görüntüleyici')],
   ]);
+  if (type === 'photo') {
+    state.shortcuts.push({ id: uid(), name: t('Fotoğraflar'), emo: '🖼', kind: 'photo' });
+    renderShortcuts(); save();
+    return;
+  }
   if (type === 'media') {
     state.shortcuts.push({ id: uid(), name: t('Medya Oynatıcı'), emo: '🎬', kind: 'media' });
     renderShortcuts(); save();
