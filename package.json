@@ -55,7 +55,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "Rbnbilisim",
+        "owner": "RbnApp",
         "repo": "desk-helper",
         "releaseType": "release"
       }
@@ -75,6 +75,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Rbnbilisim/desk-helper.git"
+    "url": "https://github.com/RbnApp/desk-helper.git"
   }
 }

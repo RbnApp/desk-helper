@@ -5,8 +5,8 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Sıradaki sürüm (0.3.8) için
 
-- Yayın: depo github.com/Rbnbilisim/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından Rbnbilisim
-  kuruluşuna taşındı, kuruluşun görünen adı RbnApp; eski adres yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
+- Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
+  kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
   package.json > build.publish. Release otomatik (0.3.7'den beri): .github/workflows/release.yml, main'e sürümü değişen
   package.json gelince windows-latest'te derler, vX.Y.Z Release'ini açar, exe + .blockmap + latest.yml yükler, notu
   CHANGELOG'daki bölümden alır. Yani "derle" = sürüm artır, CHANGELOG'u tarihle, main'e gönder. Elle Release yok.
