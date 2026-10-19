@@ -3,6 +3,17 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.3.8 · hazırlanıyor
+
+**Değişiklikler**
+- Desk Helper artık MIT lisanslı açık kaynak (LICENSE dosyası).
+- Uygulamanın GitHub deposu github.com/Rbnbilisim/desk-helper adresine taşındı; güncellemeler ve Hakkında'daki bağlantı
+  yeni adresi kullanır (eski adres de yönlendirdiği için eski sürümler güncellemeyi bulmaya devam eder).
+
+**Düzeltmeler**
+- Tarayıcıda Masaüstü / Tablet / Mobil görünüm artık her sekmede ayrı: seçim yalnızca açık olan sekmeye uygulanır, diğer
+  sekmeler etkilenmez. Yeni sekme masaüstü görünümüyle açılır; her sekmenin seçimi kapatıp açınca da korunur.
+
 ## 0.3.7 · 2026-10-17
 
 **Değişiklikler**

@@ -2,6 +2,7 @@
   "name": "desk-helper",
   "version": "0.3.7",
   "description": "WhatsApp, Telegram, not defteri, dosya gezgini ve favori programları tek pencerede toplayan masaüstü uygulaması",
+  "license": "MIT",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -54,7 +55,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "RbnCore",
+        "owner": "Rbnbilisim",
         "repo": "desk-helper",
         "releaseType": "release"
       }
@@ -74,6 +75,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/RbnCore/desk-helper.git"
+    "url": "https://github.com/Rbnbilisim/desk-helper.git"
   }
 }

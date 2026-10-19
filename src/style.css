@@ -391,7 +391,8 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .br-dev-b:hover { color: var(--text); background: var(--panel); }
 .br-dev-b.on { color: var(--on-accent); background: var(--accent); }
 .br-views.dev-tablet, .br-views.dev-mobile { background: var(--bg); background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 14px 14px; }
-.br-views.dev-tablet webview, .br-views.dev-mobile webview { left: max(0px, calc(50% - var(--dev-w) / 2)); right: auto; width: min(var(--dev-w), 100%);
+/* Genişlik her sekmenin kendi webview'ında: arka plandaki sekmeler kendi boyutunda kalır, geçişte yeniden dizilmez. */
+.br-views webview.dev-tablet, .br-views webview.dev-mobile { left: max(0px, calc(50% - var(--dev-w) / 2)); right: auto; width: min(var(--dev-w), 100%);
   box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(0,0,0,.3); }
-.br-views.dev-tablet { --dev-w: 820px; }
-.br-views.dev-mobile { --dev-w: 390px; }
+.br-views webview.dev-tablet { --dev-w: 820px; }
+.br-views webview.dev-mobile { --dev-w: 390px; }

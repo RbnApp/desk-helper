@@ -661,8 +661,10 @@ function buildBrowser(p) {
   const menuBtn = h('button', { class: 'br-tool br-menu', textContent: '⋮', title: t('Tarayıcı menüsü') });
   for (const b of [back, fwd, reload]) b.classList.add('br-tool');
   // Görünüm: Masaüstü / Tablet / Mobil. Tablet ve mobilde sayfa o genişlikte ortada açılır, site de tablet/telefon
-  // tarayıcısı sanır (user agent), böylece gerçek mobil sürümünü verir. Seçim panel başına saklanır.
-  L.device = DEVICES[L.device] ? L.device : 'desktop';
+  // tarayıcısı sanır (user agent), böylece gerçek mobil sürümünü verir. Seçim her sekmede ayrı (tab.device); diğer
+  // sekmeler etkilenmez, yeni sekme masaüstüyle açılır. 0.3.7'de panel başınaydı (L.device): o sekmelere dağıtılır.
+  if (L.device) { for (const tab of L.tabs) tab.device ??= L.device; delete L.device; }
+  const devOf = (tab) => (DEVICES[tab?.device] ? tab.device : 'desktop');
   const devBtns = Object.entries(DEVICES).map(([key, d]) => {
     const b = h('button', { class: 'br-dev-b', title: t(d.label), 'data-dev': key, onclick: () => setDevice(key) });
     b.innerHTML = d.svg;
@@ -684,7 +686,7 @@ function buildBrowser(p) {
     const wv = document.createElement('webview');
     wv.setAttribute('partition', partitionFor(L.profile));
     wv.setAttribute('allowpopups', '');
-    if (L.device !== 'desktop') wv.setAttribute('useragent', deviceUA(L.device));
+    if (devOf(tab) !== 'desktop') { wv.setAttribute('useragent', deviceUA(devOf(tab))); wv.classList.add('dev-' + devOf(tab)); }
     const vsOf = (u) => (u || '').startsWith('view-source:') ? u.slice(12) : '';
     wv.setAttribute('src', vsOf(tab.url) ? 'about:blank' : tab.url || HOME_URL);
     if (vsOf(tab.url)) { tab.vs = vsOf(tab.url); wv.addEventListener('dom-ready', () => showSource(wv, tab), { once: true }); }
@@ -732,6 +734,7 @@ function buildBrowser(p) {
     const tab = L.tabs.find((x) => x.id === id);
     if (!wvs.has(id)) makeView(tab);
     for (const [tid, wv] of wvs) wv.classList.toggle('on', tid === id);
+    paintDevice();
     addr.value = tab.url === 'about:blank' ? '' : tab.url || '';
     setTitle(p, L.title + (tab.title ? ' · ' + tab.title : ''));
     renderStrip(); updateNav(); updateStar(); save(); renderTabs();
@@ -949,20 +952,25 @@ function buildBrowser(p) {
     show(L.tabs.find((x) => x.id === L.activeTab)?.id || L.tabs[0].id);
   }
   p.setProfile = setProfile;
+  // Düğmeler ve sayfa alanının noktalı zemini etkin sekmeye göre (sekme değişince show çağırır).
   function paintDevice() {
-    for (const b of devBtns) b.classList.toggle('on', b.dataset.dev === L.device);
+    const d = devOf(curTab());
+    for (const b of devBtns) b.classList.toggle('on', b.dataset.dev === d);
     views.classList.remove('dev-tablet', 'dev-mobile');
-    if (L.device !== 'desktop') views.classList.add('dev-' + L.device);
+    if (d !== 'desktop') views.classList.add('dev-' + d);
   }
+  // Yalnızca etkin sekmeye uygulanır; o sekme bir kez yeniden yüklenir.
   function setDevice(d) {
-    if (d === L.device || !DEVICES[d]) return;
-    L.device = d;
+    const tab = curTab(), wv = cur();
+    if (!tab || !DEVICES[d] || d === devOf(tab)) return;
+    if (d === 'desktop') delete tab.device; else tab.device = d;
     paintDevice(); save();
+    if (!wv) return;
+    wv.classList.remove('dev-tablet', 'dev-mobile');
+    if (d !== 'desktop') wv.classList.add('dev-' + d);
     const ua = deviceUA(d);
-    for (const wv of wvs.values()) {
-      wv.setAttribute('useragent', ua);
-      try { wv.setUserAgent(ua); if (!wv.getURL().startsWith('data:')) wv.reload(); } catch {} // henüz yüklenmediyse öznitelik yeter
-    }
+    wv.setAttribute('useragent', ua);
+    try { wv.setUserAgent(ua); if (!wv.getURL().startsWith('data:')) wv.reload(); } catch {} // henüz yüklenmediyse öznitelik yeter
   }
   p.setDevice = setDevice;
   // Profil menüsü: profiller, yeni profil; bu sitenin şifre ve çerezleri; en altta kırmızı "Profili sil".
