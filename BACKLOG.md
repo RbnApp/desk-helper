@@ -13,7 +13,7 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
-## Kodda hazır (0.3.8'de çıkacak)
+## 0.3.8'de çıktı (2026-10-19)
 
 - Gezginde çift tık + "Birlikte aç ▸" (kullanıcı: "videolar da bizim içimizde açılsın", "uygun olmayan disabled ama ismi
   orda yazsın", "txt dosyaları da aynı şekilde"). openEntry: NOTE_EXT > IMAGE_EXT > MEDIA_EXT > desk.open. Alt menü:

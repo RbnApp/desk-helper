@@ -3,7 +3,7 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
-## 0.3.8 · hazırlanıyor
+## 0.3.8 · 2026-10-19
 
 **Yeni**
 - Medya oynatıcı: Kısayol ekle > "Medya oynatıcı" ile Desk Helper'ın içinde ses ve video paneli. Dosya ekle ya da sürükle-bırak;
