@@ -370,6 +370,7 @@ function destroyPanel(id, { close = false } = {}) {
   if (!p) return;
   if (p.leaf.kind === 'native') window.desk.native.release(id, close);
   if (p.leaf.kind === 'files') window.desk.unwatchDir(id);
+  p.onDestroy?.();
   p.el.remove();
   panels.delete(id);
 }
@@ -412,6 +413,7 @@ function createPanel(ws, leaf) {
   else if (leaf.kind === 'browser') buildBrowser(p);
   else if (leaf.kind === 'notes') buildNotes(p);
   else if (leaf.kind === 'files') buildFiles(p);
+  else if (leaf.kind === 'media') buildMedia(p);
   return p;
 }
 
@@ -1499,6 +1501,7 @@ async function buildFiles(p) {
       { label: t('Aç'), bold: true, action: () => openEntry(en) },
       isText ? { label: t('Not defterinde aç'), action: () => openInNotes(p, en.path) } : null,
       !en.isDir ? { label: t('Varsayılan programla aç'), action: () => window.desk.open(en.path) } : null,
+      !en.isDir && MEDIA_EXT.test(en.name) ? { label: t('Medya oynatıcıda aç'), action: () => openInMedia(p, [en.path]) } : null,
       { label: t('Dosya konumunu Gezgin\'de göster'), action: () => window.desk.reveal(en.path) },
       '-',
       { label: t('Kes'), key: 'Ctrl+X', action: () => setClip(en, true) },
@@ -1584,6 +1587,167 @@ document.addEventListener('contextmenu', (e) => {
     { label: t('Tümünü seç'), key: 'Ctrl+A', action: () => { el.focus(); el.select(); } },
   ]);
 }, true);
+
+// --- Medya oynatıcı paneli ---
+// Yerel ses ve video dosyalarını Desk Helper'ın içinde oynatır (HTML5 <video>; Electron'un Chromium'u H.264/AAC/MP3 dahil
+// mp4, webm, mp3, m4a, wav, ogg, flac çalar). Oynatma listesi, sürükle-bırak, ses/hız, tam ekran; liste, sıra, ses ve konum
+// panelde saklanır. Oynatılamayan dosyada (ör. bazı mkv/avi codec'leri) açık bir mesaj ve son çare "Varsayılan programda aç".
+const MEDIA_EXT = /\.(mp4|m4v|webm|mkv|mov|avi|wmv|mp3|m4a|aac|wav|ogg|oga|opus|flac|wma)$/i;
+const AUDIO_EXT = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|wma)$/i;
+const fileUrl = (p) => 'file:///' + p.replace(/\\/g, '/').replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/').replace(/^([A-Za-z])%3A/, '$1:');
+const baseName = (p) => p.split(/[\\/]/).pop();
+function fmtTime(s) {
+  if (!isFinite(s)) return '–:––';
+  s = Math.floor(s); const h0 = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, sec = String(s % 60).padStart(2, '0');
+  return h0 ? `${h0}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+function buildMedia(p) {
+  const L = p.leaf;
+  L.list ||= []; L.idx = Math.min(L.idx || 0, Math.max(0, L.list.length - 1));
+  if (L.vol == null) L.vol = 1;
+  L.rate ||= 1;
+  const video = h('video', { class: 'md-video', controls: true, preload: 'metadata' });
+  const art = h('div', { class: 'md-art' }, h('div', { class: 'md-note', textContent: '🎵' }), h('div', { class: 'md-art-t' }));
+  const err = h('div', { class: 'md-err', hidden: true });
+  const empty = h('div', { class: 'md-empty' },
+    h('div', { class: 'md-big', textContent: '🎬' }),
+    h('div', { textContent: t('Ses ya da video dosyası ekle ya da buraya sürükle') }),
+    h('button', { class: 'primary', textContent: '＋ ' + t('Dosya ekle'), onclick: () => addFiles() }));
+  const stage = h('div', { class: 'md-stage' }, video, art, err, empty);
+  const listEl = h('div', { class: 'md-list' });
+  const rate = h('select', { class: 'md-rate', title: t('Oynatma hızı') },
+    ...[0.5, 0.75, 1, 1.25, 1.5, 2].map((r) => h('option', { value: r, textContent: r + '×' })));
+  const repeat = h('button', { class: 'md-tool', title: t('Listeyi tekrarla') , textContent: '🔁' });
+  const toggleList = h('button', { class: 'md-tool', title: t('Oynatma listesi'), textContent: '☰' });
+  const bar = h('div', { class: 'md-bar' },
+    h('button', { class: 'md-tool', title: t('Önceki'), textContent: '⏮', onclick: () => step(-1) }),
+    h('button', { class: 'md-tool', title: t('Sonraki'), textContent: '⏭', onclick: () => step(1) }),
+    h('button', { class: 'md-tool', title: t('Dosya ekle'), textContent: '＋', onclick: () => addFiles() }),
+    h('span', { class: 'md-now' }), rate, repeat, toggleList);
+  const main = h('div', { class: 'md-main' }, stage, listEl);
+  p.body.append(bar, main);
+  p.body.classList.add('media');
+  p.body.tabIndex = 0;
+  const now = bar.querySelector('.md-now');
+
+  const save2 = () => save();
+  function renderList() {
+    listEl.replaceChildren(
+      h('div', { class: 'md-lh' }, h('span', { textContent: t('Oynatma listesi') + ` (${L.list.length})` }),
+        L.list.length ? h('button', { class: 'md-tool', title: t('Listeyi temizle'), textContent: '🗑', onclick: () => { L.list = []; L.idx = 0; load(false); } }) : null),
+      ...L.list.map((f, i) => {
+        const row = h('div', { class: 'md-item' + (i === L.idx ? ' on' : ''), title: f },
+          h('span', { class: 'md-i', textContent: AUDIO_EXT.test(f) ? '🎵' : '🎞' }), h('span', { class: 'md-n', textContent: baseName(f) }),
+          h('button', { class: 'x', textContent: '✕', title: t('Listeden çıkar'), onclick: (e) => { e.stopPropagation(); remove(i); } }));
+        row.addEventListener('dblclick', () => { L.idx = i; L.pos = 0; load(true); });
+        row.addEventListener('click', () => { L.idx = i; L.pos = 0; load(true); });
+        return row;
+      }));
+    p.body.classList.toggle('md-nolist', !!L.hideList);
+    repeat.classList.toggle('on', !!L.repeat);
+  }
+  function load(play) {
+    err.hidden = true;
+    const f = L.list[L.idx];
+    empty.hidden = !!f; video.hidden = !f;
+    const audio = !!f && AUDIO_EXT.test(f);
+    art.hidden = !audio; stage.classList.toggle('audio', audio);
+    if (!f) { video.removeAttribute('src'); video.load(); now.textContent = ''; setTitle(p, L.title); renderList(); save2(); return; }
+    art.querySelector('.md-art-t').textContent = baseName(f);
+    now.textContent = baseName(f);
+    setTitle(p, L.title + ' · ' + baseName(f));
+    video.src = fileUrl(f);
+    video.volume = L.vol; video.playbackRate = L.rate;
+    const start = L.pos || 0;
+    video.addEventListener('loadedmetadata', () => { if (start && start < video.duration - 1) video.currentTime = start; video.playbackRate = L.rate; }, { once: true });
+    if (play) video.play().catch(() => {});
+    renderList(); save2();
+  }
+  function step(d) {
+    if (!L.list.length) return;
+    let i = L.idx + d;
+    if (i >= L.list.length) { if (!L.repeat) return; i = 0; }
+    if (i < 0) i = L.repeat ? L.list.length - 1 : 0;
+    L.idx = i; L.pos = 0; load(true);
+  }
+  function remove(i) {
+    const wasCur = i === L.idx;
+    L.list.splice(i, 1);
+    if (i < L.idx) L.idx--;
+    if (L.idx >= L.list.length) L.idx = Math.max(0, L.list.length - 1);
+    if (wasCur) { L.pos = 0; load(false); } else { renderList(); save2(); }
+  }
+  // Listeye ekle; ilk eklenen hemen çalar (liste boşsa ya da playNow).
+  p.addMedia = (files, playNow = true) => {
+    files = files.filter(Boolean);
+    if (!files.length) return;
+    const first = L.list.length;
+    L.list.push(...files);
+    if (playNow || !L.list[L.idx] || first === 0) { L.idx = first; L.pos = 0; load(true); } else renderList();
+    save2();
+  };
+  async function addFiles() { p.addMedia(await window.desk.pickMedia() || []); }
+
+  video.addEventListener('ended', () => step(1));
+  video.addEventListener('volumechange', () => { L.vol = video.volume; save2(); });
+  video.addEventListener('ratechange', () => { if (video.playbackRate !== L.rate) { L.rate = video.playbackRate; rate.value = L.rate; save2(); } });
+  let lastSave = 0;
+  video.addEventListener('timeupdate', () => { L.pos = video.currentTime; if (Date.now() - lastSave > 5000) { lastSave = Date.now(); save2(); } });
+  video.addEventListener('pause', () => { L.pos = video.currentTime; save2(); });
+  video.addEventListener('error', () => {
+    const f = L.list[L.idx]; if (!f || !video.getAttribute('src')) return;
+    const code = video.error?.code;
+    err.replaceChildren(
+      h('div', { class: 'md-big', textContent: '⚠' }),
+      h('div', { class: 'md-err-t', textContent: code === 4
+        ? t('Bu dosya Desk Helper\'da oynatılamıyor: biçimi ya da sıkıştırması (codec) desteklenmiyor.')
+        : t('Dosya açılamadı (taşınmış ya da silinmiş olabilir).') }),
+      h('div', { class: 'md-err-f', textContent: baseName(f) }),
+      h('div', { class: 'md-err-b' },
+        L.list.length > 1 ? h('button', { textContent: t('Sonrakine geç'), onclick: () => step(1) }) : null,
+        h('button', { textContent: t('Varsayılan programda aç'), onclick: () => window.desk.open(f) })));
+    err.hidden = false; art.hidden = true; video.hidden = true;
+  });
+  rate.value = L.rate;
+  rate.addEventListener('change', () => { L.rate = +rate.value; video.playbackRate = L.rate; save2(); });
+  repeat.onclick = () => { L.repeat = !L.repeat; renderList(); save2(); };
+  toggleList.onclick = () => { L.hideList = !L.hideList; renderList(); save2(); };
+  // Sürükle-bırak: Gezgin'den ya da Desk Helper'ın dosya panelinden ses/video dosyaları.
+  p.body.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); p.body.classList.add('md-drop'); } });
+  p.body.addEventListener('dragleave', (e) => { if (!p.body.contains(e.relatedTarget)) p.body.classList.remove('md-drop'); });
+  p.body.addEventListener('drop', (e) => {
+    p.body.classList.remove('md-drop');
+    const files = [...(e.dataTransfer?.files || [])].map((f) => window.desk.pathForFile(f)).filter((x) => x && MEDIA_EXT.test(x));
+    if (!files.length) return;
+    e.preventDefault(); e.stopPropagation(); p.addMedia(files);
+  });
+  // Klavye: boşluk oynat/duraklat, ←/→ 5 sn, ↑/↓ ses, F tam ekran, N/P sonraki/önceki.
+  p.body.addEventListener('keydown', (e) => {
+    if (e.target.closest('select, input, button')) return;
+    const k = e.key.toLowerCase();
+    if (k === ' ') { e.preventDefault(); if (video.paused) video.play().catch(() => {}); else video.pause(); }
+    else if (k === 'arrowright') video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
+    else if (k === 'arrowleft') video.currentTime = Math.max(0, video.currentTime - 5);
+    else if (k === 'arrowup') { e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); }
+    else if (k === 'arrowdown') { e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); }
+    else if (k === 'f') { if (document.fullscreenElement) document.exitFullscreen(); else (stage.classList.contains('audio') ? null : video.requestFullscreen?.()); }
+    else if (k === 'n') step(1);
+    else if (k === 'p') step(-1);
+  });
+  p.onDestroy = () => { try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
+  load(false);
+}
+// Dosyaları aynı sekmedeki medya oynatıcıda aç (yoksa yanına yeni panel).
+function openInMedia(fromPanel, files) {
+  const ws = fromPanel.ws;
+  const existing = [...panels.values()].find((q) => q.ws === ws && q.leaf.kind === 'media' && q.addMedia);
+  if (existing) { existing.addMedia(files); setActive(ws, existing.leaf.id); return; }
+  const leaf = { type: 'panel', id: uid(), kind: 'media', title: t('Medya Oynatıcı'), emo: '🎬', list: files, idx: 0 };
+  insertNear(ws, fromPanel.leaf.id, leaf, 'right');
+  ws.active = leaf.id;
+  layout(); renderTabs(); save();
+  setTimeout(() => panels.get(leaf.id)?.body.querySelector('video')?.play().catch(() => {}), 300);
+}
 
 // Metin dosyasını aynı sekmedeki bir not defteri panelinde aç (yoksa yanına yeni panel ekle).
 function openInNotes(fromPanel, file) {
@@ -1955,7 +2119,13 @@ async function newShortcut() {
     ['site', '🧭 ' + t('Tarayıcıda bir site')],
     ['program', '🖥 ' + t('Kurulu bir program')],
     ['web', '🔗 ' + t('Uygulama içi web sayfası')],
+    ['media', '🎬 ' + t('Medya oynatıcı')],
   ]);
+  if (type === 'media') {
+    state.shortcuts.push({ id: uid(), name: t('Medya Oynatıcı'), emo: '🎬', kind: 'media' });
+    renderShortcuts(); save();
+    return;
+  }
   if (type === 'site') {
     const r = await modal({ title: t('Yeni kısayol'), text: t('Site Desk Helper\'ın tarayıcı panelinde açılır.'), fields: [
       { name: 'name', label: t('Ad'), value: '' }, { name: 'url', label: t('Adres (web sitesi)'), value: '' }] });

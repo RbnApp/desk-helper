@@ -303,6 +303,15 @@ ipcMain.handle('dialog:pick', async (_e, kind) => {
   return r.canceled ? null : r.filePaths[0];
 });
 
+// Medya oynatıcı: birden fazla ses/video dosyası seç.
+ipcMain.handle('media:pick', async () => {
+  const en = settings.lang === 'en';
+  const r = await dialog.showOpenDialog(win, { title: en ? 'Add audio or video' : 'Ses ya da video ekle', properties: ['openFile', 'multiSelections'],
+    filters: [{ name: en ? 'Audio and video' : 'Ses ve video', extensions: ['mp4', 'm4v', 'webm', 'mkv', 'mov', 'avi', 'wmv', 'mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'wma'] },
+      { name: en ? 'All files' : 'Tüm dosyalar', extensions: ['*'] }] });
+  return r.canceled ? [] : r.filePaths;
+});
+
 // "Simgeyi değiştir": kullanıcının seçtiği resim küçültülüp veri adresi olarak durumda saklanır (dosya silinse de kalır).
 ipcMain.handle('icon:pick', async () => {
   const en = settings.lang === 'en';

@@ -5,6 +5,13 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.3.8 · hazırlanıyor
 
+**Yeni**
+- Medya oynatıcı: Kısayol ekle > "Medya oynatıcı" ile Desk Helper'ın içinde ses ve video paneli. Dosya ekle ya da sürükle-bırak;
+  oynatma listesi, önceki/sonraki, listeyi tekrarla, hız (0,5×–2×), ses, tam ekran; klavye: boşluk, ←/→ 5 sn, ↑/↓ ses, F, N/P.
+  Liste, kaldığın yer ve ses düzeyi hatırlanır. mp4, webm, mkv (H.264/VP9), mp3, m4a, wav, ogg, flac çalar. Dosya gezgininde
+  ses/video dosyasına sağ tık > "Medya oynatıcıda aç". Oynatılamayan dosyada (ör. eski avi/xvid) açık bir mesaj, sonrakine geç
+  ve son çare "Varsayılan programda aç".
+
 **Değişiklikler**
 - Desk Helper artık MIT lisanslı açık kaynak (LICENSE dosyası).
 - Ayarlar > Yenilikler artık yalnızca kurulu sürümün notlarını gösterir; önceki sürümler için en altta GitHub'daki

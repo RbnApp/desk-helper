@@ -401,3 +401,41 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .cl-more { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
 .cl-more a { color: var(--accent); text-decoration: none; }
 .cl-more a:hover { text-decoration: underline; }
+
+/* Medya oynatıcı */
+.pbody.media { display: flex; flex-direction: column; }
+.md-bar { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-bottom: 1px solid var(--line); flex: none; }
+.md-tool { min-width: 30px; height: 28px; padding: 0 6px; border-radius: 7px; color: var(--muted); background: none; }
+.md-tool:hover { background: var(--panel); color: var(--text); }
+.md-tool.on { color: var(--on-accent); background: var(--accent); }
+.md-now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--muted); padding: 0 6px; }
+.md-rate { height: 28px; border-radius: 7px; font-size: 12px; }
+.md-main { flex: 1; min-height: 0; display: flex; }
+.md-stage { flex: 1; min-width: 0; position: relative; background: #000; display: flex; align-items: center; justify-content: center; }
+.md-video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
+.md-video[hidden] { display: none; }
+.md-stage.audio { background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 30%, #111), #0b0d12 70%); flex-direction: column; }
+.md-stage.audio .md-video { height: 54px; width: min(640px, 92%); position: absolute; bottom: 24px; background: transparent; }
+.md-art { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #fff; margin-bottom: 80px; padding: 0 20px; text-align: center; }
+.md-art[hidden] { display: none; }
+.md-note { font-size: 72px; filter: drop-shadow(0 8px 24px rgba(0,0,0,.5)); }
+.md-art-t { font-size: 15px; opacity: .9; word-break: break-word; }
+.md-empty, .md-err { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); background: var(--bg); text-align: center; padding: 20px; }
+.md-empty[hidden], .md-err[hidden] { display: none; }
+.md-big { font-size: 48px; }
+.md-err-t { color: var(--text); max-width: 420px; }
+.md-err-f { font-size: 12px; word-break: break-all; }
+.md-err-b { display: flex; gap: 8px; }
+.md-empty .primary { background: var(--accent); color: var(--on-accent); padding: 7px 14px; border-radius: 8px; }
+.md-list { width: 260px; flex: none; border-left: 1px solid var(--line); overflow: auto; background: var(--panel); }
+.md-nolist .md-list { display: none; }
+.md-lh { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; font-size: 12px; color: var(--muted); position: sticky; top: 0; background: var(--panel); }
+.md-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12.5px; cursor: pointer; border-left: 2px solid transparent; }
+.md-item:hover { background: var(--bg); }
+.md-item.on { border-left-color: var(--accent); color: var(--text); background: var(--bg); font-weight: 600; }
+.md-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-item .x { opacity: 0; padding: 0 4px; font-size: 10px; background: none; color: var(--muted); }
+.md-item:hover .x { opacity: 1; }
+.media.md-drop .md-stage { box-shadow: inset 0 0 0 3px var(--accent); }
+.md-err-b button { padding: 7px 14px; border-radius: 8px; background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+.md-err-b button:hover { border-color: var(--accent); }

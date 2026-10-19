@@ -26,6 +26,14 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
   notları GitHub'da →" bağlantısı: info.repo + '/releases' (https://github.com/RbnApp/desk-helper/releases), uygulamanın
   tarayıcı panelinde açılır. Test: tek bölüm görünüyor, bağlantı tarayıcı panelinde doğru adresi açtı.
 
+- Medya oynatıcı paneli (kullanıcı: "Windows Media Player ekleyebilir miyiz", "bizim uygulamada pencere olarak açılmalı").
+  WMP gömülemez; kendi panelimiz kind 'media': HTML5 <video> (ses için de), file:// adresi (CSP media-src 'self' file: blob:),
+  leaf.list/idx/pos/vol/rate/repeat/hideList saklanır, main media:pick (çoklu seçim), sürükle-bırak webUtils.getPathForFile,
+  dosya gezgininde sağ tık > Medya oynatıcıda aç (openInMedia: aynı sekmedeki oynatıcıya ekler). Test (xvfb, ffmpeg ile üretilen
+  dosyalar): Türkçe adlı mp4 ve mp3 çaldı, bitince sonrakine geçti; H.264 mkv çaldı; xvid avi hata mesajı gösterdi; yeniden
+  açılışta liste, sıra, konum (1,5 sn) ve ses (0,4) korundu. Açık soru: oynatılamayan biçimler için ffmpeg gömmek (kurucuya
+  yaklaşık +30–40 MB) kullanıcıya soruldu.
+
 ## 0.3.7'de çıktı (2026-10-17)
 
 - Tek açılış (Sefa'nın geri bildirimi: "bir uygulamaya 10 kere tıklayınca 10 kere açıyor"). WhatsApp, Telegram, Instagram ve X

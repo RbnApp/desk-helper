@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('desk', {
     onProgress: (fn) => { const f = (_e, p) => fn(p); ipcRenderer.on('upd:progress', f); return () => ipcRenderer.removeListener('upd:progress', f); },
   },
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
+  pickMedia: () => ipcRenderer.invoke('media:pick'),
   describe: (p) => ipcRenderer.invoke('fav:describe', p),
   installedApps: (refresh) => ipcRenderer.invoke('apps:list', refresh),
   iconFor: (p) => ipcRenderer.invoke('fav:icon', p),
