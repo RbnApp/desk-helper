@@ -17,6 +17,7 @@ window.I18N_EN = {
   'Geçmiş': 'History',
   'Tarayıcı menüsü': 'Browser menu',
   'Görünüm': 'View',
+  'Önceki sürümlerin notları GitHub\'da': 'Notes for earlier versions on GitHub',
   'Masaüstü görünümü': 'Desktop view',
   'Tablet görünümü': 'Tablet view',
   'Mobil görünüm': 'Mobile view',

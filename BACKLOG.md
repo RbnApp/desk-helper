@@ -21,6 +21,11 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
   masaüstü. 0.3.7'den kalan leaf.device bir kez o paneldeki sekmelere dağıtılıp silinir. Test: sekme 1 mobil, sekme 2
   masaüstü kaldı; sekme 2 tablet yapılınca sekme 1 mobil kaldı; yeni sekme masaüstü; yeniden açılışta üçü de korundu.
 
+- Yenilikler sekmesi yalnızca kurulu sürüm (kullanıcı isteği): CHANGELOG ## bölümlerinden info.version ile eşleşen, yoksa en
+  üstteki (geliştirme ortamında app.getVersion Electron sürümünü verdiği için en üstteki görünür). En altta "Önceki sürümlerin
+  notları GitHub'da →" bağlantısı: info.repo + '/releases' (https://github.com/RbnApp/desk-helper/releases), uygulamanın
+  tarayıcı panelinde açılır. Test: tek bölüm görünüyor, bağlantı tarayıcı panelinde doğru adresi açtı.
+
 ## 0.3.7'de çıktı (2026-10-17)
 
 - Tek açılış (Sefa'nın geri bildirimi: "bir uygulamaya 10 kere tıklayınca 10 kere açıyor"). WhatsApp, Telegram, Instagram ve X

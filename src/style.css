@@ -396,3 +396,8 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
   box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(0,0,0,.3); }
 .br-views webview.dev-tablet { --dev-w: 820px; }
 .br-views webview.dev-mobile { --dev-w: 390px; }
+
+/* Yenilikler: önceki sürümler bağlantısı */
+.cl-more { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.cl-more a { color: var(--accent); text-decoration: none; }
+.cl-more a:hover { text-decoration: underline; }

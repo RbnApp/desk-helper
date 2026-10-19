@@ -7,6 +7,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 **Değişiklikler**
 - Desk Helper artık MIT lisanslı açık kaynak (LICENSE dosyası).
+- Ayarlar > Yenilikler artık yalnızca kurulu sürümün notlarını gösterir; önceki sürümler için en altta GitHub'daki
+  sürümler sayfasına bağlantı var.
 - Uygulamanın GitHub deposu github.com/RbnApp/desk-helper adresine taşındı; güncellemeler ve Hakkında'daki bağlantı
   yeni adresi kullanır (eski adres de yönlendirdiği için eski sürümler güncellemeyi bulmaya devam eder).
 

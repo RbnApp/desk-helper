@@ -2375,11 +2375,14 @@ async function openSettings(tab = 'settings') {
         h('button', { class: 'primary', textContent: t('Güncellemeleri denetle'), onclick: () => checkUpdate(true) }),
         h('button', { textContent: t('Veri klasörü'), onclick: () => window.desk.open(info.dataDir) })));
 
-    // Yenilikler: CHANGELOG.md uygulamanın içinden (internetsiz), altında GitHub'daki sürüm notları bağlantısı.
+    // Yenilikler: yalnızca kurulu sürümün notu (CHANGELOG.md'den, internetsiz); bulunamazsa en üstteki bölüm.
+    // Önceki sürümler için en altta GitHub'daki sürümler sayfasına bağlantı.
     const notesPane = h('div', { class: 'pane changelog' }, h('div', { class: 'hint', textContent: '…' }));
     window.desk.changelog().then((md) => {
-      notesPane.replaceChildren(...renderMarkdown(md ? md.slice(Math.max(0, md.indexOf('\n## '))) : t('Sürüm notları bulunamadı.')),
-        ...(info.repo ? [h('div', { class: 'fav-add' }, h('button', { textContent: t('GitHub\'da sürüm notları'), onclick: () => openLink(info.repo + '/releases') }))] : []));
+      const parts = (md || '').split(/\n(?=## )/).filter((x) => x.startsWith('## '));
+      const mine = parts.find((x) => x.startsWith('## ' + info.version + ' ')) || parts[0];
+      notesPane.replaceChildren(...renderMarkdown(mine || t('Sürüm notları bulunamadı.')),
+        ...(info.repo ? [h('div', { class: 'cl-more' }, h('a', { href: '#', textContent: t('Önceki sürümlerin notları GitHub\'da') + ' →', onclick: (e) => { e.preventDefault(); openLink(info.repo + '/releases'); } }))] : []));
     });
     const openLink = (url) => { api.close(); openInDeskBrowser(url); };
 
