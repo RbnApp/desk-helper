@@ -125,6 +125,7 @@ window.I18N_EN = {
   'Önceki': 'Previous',
   'Sonraki': 'Next',
   'Listeyi temizle': 'Clear list',
+  'Medya ekle': 'Add media',
   'Listeden çıkar': 'Remove from list',
   'Bu dosya Desk Helper\'da oynatılamıyor: biçimi ya da sıkıştırması (codec) desteklenmiyor.': 'Desk Helper cannot play this file: its format or codec is not supported.',
   'Dosya açılamadı (taşınmış ya da silinmiş olabilir).': 'The file could not be opened (it may have been moved or deleted).',

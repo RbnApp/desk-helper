@@ -482,6 +482,12 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .media.md-drop .md-stage { box-shadow: inset 0 0 0 3px var(--accent); }
 .md-list { display: flex; flex-direction: column; }
 .md-list.tv { width: 300px; overflow: hidden; }
+.md-list:not(.tv) { overflow: hidden; }
+.md-items { flex: 1; min-height: 0; overflow: auto; }
+.md-lf { display: flex; gap: 6px; padding: 8px; flex: none; border-top: 1px solid var(--line); }
+.md-lf button { flex: 1; padding: 6px 8px; border-radius: 7px; font-size: 12.5px; white-space: nowrap; background: var(--head); color: var(--text); }
+.md-lf button:not(:disabled):hover { background: var(--line); }
+.md-lf button:disabled { opacity: .45; cursor: default; }
 .md-tabs { display: flex; gap: 2px; padding: 6px 6px 0; flex: none; border-bottom: 1px solid var(--line); }
 .md-tabs button { flex: 1; padding: 6px 8px; border-radius: 7px 7px 0 0; color: var(--muted); background: none; font-size: 12.5px; }
 .md-tabs button.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }

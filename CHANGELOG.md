@@ -38,6 +38,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Tarayıcıda "Kayıtlı şifreler…" ve "Bu sitenin çerezlerini temizle…" artık yalnızca sağdaki ⋮ menüsünde. Profil menüsünden
   ve adres çubuğunun yanındaki 🍪 düğmesinden kaldırıldı (profil menüsü yalnızca profil seçimi içindir).
 - Fotoğraf görüntüleyicide sol üstteki 📂 düğmesinde artık "Dosya aç" yazıyor (önceden yalnızca simgeydi).
+- Medya oynatıcıda oynatma listesinin altında "＋ Medya ekle" ve "🗑 Listeyi temizle" düğmeleri var; liste uzayınca da
+  altta sabit kalırlar. Başlıktaki küçük 🗑 düğmesi bunun yerine kaldırıldı.
 
 ## 0.3.8 · 2026-10-19
 

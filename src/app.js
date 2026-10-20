@@ -1808,16 +1808,18 @@ function buildMedia(p) {
       return;
     }
     listEl.replaceChildren(viewTabs,
-      h('div', { class: 'md-lh' }, h('span', { textContent: t('Oynatma listesi') + ` (${L.list.length})` }),
-        L.list.length ? h('button', { class: 'md-tool', title: t('Listeyi temizle'), textContent: '🗑', onclick: () => { L.list = []; L.idx = 0; load(false); } }) : null),
-      ...L.list.map((f, i) => {
+      h('div', { class: 'md-lh' }, h('span', { textContent: t('Oynatma listesi') + ` (${L.list.length})` })),
+      h('div', { class: 'md-items' }, ...L.list.map((f, i) => {
         const row = h('div', { class: 'md-item' + (i === L.idx && !L.tvOn ? ' on' : ''), title: f },
           h('span', { class: 'md-i', textContent: AUDIO_EXT.test(f) ? '🎵' : '🎞' }), h('span', { class: 'md-n', textContent: baseName(f) }),
           h('button', { class: 'x', textContent: '✕', title: t('Listeden çıkar'), onclick: (e) => { e.stopPropagation(); remove(i); } }));
         row.addEventListener('dblclick', () => { L.idx = i; L.pos = 0; load(true); });
         row.addEventListener('click', () => { L.idx = i; L.pos = 0; load(true); });
         return row;
-      }));
+      })),
+      h('div', { class: 'md-lf' },
+        h('button', { textContent: '＋ ' + t('Medya ekle'), title: t('Dosya ekle'), onclick: () => addFiles() }),
+        h('button', { textContent: '🗑 ' + t('Listeyi temizle'), disabled: !L.list.length, onclick: () => { L.list = []; L.idx = 0; load(false); } })));
   }
   function load(play) {
     tv.stop(); L.tvOn = false;

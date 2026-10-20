@@ -15,6 +15,9 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Oynatma listesi alt düğmeleri (kullanıcı: "listenin altında listeyi temizle ve medya ekle butonları olsun"). Dosyalar
+  görünümü: .md-items (kayan) + .md-lf (sabit alt çubuk: Medya ekle → addFiles, Listeyi temizle; liste boşken pasif).
+  .md-lh'deki 🗑 kaldırıldı. Test (xvfb): 0/3/63 öğede çubuk listenin dibinde, temizle sonrası pasif.
 - Fotoğraf görüntüleyici "Dosya aç" (kullanıcı: "şurda dosya aç yazmalı, yeni keşfettim"): araç çubuğundaki 📂 düğmesi
   "📂 Dosya aç" etiketli, ipucu "Resim aç…". i18n 'Dosya aç' → 'Open file'.
 - YouTube reklam engelleyici (kullanıcı: "hesap yoksa reklam izlerim"; karar kartı "Evet, ekle"). src/adblock.js,
