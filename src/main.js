@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net } = require('electron');
 const path = require('path');
 const native = require('./native');
 const fs = require('fs');
@@ -58,6 +58,7 @@ function createWindow() {
   Menu.setApplicationMenu(null);
   win.loadFile(path.join(__dirname, 'index.html'));
   session.fromPartition('persist:desk').setUserAgent(CHROME_UA);
+  iptvBridge();
 
   try { native.rescueParked(); } catch {}
   docker = native.createDocker({
@@ -319,6 +320,98 @@ ipcMain.handle('media:pick', async () => {
     filters: [{ name: en ? 'Audio and video' : 'Ses ve video', extensions: ['mp4', 'm4v', 'webm', 'mkv', 'mov', 'avi', 'wmv', 'mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'wma'] },
       { name: en ? 'All files' : 'Tüm dosyalar', extensions: ['*'] }] });
   return r.canceled ? [] : r.filePaths;
+});
+
+// --- IPTV (medya oynatıcıda M3U listesi) ---
+// Listeyi ana süreç indirir (CORS yok) ve userData/iptv altında saklar; ağ yoksa son indirilen kullanılır.
+// Yayınları oynatıcı (hls.js / mpegts.js) uygulama penceresinden ister: IPTV sunucuları çoğunlukla CORS başlığı
+// göndermez, bu yüzden YALNIZCA uygulama penceresinin kendi xhr/medya isteklerine izin başlığı eklenir (web panelleri
+// ve tarayıcı kendi oturumlarındadır, etkilenmez). Listede #EXTVLCOPT ile gelen User-Agent / Referer o sunucuya
+// giden isteklerde kullanılır.
+const iptvDir = () => path.join(dataDir(), 'iptv');
+const iptvCacheFile = (src) => path.join(iptvDir(), require('crypto').createHash('sha1').update(src).digest('hex').slice(0, 16) + '.m3u');
+const streamHeaders = new Map(); // origin -> { ua, referer }
+const originOf = (u) => { try { return new URL(u).origin; } catch { return ''; } };
+function iptvBridge() {
+  const ses = session.defaultSession;
+  const mine = (d) => win && !win.isDestroyed() && d.webContentsId === win.webContents.id && /^https?:/.test(d.url) && ['xhr', 'media', 'other'].includes(d.resourceType);
+  ses.webRequest.onBeforeSendHeaders({ urls: ['http://*/*', 'https://*/*'] }, (d, cb) => {
+    if (!mine(d)) return cb({});
+    const h = streamHeaders.get(originOf(d.url));
+    const rh = { ...d.requestHeaders };
+    if (h?.ua) rh['User-Agent'] = h.ua;
+    if (h?.referer) rh.Referer = h.referer;
+    delete rh.Origin; // file:// sayfası "Origin: null" gönderir; bazı sunucular bunu reddediyor
+    cb({ requestHeaders: rh });
+  });
+  ses.webRequest.onHeadersReceived({ urls: ['http://*/*', 'https://*/*'] }, (d, cb) => {
+    if (!mine(d)) return cb({});
+    const rh = {};
+    for (const [k, v] of Object.entries(d.responseHeaders || {})) if (!/^access-control-allow-(origin|credentials)$/i.test(k)) rh[k] = v;
+    rh['Access-Control-Allow-Origin'] = ['*'];
+    cb({ responseHeaders: rh });
+  });
+}
+async function fetchText(url, ua) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30000);
+  try {
+    const res = await net.fetch(url, { headers: ua ? { 'User-Agent': ua } : {}, signal: ctl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > 80 * 1024 * 1024) throw new Error('liste çok büyük');
+    return buf.toString('utf8').replace(/^\uFEFF/, '');
+  } finally { clearTimeout(timer); }
+}
+// src: http(s) adresi ya da dosya yolu. refresh=false ise önce saklanan kopya kullanılır (açılış hızlı olsun).
+ipcMain.handle('iptv:load', async (_e, src, refresh) => {
+  const remote = /^https?:\/\//i.test(src);
+  if (!remote) return { text: fs.readFileSync(src, 'utf8').replace(/^\uFEFF/, ''), at: fs.statSync(src).mtimeMs };
+  const cache = iptvCacheFile(src);
+  if (!refresh && fs.existsSync(cache)) return { text: fs.readFileSync(cache, 'utf8'), at: fs.statSync(cache).mtimeMs, cached: true };
+  try {
+    const text = await fetchText(src);
+    fs.mkdirSync(iptvDir(), { recursive: true });
+    fs.writeFileSync(cache, text);
+    return { text, at: Date.now() };
+  } catch (err) {
+    if (fs.existsSync(cache)) return { text: fs.readFileSync(cache, 'utf8'), at: fs.statSync(cache).mtimeMs, cached: true, stale: String(err.message || err) };
+    throw err;
+  }
+});
+ipcMain.handle('iptv:forget', (_e, src) => { try { fs.rmSync(iptvCacheFile(src), { force: true }); } catch {} });
+ipcMain.handle('iptv:pick', async () => {
+  const en = settings.lang === 'en';
+  const r = await dialog.showOpenDialog(win, { title: en ? 'Open M3U playlist' : 'M3U listesi aç', properties: ['openFile'],
+    filters: [{ name: 'M3U', extensions: ['m3u', 'm3u8'] }, { name: en ? 'All files' : 'Tüm dosyalar', extensions: ['*'] }] });
+  return r.canceled ? null : r.filePaths[0];
+});
+// Kanalın yayın sunucusuna özel başlıklar (#EXTVLCOPT:http-user-agent / http-referrer).
+ipcMain.handle('iptv:headers', (_e, url, h) => {
+  const o = originOf(url);
+  if (!o) return;
+  if (h && (h.ua || h.referer)) streamHeaders.set(o, h); else streamHeaders.delete(o);
+});
+// Uzantısı belli olmayan yayının türünü ilk baytlarından anla: HLS listesi mi, MPEG-TS mi, başka bir şey mi.
+ipcMain.handle('iptv:probe', async (_e, url) => {
+  const h = streamHeaders.get(originOf(url)) || {};
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const res = await net.fetch(url, { headers: { ...(h.ua ? { 'User-Agent': h.ua } : {}), ...(h.referer ? { Referer: h.referer } : {}) }, signal: ctl.signal });
+    const ct = res.headers.get('content-type') || '';
+    let head = Buffer.alloc(0);
+    if (res.ok && res.body) {
+      const rd = res.body.getReader();
+      while (head.length < 376) { const { done, value } = await rd.read(); if (done) break; head = Buffer.concat([head, Buffer.from(value)]); }
+      rd.cancel().catch(() => {});
+    }
+    const txt = head.toString('latin1');
+    const kind = /^\s*#EXTM3U/.test(txt) || /mpegurl/i.test(ct) ? 'hls' : head[0] === 0x47 && (head.length < 189 || head[188] === 0x47) || /mp2t/i.test(ct) ? 'ts' : /^(video|audio)\//i.test(ct) ? 'native' : 'unknown';
+    return { ok: res.ok, status: res.status, ct, kind, url: res.url };
+  } catch (err) {
+    return { ok: false, status: 0, error: String(err.message || err), kind: 'unknown' };
+  } finally { ctl.abort(); clearTimeout(timer); }
 });
 
 // "Simgeyi değiştir": kullanıcının seçtiği resim küçültülüp veri adresi olarak durumda saklanır (dosya silinse de kalır).

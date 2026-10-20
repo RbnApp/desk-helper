@@ -16,6 +16,13 @@ contextBridge.exposeInMainWorld('desk', {
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
   pickMedia: () => ipcRenderer.invoke('media:pick'),
   pickImage: () => ipcRenderer.invoke('photo:pick'),
+  iptv: {
+    load: (src, refresh) => ipcRenderer.invoke('iptv:load', src, refresh),
+    forget: (src) => ipcRenderer.invoke('iptv:forget', src),
+    pick: () => ipcRenderer.invoke('iptv:pick'),
+    headers: (url, h) => ipcRenderer.invoke('iptv:headers', url, h),
+    probe: (url) => ipcRenderer.invoke('iptv:probe', url),
+  },
   describe: (p) => ipcRenderer.invoke('fav:describe', p),
   installedApps: (refresh) => ipcRenderer.invoke('apps:list', refresh),
   iconFor: (p) => ipcRenderer.invoke('fav:icon', p),

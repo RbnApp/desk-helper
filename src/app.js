@@ -1673,7 +1673,52 @@ document.addEventListener('contextmenu', (e) => {
 // Yerel ses ve video dosyalarını Desk Helper'ın içinde oynatır (HTML5 <video>; Electron'un Chromium'u H.264/AAC/MP3 dahil
 // mp4, webm, mp3, m4a, wav, ogg, flac çalar). Oynatma listesi, sürükle-bırak, ses/hız, tam ekran; liste, sıra, ses ve konum
 // panelde saklanır. Oynatılamayan dosyada (ör. bazı mkv/avi codec'leri) açık bir mesaj ve son çare "Varsayılan programda aç".
-const MEDIA_EXT = /\.(mp4|m4v|webm|mkv|mov|avi|wmv|mp3|m4a|aac|wav|ogg|oga|opus|flac|wma)$/i;
+const MEDIA_EXT = /\.(mp4|m4v|webm|mkv|mov|avi|wmv|mp3|m4a|aac|wav|ogg|oga|opus|flac|wma|m3u8?)$/i;
+const M3U_EXT = /\.m3u8?$/i;
+
+// --- IPTV: M3U listesi ---
+// #EXTINF:-1 tvg-id=".." tvg-name=".." tvg-logo=".." group-title="..",Kanal adı  ardından yayın adresi.
+// #EXTGRP grup, #EXTVLCOPT:http-user-agent / http-referrer o kanalın isteklerinde kullanılır (main.js iptv:headers).
+// İçinde #EXT-X- etiketleri olan "liste" aslında tek bir HLS yayınıdır; o zaman tek kanal döner.
+function parseM3U(text, base) {
+  const abs = (u) => { try { return base ? new URL(u, base).href : u; } catch { return u; } };
+  if (/^#EXT-X-(TARGETDURATION|STREAM-INF|MEDIA-SEQUENCE)/m.test(text)) return [{ name: base ? baseName(base.split('?')[0]) : 'Yayın', url: base, logo: '', group: '' }];
+  const out = [];
+  let info = {};
+  for (let line of text.split(/\r?\n/)) {
+    line = line.trim();
+    if (!line) continue;
+    if (line.startsWith('#EXTINF:')) {
+      info = {};
+      const body = line.slice(8);
+      let q = false, cut = -1;
+      for (let i = 0; i < body.length; i++) { const c = body[i]; if (c === '"') q = !q; else if (c === ',' && !q) { cut = i; break; } }
+      const attrs = cut >= 0 ? body.slice(0, cut) : body;
+      for (const m of attrs.matchAll(/([\w-]+)="([^"]*)"/g)) info[m[1].toLowerCase()] = m[2];
+      info.name = (cut >= 0 ? body.slice(cut + 1) : '').trim() || info['tvg-name'] || '';
+    } else if (line.startsWith('#EXTGRP:')) info.grp = line.slice(8).trim();
+    else if (/^#EXTVLCOPT:http-user-agent=/i.test(line)) info.ua = line.replace(/^#EXTVLCOPT:http-user-agent=/i, '');
+    else if (/^#EXTVLCOPT:http-refere?rer=/i.test(line)) info.referer = line.replace(/^#EXTVLCOPT:http-refere?rer=/i, '');
+    else if (line.startsWith('#')) continue;
+    else {
+      const url = abs(line);
+      out.push({ name: info.name || info['tvg-name'] || url, url, logo: info['tvg-logo'] || '', group: info['group-title'] || info.grp || '',
+        ...(info.ua ? { ua: info.ua } : {}), ...(info.referer ? { referer: info.referer } : {}) });
+      info = {};
+    }
+  }
+  return out;
+}
+const scriptOnce = new Map();
+function loadScript(src) {
+  if (!scriptOnce.has(src)) scriptOnce.set(src, new Promise((res, rej) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = res; el.onerror = () => { scriptOnce.delete(src); rej(new Error(src)); };
+    document.head.append(el);
+  }));
+  return scriptOnce.get(src);
+}
+const trLower = (x) => String(x).toLocaleLowerCase('tr');
 const AUDIO_EXT = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|wma)$/i;
 const fileUrl = (p) => 'file:///' + p.replace(/\\/g, '/').replace(/^\/+/, '').split('/').map(encodeURIComponent).join('/').replace(/^([A-Za-z])%3A/, '$1:');
 const baseName = (p) => p.split(/[\\/]/).pop();
@@ -1709,11 +1754,12 @@ function buildMedia(p) {
     ...[0.5, 0.75, 1, 1.25, 1.5, 2].map((r) => h('option', { value: r, textContent: r + '×' })));
   const repeat = h('button', { class: 'md-tool', title: t('Listeyi tekrarla') , textContent: '🔁' });
   const toggleList = h('button', { class: 'md-tool', title: t('Oynatma listesi'), textContent: '☰' });
+  const tvBtn = h('button', { class: 'md-tool', title: t('IPTV: M3U kanal listesi'), textContent: '📺', onclick: () => { L.hideList = false; L.listView = 'tv'; renderList(); save2(); if (!L.tv?.src) tv.ask(); } });
   const bar = h('div', { class: 'md-bar' },
     h('button', { class: 'md-tool', title: t('Önceki'), textContent: '⏮', onclick: () => step(-1) }),
     h('button', { class: 'md-tool', title: t('Sonraki'), textContent: '⏭', onclick: () => step(1) }),
     h('button', { class: 'md-tool', title: t('Dosya ekle'), textContent: '＋', onclick: () => addFiles() }),
-    h('span', { class: 'md-now' }), rate, repeat, toggleList);
+    h('span', { class: 'md-now' }), rate, repeat, tvBtn, toggleList);
   const main = h('div', { class: 'md-main' }, stage, listEl);
   p.body.append(bar, main);
   p.body.classList.add('media');
@@ -1721,28 +1767,40 @@ function buildMedia(p) {
   const now = bar.querySelector('.md-now');
 
   const save2 = () => save();
+  const viewTabs = h('div', { class: 'md-tabs' },
+    h('button', { 'data-v': 'files', textContent: '🎞 ' + t('Dosyalar'), onclick: () => { L.listView = 'files'; renderList(); save2(); } }),
+    h('button', { 'data-v': 'tv', textContent: '📺 TV', onclick: () => { L.listView = 'tv'; renderList(); save2(); if (!L.tv?.src) tv.ask(); } }));
   function renderList() {
-    listEl.replaceChildren(
+    for (const b of viewTabs.children) b.classList.toggle('on', b.dataset.v === (L.listView || 'files'));
+    listEl.classList.toggle('tv', L.listView === 'tv');
+    p.body.classList.toggle('md-nolist', !!L.hideList);
+    repeat.classList.toggle('on', !!L.repeat);
+    if (L.listView === 'tv') {
+      if (listEl.lastChild !== tv.box) listEl.replaceChildren(viewTabs, tv.box);
+      tv.paint();
+      return;
+    }
+    listEl.replaceChildren(viewTabs,
       h('div', { class: 'md-lh' }, h('span', { textContent: t('Oynatma listesi') + ` (${L.list.length})` }),
         L.list.length ? h('button', { class: 'md-tool', title: t('Listeyi temizle'), textContent: '🗑', onclick: () => { L.list = []; L.idx = 0; load(false); } }) : null),
       ...L.list.map((f, i) => {
-        const row = h('div', { class: 'md-item' + (i === L.idx ? ' on' : ''), title: f },
+        const row = h('div', { class: 'md-item' + (i === L.idx && !L.tvOn ? ' on' : ''), title: f },
           h('span', { class: 'md-i', textContent: AUDIO_EXT.test(f) ? '🎵' : '🎞' }), h('span', { class: 'md-n', textContent: baseName(f) }),
           h('button', { class: 'x', textContent: '✕', title: t('Listeden çıkar'), onclick: (e) => { e.stopPropagation(); remove(i); } }));
         row.addEventListener('dblclick', () => { L.idx = i; L.pos = 0; load(true); });
         row.addEventListener('click', () => { L.idx = i; L.pos = 0; load(true); });
         return row;
       }));
-    p.body.classList.toggle('md-nolist', !!L.hideList);
-    repeat.classList.toggle('on', !!L.repeat);
   }
   function load(play) {
+    tv.stop(); L.tvOn = false;
     err.hidden = true;
     const f = L.list[L.idx];
     empty.hidden = !!f; video.hidden = vbox.hidden = !f;
     const audio = !!f && AUDIO_EXT.test(f);
     art.hidden = !audio; stage.classList.toggle('audio', audio);
     if (!f) { video.removeAttribute('src'); video.load(); now.textContent = ''; setTitle(p, L.title); renderList(); save2(); return; }
+    art.querySelector('.md-note').textContent = '🎵';
     art.querySelector('.md-art-t').textContent = baseName(f);
     now.textContent = baseName(f);
     setTitle(p, L.title + ' · ' + baseName(f));
@@ -1754,6 +1812,7 @@ function buildMedia(p) {
     renderList(); save2();
   }
   function step(d) {
+    if (L.tvOn) return tv.step(d);
     if (!L.list.length) return;
     let i = L.idx + d;
     if (i >= L.list.length) { if (!L.repeat) return; i = 0; }
@@ -1770,6 +1829,8 @@ function buildMedia(p) {
   // Listeye ekle; ilk eklenen hemen çalar (liste boşsa ya da playNow).
   p.addMedia = (files, playNow = true) => {
     files = files.filter(Boolean);
+    const m3u = files.find((f) => M3U_EXT.test(f));
+    if (m3u) { tv.open(m3u); files = files.filter((f) => !M3U_EXT.test(f)); }
     if (!files.length) return;
     // Listede zaten olan tek dosya (ör. gezginde ikinci kez çift tık) yeniden eklenmez, ona geçilir
     if (files.length === 1 && L.list.includes(files[0])) { L.idx = L.list.indexOf(files[0]); L.pos = 0; load(true); save2(); return; }
@@ -1780,13 +1841,14 @@ function buildMedia(p) {
   };
   async function addFiles() { p.addMedia(await window.desk.pickMedia() || []); }
 
-  video.addEventListener('ended', () => step(1));
+  video.addEventListener('ended', () => (L.tvOn ? tv.dropped() : step(1)));
   video.addEventListener('volumechange', () => { L.vol = video.volume; save2(); });
   video.addEventListener('ratechange', () => { if (video.playbackRate !== L.rate) { L.rate = video.playbackRate; rate.value = L.rate; save2(); } });
   let lastSave = 0;
-  video.addEventListener('timeupdate', () => { L.pos = video.currentTime; if (Date.now() - lastSave > 5000) { lastSave = Date.now(); save2(); } });
-  video.addEventListener('pause', () => { L.pos = video.currentTime; save2(); });
+  video.addEventListener('timeupdate', () => { if (L.tvOn) return; L.pos = video.currentTime; if (Date.now() - lastSave > 5000) { lastSave = Date.now(); save2(); } });
+  video.addEventListener('pause', () => { if (L.tvOn) return; L.pos = video.currentTime; save2(); });
   video.addEventListener('error', () => {
+    if (L.tvOn) { if (video.getAttribute('src')) tv.fail(video.error?.code === 4 ? t('Bu kanalın görüntü ya da ses biçimi desteklenmiyor.') : t('Yayına bağlanılamadı.')); return; }
     const f = L.list[L.idx]; if (!f || !video.getAttribute('src')) return;
     const code = video.error?.code;
     err.replaceChildren(
@@ -1854,8 +1916,306 @@ function buildMedia(p) {
     else if (k === 'n') step(1);
     else if (k === 'p') step(-1);
   });
-  p.onDestroy = () => { clearTimeout(idleT); try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
-  load(false);
+  const tv = iptvUI({ p, L, video, vbox, err, empty, art, stage, now, save2, renderList });
+  p.onDestroy = () => { clearTimeout(idleT); tv.stop(); if (L.tvOn) { try { video.removeAttribute('src'); video.load(); } catch {} return; } try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
+  if (L.tvOn && L.tv?.chan) tv.resume(); else load(false);
+  if (L.tv?.src) tv.ensure();
+}
+
+// Medya oynatıcının TV (IPTV) kısmı: liste yükleme, kanal listesi (sanal: yalnızca görünen satırlar çizilir, 10 binlerce
+// kanalda da akıcı), grup / arama / favori, yayın motoru. HLS (.m3u8) hls.js ile, MPEG-TS (.ts, Xtream canlı yayınları)
+// mpegts.js ile, mp4/mp3 gibi düz dosyalar doğrudan oynar; uzantı belli değilse main.js ilk baytlara bakar (iptv:probe).
+// Kütüphaneler ilk TV yayınında yüklenir (src/vendor). L.tv = { src, name, group, q, chan, fav[] } — kanallar duruma
+// yazılmaz (büyük olabilir); liste main.js'te userData/iptv altında saklanır.
+function iptvUI({ p, L, video, vbox, err, empty, art, stage, now, save2, renderList }) {
+  const ROW = 34;
+  let chans = [], view = [], loading = false, loadErr = '', listAt = 0;
+  let hls = null, mts = null, seq = 0, cur = null, played = false, autoRetry = 0;
+  const groups = h('select', { class: 'tv-grp', title: t('Grup') });
+  const search = h('input', { class: 'tv-q', type: 'search', placeholder: t('Kanal ara…'), spellcheck: false });
+  const nameEl = h('span', { class: 'tv-name' });
+  const info = h('div', { class: 'tv-info' });
+  const inner = h('div', { class: 'tv-inner' });
+  const scroll = h('div', { class: 'tv-scroll' }, inner);
+  const head = h('div', { class: 'md-lh tv-head' }, nameEl,
+    h('span', {},
+      h('button', { class: 'md-tool', title: t('Listeyi yenile'), textContent: '⟳', onclick: () => ensure(true) }),
+      h('button', { class: 'md-tool', title: t('Liste'), textContent: '⋯', onclick: (e) => PopMenu.open(e.currentTarget, [
+        { label: t('Başka liste aç…'), action: () => ask() },
+        { label: t('Listeyi yenile'), disabled: !/^https?:/i.test(L.tv?.src || ''), action: () => ensure(true) },
+        '-',
+        { label: t('Listeyi kaldır'), danger: true, disabled: !L.tv?.src, action: () => forget() },
+      ], { align: 'right' }) })));
+  const tools = h('div', { class: 'tv-tools' }, groups, search);
+  const emptyBox = h('div', { class: 'tv-empty' });
+  const box = h('div', { class: 'tv-box' }, head, tools, info, scroll, emptyBox);
+  const fav = () => new Set(L.tv?.fav || []);
+
+  function filter() {
+    const g = L.tv?.group || '', q = trLower(L.tv?.q || '').trim(), f = fav();
+    view = [];
+    for (let i = 0; i < chans.length; i++) {
+      const c = chans[i];
+      if (g === '★' ? !f.has(c.url) : g && c.group !== g) continue;
+      if (q && !trLower(c.name).includes(q)) continue;
+      view.push(i);
+    }
+    inner.style.height = view.length * ROW + 'px';
+    info.textContent = chans.length ? t('{n} kanal', { n: view.length.toLocaleString(lang === 'en' ? 'en' : 'tr') }) + (listAt ? ' · ' + t('liste: {d}', { d: new Date(listAt).toLocaleString(lang === 'en' ? 'en-GB' : 'tr-TR', { dateStyle: 'short', timeStyle: 'short' }) }) : '') : '';
+    draw(true);
+  }
+  let drawn = '';
+  function draw(force) {
+    const top = scroll.scrollTop, hgt = scroll.clientHeight || 400;
+    const a = Math.max(0, Math.floor(top / ROW) - 6), b = Math.min(view.length, Math.ceil((top + hgt) / ROW) + 6);
+    const key = a + ':' + b + ':' + (cur?.url || '');
+    if (!force && key === drawn) return;
+    drawn = key;
+    const f = fav();
+    inner.replaceChildren(...view.slice(a, b).map((ci, k) => {
+      const c = chans[ci];
+      const logo = c.logo ? h('img', { class: 'tv-logo', src: c.logo, loading: 'lazy', alt: '', referrerPolicy: 'no-referrer' }) : h('span', { class: 'tv-logo none', textContent: '📺' });
+      if (c.logo) logo.onerror = () => logo.replaceWith(h('span', { class: 'tv-logo none', textContent: '📺' }));
+      const star = h('button', { class: 'tv-star' + (f.has(c.url) ? ' on' : ''), textContent: f.has(c.url) ? '★' : '☆', title: t('Favori kanal'),
+        onclick: (e) => { e.stopPropagation(); toggleFav(c); } });
+      const row = h('div', { class: 'md-item tv-row' + (L.tvOn && cur?.url === c.url ? ' on' : ''), title: c.name + (c.group ? '\n' + c.group : '') },
+        logo, h('span', { class: 'md-n', textContent: c.name }), star);
+      row.style.top = (a + k) * ROW + 'px';
+      row.addEventListener('click', () => play(c));
+      return row;
+    }));
+  }
+  scroll.addEventListener('scroll', () => requestAnimationFrame(() => draw()));
+  new ResizeObserver(() => draw()).observe(scroll);
+  groups.addEventListener('change', () => { L.tv.group = groups.value; save2(); scroll.scrollTop = 0; filter(); });
+  let qT;
+  search.addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(() => { L.tv.q = search.value; save2(); scroll.scrollTop = 0; filter(); }, 120); });
+  function toggleFav(c) {
+    const f = fav();
+    if (f.has(c.url)) f.delete(c.url); else f.add(c.url);
+    L.tv.fav = [...f]; save2(); fillGroups();
+    if (L.tv.group === '★') filter(); else draw(true);
+  }
+  function fillGroups() {
+    const cnt = new Map();
+    for (const c of chans) if (c.group) cnt.set(c.group, (cnt.get(c.group) || 0) + 1);
+    const fl = fav(), fc = chans.filter((c) => fl.has(c.url)).length;
+    const g = L.tv?.group || '';
+    groups.replaceChildren(h('option', { value: '', textContent: t('Tüm kanallar') + ` (${chans.length})` }),
+      h('option', { value: '★', textContent: '★ ' + t('Favoriler') + ` (${fc})` }),
+      ...[...cnt].map(([k, n]) => h('option', { value: k, textContent: `${k} (${n})` })));
+    groups.value = [...groups.options].some((o) => o.value === g) ? g : '';
+  }
+  function paint() {
+    const has = !!L.tv?.src;
+    nameEl.textContent = has ? (L.tv.name || baseName(L.tv.src.split('?')[0])) : t('IPTV');
+    nameEl.title = has ? L.tv.src.replace(/\/\/[^/@]*@/, '//') : '';
+    tools.hidden = info.hidden = scroll.hidden = !has || loading || (!!loadErr && !chans.length);
+    emptyBox.hidden = !tools.hidden;
+    if (!has) emptyBox.replaceChildren(h('div', { class: 'md-big', textContent: '📺' }),
+      h('div', { textContent: t('IPTV sağlayıcının verdiği M3U listesini ekle: adres (http…) ya da .m3u dosyası.') }),
+      h('div', { class: 'tv-note', textContent: t('Desk Helper kanal sağlamaz; yalnızca senin listendeki yayınları oynatır.') }),
+      h('button', { class: 'primary', textContent: t('Liste ekle…'), onclick: () => ask() }));
+    else if (loading) emptyBox.replaceChildren(h('div', { class: 'tv-spin' }), h('div', { textContent: t('Liste yükleniyor…') }));
+    else if (loadErr && !chans.length) emptyBox.replaceChildren(h('div', { class: 'md-big', textContent: '⚠' }),
+      h('div', { textContent: t('Liste yüklenemedi: {err}', { err: loadErr }) }),
+      h('div', { class: 'md-err-b' }, h('button', { textContent: t('Tekrar dene'), onclick: () => ensure(true) }), h('button', { textContent: t('Başka liste aç…'), onclick: () => ask() })));
+    if (!tools.hidden) { if (search.value !== (L.tv.q || '') && document.activeElement !== search) search.value = L.tv.q || ''; draw(true); }
+  }
+
+  let ensuring = null;
+  async function ensure(refresh) {
+    if (!L.tv?.src) return;
+    if (ensuring && !refresh) return ensuring;
+    loading = true; loadErr = ''; if (L.listView === 'tv') renderList();
+    ensuring = (async () => {
+      try {
+        const r = await window.desk.iptv.load(L.tv.src, !!refresh);
+        chans = parseM3U(r.text, /^https?:/i.test(L.tv.src) ? L.tv.src : '');
+        listAt = r.at || 0;
+        if (!chans.length) loadErr = t('listede kanal bulunamadı');
+        if (r.stale) loadErr = t('güncellenemedi, son indirilen kullanılıyor ({err})', { err: r.stale });
+      } catch (e) {
+        loadErr = String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+      }
+      loading = false; ensuring = null;
+      fillGroups(); filter(); renderList();
+      if (loadErr && chans.length) info.textContent += ' · ⚠ ' + loadErr;
+    })();
+    return ensuring;
+  }
+  function open(src, name) {
+    const same = L.tv?.src === src;
+    L.tv = same ? L.tv : { src, name: name || '', group: '', q: '', fav: L.tv?.fav || [] };
+    L.listView = 'tv'; L.hideList = false; save2();
+    chans = []; view = []; ensure(true);
+  }
+  async function forget() {
+    if (L.tv?.src && /^https?:/i.test(L.tv.src)) window.desk.iptv.forget(L.tv.src);
+    if (L.tvOn) { stop(); L.tvOn = false; video.removeAttribute('src'); video.load(); empty.hidden = false; vbox.hidden = true; now.textContent = ''; }
+    L.tv = null; chans = []; view = []; save2(); renderList();
+  }
+  function ask() {
+    const inp = h('input', { type: 'url', placeholder: 'http://…/playlist.m3u', value: /^https?:/i.test(L.tv?.src || '') ? L.tv.src : '', spellcheck: false });
+    const nm = h('input', { placeholder: t('ör. Ev listesi'), value: L.tv?.name || '' });
+    Modal.open({ title: t('IPTV listesi (M3U)'), icon: '📺', size: 'md',
+      body: () => [
+        h('div', { class: 'hint', textContent: t('IPTV sağlayıcının verdiği M3U / M3U8 liste adresini yapıştır ya da bilgisayardaki .m3u dosyasını seç. Desk Helper kanal sağlamaz.') }),
+        h('label', { class: 'mdl-field' }, h('span', { textContent: t('Liste adresi') }), inp),
+        h('label', { class: 'mdl-field' }, h('span', { textContent: t('Adı (isteğe bağlı)') }), nm)],
+      buttons: [
+        { label: t('Dosyadan seç…'), left: true, keep: true, onClick: async (api) => { const f = await window.desk.iptv.pick(); if (f) { api.close(); open(f, nm.value.trim()); } } },
+        { label: t('Vazgeç'), value: null },
+        { label: t('Yükle'), primary: true, keep: true, onClick: (api) => {
+          const u = inp.value.trim();
+          if (!/^https?:\/\/\S+$/i.test(u)) { inp.focus(); inp.classList.add('bad'); return; }
+          api.close(); open(u, nm.value.trim());
+        } }] });
+    setTimeout(() => inp.focus(), 50);
+  }
+
+  // --- Yayın motoru ---
+  function stop() {
+    seq++; clearTimeout(startT); clearTimeout(noVidT);
+    if (hls) { try { hls.destroy(); } catch {} hls = null; }
+    if (mts) { try { mts.pause(); mts.unload(); mts.detachMediaElement(); mts.destroy(); } catch {} mts = null; }
+  }
+  function show(ch) {
+    err.hidden = true; empty.hidden = true; art.hidden = true; vbox.hidden = video.hidden = false;
+    stage.classList.remove('audio');
+    now.textContent = '📺 ' + ch.name;
+    setTitle(p, L.title + ' · ' + ch.name);
+  }
+  const kindOf = (u) => {
+    const path = u.split(/[?#]/)[0];
+    return /\.m3u8$/i.test(path) ? 'hls' : /\.(ts|mts|m2ts)$/i.test(path) ? 'ts'
+      : /\.(mp4|m4v|webm|mkv|mov|mp3|aac|m4a|ogg|oga|opus|flac|wav)$/i.test(path) ? 'native' : '';
+  };
+  async function play(ch, { auto = false } = {}) {
+    stop();
+    const my = seq;
+    cur = ch; L.tvOn = true; L.tv.chan = ch.url; save2();
+    if (!auto) { autoRetry = 0; }
+    played = false;
+    show(ch); draw(true); renderList();
+    video.removeAttribute('src'); video.load();
+    clearTimeout(startT); clearTimeout(noVidT);
+    startT = setTimeout(() => { if (my === seq && !played && err.hidden) fail(t('Yayın başlamadı: sunucu yanıt vermiyor ya da biçim desteklenmiyor.')); }, 20000);
+    await window.desk.iptv.headers(ch.url, ch.ua || ch.referer ? { ua: ch.ua, referer: ch.referer } : null);
+    let kind = kindOf(ch.url), probe = null;
+    if (!kind) {
+      probe = await window.desk.iptv.probe(ch.url);
+      if (my !== seq) return;
+      if (!probe.ok) return fail(probe.status ? t('Sunucu yayını vermedi (HTTP {s}).', { s: probe.status }) : t('Sunucuya bağlanılamadı ({err}).', { err: probe.error || '?' }));
+      kind = probe.kind === 'unknown' ? 'native' : probe.kind;
+    }
+    try {
+      if (kind === 'hls') {
+        await loadScript('vendor/hls.light.min.js');
+        if (my !== seq) return;
+        if (!window.Hls?.isSupported()) { video.src = ch.url; video.play().catch(() => {}); return; }
+        let netTry = 0, medTry = 0;
+        hls = new Hls({ enableWorker: false, manifestLoadingMaxRetry: 2, levelLoadingMaxRetry: 2, fragLoadingMaxRetry: 4, liveDurationInfinity: true });
+        hls.on(Hls.Events.ERROR, (_e, d) => {
+          if (my !== seq || !d.fatal) return;
+          if (d.type === Hls.ErrorTypes.NETWORK_ERROR && netTry++ < 2 && played) { setTimeout(() => my === seq && hls?.startLoad(), 2000); return; }
+          if (d.type === Hls.ErrorTypes.MEDIA_ERROR && medTry++ < 1) { hls.recoverMediaError(); return; }
+          const code = d.response?.code;
+          fail(d.type === Hls.ErrorTypes.NETWORK_ERROR
+            ? (code ? t('Sunucu yayını vermedi (HTTP {s}).', { s: code }) : t('Yayına bağlanılamadı.'))
+            : d.details === 'bufferAddCodecError' || d.details === 'manifestIncompatibleCodecsError' ? t('Bu kanalın görüntü ya da ses biçimi desteklenmiyor.')
+            : t('Yayın oynatılamadı ({err}).', { err: d.details }));
+        });
+        hls.loadSource(ch.url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => { if (my === seq) video.play().catch(() => {}); });
+      } else if (kind === 'ts') {
+        await loadScript('vendor/mpegts.js');
+        if (my !== seq) return;
+        const mp = window.mpegts;
+        if (!mp?.isSupported()) return fail(t('Bu yayın türü (MPEG-TS) bu bilgisayarda oynatılamıyor.'));
+        mts = mp.createPlayer({ type: 'mpegts', isLive: true, url: probe?.url || ch.url }, { enableWorker: false, lazyLoad: false, autoCleanupSourceBuffer: true });
+        mts.on(mp.Events.ERROR, (type, detail, inf) => {
+          if (my !== seq) return;
+          fail(type === mp.ErrorTypes.NETWORK_ERROR
+            ? (inf?.code > 0 ? t('Sunucu yayını vermedi (HTTP {s}).', { s: inf.code }) : t('Yayına bağlanılamadı.'))
+            : /codec|unsupported/i.test((inf?.msg || '') + detail) ? t('Bu kanalın görüntü ya da ses biçimi desteklenmiyor.') : t('Yayın oynatılamadı ({err}).', { err: detail }));
+        });
+        mts.on(mp.Events.LOADING_COMPLETE, () => { if (my === seq && played) dropped(); });
+        mts.attachMediaElement(video);
+        mts.load();
+        Promise.resolve(mts.play()).catch(() => {});
+      } else {
+        video.src = probe?.url || ch.url;
+        video.play().catch(() => {});
+      }
+    } catch (e) {
+      if (my === seq) fail(t('Oynatıcı yüklenemedi ({err}).', { err: e.message }));
+    }
+  }
+  // Oynamaya başladı: kopma sayacı sıfırlanır. Görüntü gelmiyorsa (radyo ya da desteklenmeyen görüntü biçimi, ör.
+  // MPEG-2) siyah ekran yerine kanal adı ve kısa bir not gösterilir; ses çalmaya devam eder.
+  let startT, noVidT, playingAt = 0;
+  video.addEventListener('timeupdate', () => { if (L.tvOn && played && Date.now() - playingAt > 10000) autoRetry = 0; });
+  video.addEventListener('loadedmetadata', () => { if (L.tvOn) checkPicture(); });
+  video.addEventListener('playing', () => {
+    if (!L.tvOn) return;
+    if (!played) playingAt = Date.now();
+    played = true; clearTimeout(startT);
+    checkPicture();
+  });
+  function checkPicture() {
+    clearTimeout(noVidT);
+    const my = seq;
+    noVidT = setTimeout(() => {
+      if (my !== seq || !L.tvOn || video.videoWidth) return;
+      art.querySelector('.md-note').textContent = '📻';
+      art.querySelector('.md-art-t').textContent = (cur?.name || '') + '\n' + t('Bu kanalda görüntü yok: radyo olabilir ya da görüntü biçimi desteklenmiyor (ör. MPEG-2).');
+      art.hidden = false; stage.classList.add('audio');
+    }, 2500);
+  }
+  // Yayın koptu (bir süre oynadıktan sonra bitti ya da hata verdi): iki kez kendiliğinden yeniden bağlan.
+  function dropped() {
+    if (!cur) return;
+    // Hemen "bitti": çözülebilen ne görüntü ne ses var (ör. MPEG-2 görüntü + MP2/AC-3 ses). Yeniden denemek boşuna.
+    if (played && Date.now() - playingAt < 3000 && !video.videoWidth) { played = false; return fail(t('Bu kanalın görüntü ya da ses biçimi desteklenmiyor.') + ' ' + t('(ör. MPEG-2 görüntü, AC-3 ses)')); }
+    if (autoRetry++ < 2) { setTimeout(() => L.tvOn && cur && play(cur, { auto: true }), 1500); return; }
+    fail(t('Yayın kesildi.'));
+  }
+  function fail(msg) {
+    if (!cur) return;
+    if (played && autoRetry < 2) return dropped();
+    stop();
+    const ch = cur;
+    err.replaceChildren(
+      h('div', { class: 'md-big', textContent: '⚠' }),
+      h('div', { class: 'md-err-t', textContent: msg }),
+      h('div', { class: 'md-err-f', textContent: ch.name }),
+      h('div', { class: 'md-err-b' },
+        h('button', { textContent: t('Tekrar dene'), onclick: () => play(ch) }),
+        view.length > 1 ? h('button', { textContent: t('Sonraki kanal'), onclick: () => stepTv(1) }) : null));
+    err.hidden = false; vbox.hidden = video.hidden = true;
+  }
+  function stepTv(d) {
+    if (!view.length) return;
+    let i = view.findIndex((ci) => chans[ci].url === cur?.url);
+    i = ((i < 0 ? (d > 0 ? -1 : 0) : i) + d + view.length) % view.length;
+    const c = chans[view[i]];
+    play(c);
+    const top = i * ROW;
+    if (top < scroll.scrollTop || top > scroll.scrollTop + scroll.clientHeight - ROW) scroll.scrollTop = top - scroll.clientHeight / 2;
+  }
+  // Açılışta: son kanal seçili gelir ama kendiliğinden oynamaz (canlı yayın gereksiz yere indirilmesin).
+  async function resume() {
+    L.tvOn = true;
+    await ensure();
+    const ch = chans.find((c) => c.url === L.tv.chan) || { name: L.tv.chan, url: L.tv.chan };
+    cur = ch; show(ch); vbox.hidden = video.hidden = true;
+    err.replaceChildren(h('div', { class: 'md-big', textContent: '📺' }), h('div', { class: 'md-err-t', textContent: ch.name }),
+      h('div', { class: 'md-err-b' }, h('button', { class: 'primary', textContent: '▶ ' + t('İzle'), onclick: () => play(ch) })));
+    err.hidden = false; renderList();
+  }
+  return { box, paint, ensure, open, stop, step: stepTv, dropped, fail, resume, ask };
 }
 // --- Fotoğraf görüntüleyici paneli ---
 // Bir resmi açar, ←/→ ile aynı klasördeki diğer resimlere geçer. Hareketli resimler (gif, hareketli webp/png) kendiliğinden

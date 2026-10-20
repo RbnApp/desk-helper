@@ -11,6 +11,13 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   alanlar arasında geçilir, ad değiştirilir ya da silinir (Ctrl+Alt+1…9 ile de geçilir). Kısayollar, favoriler, alt çubuk,
   yer imleri, şifreler, tarayıcı profilleri ve ayarlar tüm alanlarda ortak. Mevcut düzenin "Çalışma alanı 1" olarak kalır;
   yükseltmeden önce yedeği alınır. Kapatıp açınca alanlar ve en son hangisinde olduğun hatırlanır.
+- Medya oynatıcıda IPTV: 📺 düğmesi ya da listedeki "TV" sekmesi ile IPTV sağlayıcının verdiği M3U / M3U8 listesi
+  (adres ya da .m3u dosyası) eklenir. Kanallar logo ve adlarıyla listelenir; grup seçimi, arama ve ★ favori kanallar var,
+  20 bin kanallık listede de akıcı. HLS (.m3u8), MPEG-TS (.ts ve uzantısız canlı yayınlar) ve mp4/mp3 yayınları oynar;
+  listedeki User-Agent / Referer ayarları kullanılır. Yayın koparsa kendiliğinden yeniden bağlanır; açılmayan kanalda
+  nedeni (ör. "HTTP 404", "biçim desteklenmiyor") ve Tekrar dene / Sonraki kanal. N/P ya da ⏮⏭ ile kanal değişir. Liste
+  saklanır, ⟳ ile yenilenir; son izlenen kanal açılışta seçili gelir. Desk Helper kanal sağlamaz. MPEG-2 görüntü ve
+  AC-3 ses kullanan kanallar oynatılamaz (oynatıcının desteklemediği biçimler).
 
 **Değişiklikler**
 - "＋ Sekme" ve 🔔 bildirimler kısayol çubuğunun en sağına taşındı (sırayla ＋ Sekme, ＋ Çalışma alanı, 🔔). Pencere

@@ -15,6 +15,19 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- IPTV (kullanıcı: "playere m3u listesi girilerek iptv özelliği"). src/vendor: hls.js 1.6.15 light (354 KB) ve mpegts.js
+  1.8.0 (273 KB), Apache-2.0 lisansları yanında; ilk TV yayınında loadScript ile yüklenir. parseM3U (EXTINF öznitelikleri,
+  tırnak içi virgül, EXTGRP, EXTVLCOPT ua/referer, #EXT-X- içeren "liste" = tek HLS kanalı). iptvUI(): sanal liste (ROW 34),
+  grup/arama/★ (L.tv.fav = url), L.tv = {src,name,group,q,chan,fav}; kanallar state'e yazılmaz. main.js: iptv:load (net.fetch,
+  userData/iptv/<sha1>.m3u önbelleği, ağ yoksa eskisi), iptv:probe (ilk 376 bayt: #EXTM3U→hls, 0x47→ts), iptv:headers;
+  defaultSession webRequest yalnızca ana pencerenin xhr/media/other isteklerine ACAO:* ekler, Origin'i siler, kanal UA/Referer'ı
+  koyar. CSP: media-src ve connect-src http/https. Hata: HLS 2 ağ + 1 medya kurtarma; oynamış yayın koparsa 2 kez otomatik
+  yeniden bağlan; <3 sn'de "biten" görüntüsüz yayın = biçim desteklenmiyor; 20 sn başlamazsa hata; görüntü yoksa 📻 notu.
+  Test (yerel sunucu, CORS başlığı yok; dış test yayınlarına bu ortamdan erişilemedi): HLS, .ts, uzantısız TS (probe), mp4,
+  UA+Referer isteyen kanal (403 → çalıştı), 404 mesajı, MPEG-2+MP2 "desteklenmiyor", yalnız ses AAC radyo notu, 30 sn'lik
+  yayın bitince kendiliğinden yeniden bağlandı, 20 bin kanal ~1 sn'de yüklendi, kaydırma/arama/grup anında, state.json 6,5 KB,
+  yeniden açılışta son kanal seçili + İzle. Gerçek IPTV servisinde denenmedi.
+
 - Medya oynatıcıda dikey ses (kullanıcı: "ses düğmesi yana değil yukarı dikey açılmalı"). Chromium'un mute/volume ve
   fullscreen düğmeleri ::-webkit-media-controls-* ile gizlendi, controlsList nofullscreen (çift tık da tarayıcı tam ekranı
   yapmasın). Yerine .md-ov: ses düğmesi + üstünde .md-vol-pop (writing-mode: vertical-lr range, :hover ile, ::after köprü)

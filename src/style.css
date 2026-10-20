@@ -462,7 +462,7 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .md-art { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #fff; margin-bottom: 80px; padding: 0 20px; text-align: center; }
 .md-art[hidden] { display: none; }
 .md-note { font-size: 72px; filter: drop-shadow(0 8px 24px rgba(0,0,0,.5)); }
-.md-art-t { font-size: 15px; opacity: .9; word-break: break-word; }
+.md-art-t { font-size: 15px; opacity: .9; word-break: break-word; white-space: pre-line; max-width: 520px; }
 .md-empty, .md-err { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); background: var(--bg); text-align: center; padding: 20px; }
 .md-empty[hidden], .md-err[hidden] { display: none; }
 .md-big { font-size: 48px; }
@@ -480,6 +480,35 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .md-item .x { opacity: 0; padding: 0 4px; font-size: 10px; background: none; color: var(--muted); }
 .md-item:hover .x { opacity: 1; }
 .media.md-drop .md-stage { box-shadow: inset 0 0 0 3px var(--accent); }
+.md-list { display: flex; flex-direction: column; }
+.md-list.tv { width: 300px; overflow: hidden; }
+.md-tabs { display: flex; gap: 2px; padding: 6px 6px 0; flex: none; border-bottom: 1px solid var(--line); }
+.md-tabs button { flex: 1; padding: 6px 8px; border-radius: 7px 7px 0 0; color: var(--muted); background: none; font-size: 12.5px; }
+.md-tabs button.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+/* IPTV kanal listesi: yalnızca görünen satırlar çizilir (sanal liste), satır yüksekliği 34px (app.js ROW) */
+.tv-box { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.tv-head { flex: none; }
+.tv-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text); }
+.tv-head > span:last-child { display: flex; flex: none; }
+.tv-tools { display: flex; flex-direction: column; gap: 6px; padding: 0 10px 6px; flex: none; }
+.tv-tools[hidden], .tv-scroll[hidden], .tv-info[hidden], .tv-empty[hidden] { display: none; }
+.tv-grp, .tv-q { width: 100%; height: 28px; border-radius: 7px; font-size: 12.5px; }
+.tv-info { padding: 0 10px 6px; font-size: 11px; color: var(--muted); flex: none; }
+.tv-scroll { flex: 1; min-height: 0; overflow-y: auto; position: relative; }
+.tv-inner { position: relative; }
+.tv-row { position: absolute; left: 0; right: 0; height: 34px; padding: 0 6px 0 10px; }
+.tv-logo { width: 26px; height: 26px; flex: none; object-fit: contain; border-radius: 4px; }
+.tv-logo.none { display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: .5; }
+.tv-star { padding: 0 4px; background: none; color: var(--muted); font-size: 14px; opacity: 0; }
+.tv-row:hover .tv-star, .tv-star.on { opacity: 1; }
+.tv-star.on { color: #e3b341; }
+.tv-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; text-align: center; color: var(--muted); font-size: 12.5px; }
+.tv-empty .primary { background: var(--accent); color: var(--on-accent); padding: 7px 14px; border-radius: 8px; }
+.tv-note { font-size: 11px; opacity: .8; }
+.tv-spin { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: tvspin .8s linear infinite; }
+@keyframes tvspin { to { transform: rotate(360deg); } }
+.md-err .primary { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.mdl input.bad { border-color: #e5534b; }
 .md-err-b button { padding: 7px 14px; border-radius: 8px; background: var(--panel); color: var(--text); border: 1px solid var(--line); }
 .md-err-b button:hover { border-color: var(--accent); }
 
