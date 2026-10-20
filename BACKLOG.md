@@ -15,6 +15,13 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Medya oynatıcıda dikey ses (kullanıcı: "ses düğmesi yana değil yukarı dikey açılmalı"). Chromium'un mute/volume ve
+  fullscreen düğmeleri ::-webkit-media-controls-* ile gizlendi, controlsList nofullscreen (çift tık da tarayıcı tam ekranı
+  yapmasın). Yerine .md-ov: ses düğmesi + üstünde .md-vol-pop (writing-mode: vertical-lr range, :hover ile, ::after köprü)
+  ve sahneyi (stage) tam ekran yapan düğme; oynatırken 2,5 sn fare durunca yerel denetimlerle birlikte gizlenir. Ses
+  dosyasında hap biçimli çubuğun sağ ucunda, açık zeminde. Test: üzerine gelince açıldı, yukarı çıkarken açık kaldı,
+  kaydırıcıda %17 ve %100, tık = sessiz 🔇, dışarı çıkınca kapandı, tam ekranda (stage) düğme ve kaydırıcı çalıştı.
+
 - Çalışma alanları (kullanıcı: "farklı çalışma alanları olacak, her workspace sıfırdan başlangıç"). state.spaces
   [{id,name,workspaces,activeWs}] + activeSpace; şema 10 (mevcut düzen "Çalışma alanı 1", backup-schema9 alınır).
   state.workspaces/activeWs her zaman etkin alanın dizisiyle aynı nesne (linkSpace), sekme/panel kodu değişmedi.

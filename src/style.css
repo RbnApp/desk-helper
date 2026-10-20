@@ -426,7 +426,39 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .md-video { width: 100%; height: 100%; object-fit: contain; background: #000; outline: none; }
 .md-video[hidden] { display: none; }
 .md-stage.audio { background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 30%, #111), #0b0d12 70%); flex-direction: column; }
-.md-stage.audio .md-video { height: 54px; width: min(640px, 92%); position: absolute; bottom: 24px; background: transparent; }
+.md-vbox { position: relative; width: 100%; height: 100%; }
+.md-vbox[hidden] { display: none; }
+.md-stage.audio .md-vbox { height: 54px; width: min(640px, 92%); position: absolute; bottom: 24px; }
+.md-stage.audio .md-video { background: transparent; }
+/* Chromium'un yana açılan ses denetimi ve tam ekran düğmesi yerine kendi düğmelerimiz (app.js buildMedia) */
+.md-video::-webkit-media-controls-mute-button,
+.md-video::-webkit-media-controls-volume-slider,
+.md-video::-webkit-media-controls-volume-control-container,
+.md-video::-webkit-media-controls-fullscreen-button { display: none !important; }
+.md-ov { position: absolute; right: 40px; bottom: 29px; display: flex; gap: 2px; align-items: flex-end; z-index: 2; transition: opacity .3s; }
+/* Ses dosyasında oynatıcı tek satırlık açık renk bir hap; ses düğmesi hapın sağ ucunda, aynı zeminde */
+.md-stage.audio .md-vbox { background: #f1f3f4; border-radius: 27px; }
+.md-stage.audio .md-video { width: calc(100% - 42px); }
+.md-stage.audio .md-ov { right: 10px; bottom: 10px; }
+.md-stage.audio .md-ov.idle { opacity: 1; pointer-events: auto; }
+.md-stage.audio.idle { cursor: auto; }
+.md-stage.audio .md-ov-b { color: #202124; filter: none; }
+.md-stage.audio .md-ov-b:hover { background: rgba(0,0,0,.08); }
+.md-stage.audio .md-ov > .md-ov-b:last-child { display: none; }
+.md-ov.idle { opacity: 0; pointer-events: none; }
+.md-stage.idle { cursor: none; }
+.md-ov-b { width: 34px; height: 34px; border-radius: 50%; background: none; color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 1px 2px rgba(0,0,0,.8)); }
+.md-ov-b:hover { background: rgba(255,255,255,.16); }
+.md-vol { position: relative; display: flex; flex-direction: column; align-items: center; }
+/* Dikey kaydırıcı düğmenin hemen üstünde; arada boşluk yok (padding köprü olur), fare geçerken kapanmaz */
+.md-vol-pop { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0 8px; width: 40px; margin-bottom: 0; background: rgba(20,22,28,.92); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+.md-vol:hover .md-vol-pop { display: flex; }
+.md-vol-pop::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 8px; }
+.md-vol-p { font-size: 11px; color: #fff; opacity: .85; font-variant-numeric: tabular-nums; }
+.md-vol-r { writing-mode: vertical-lr; direction: rtl; width: 6px; height: 110px; margin: 0; appearance: none; -webkit-appearance: none; border-radius: 3px; cursor: pointer;
+  background: linear-gradient(to top, var(--accent) var(--v, 100%), rgba(255,255,255,.25) var(--v, 100%)); }
+.md-vol-r::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.md-stage:fullscreen { background: #000; }
 .md-art { display: flex; flex-direction: column; align-items: center; gap: 14px; color: #fff; margin-bottom: 80px; padding: 0 20px; text-align: center; }
 .md-art[hidden] { display: none; }
 .md-note { font-size: 72px; filter: drop-shadow(0 8px 24px rgba(0,0,0,.5)); }

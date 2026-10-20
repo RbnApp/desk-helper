@@ -1687,14 +1687,23 @@ function buildMedia(p) {
   L.list ||= []; L.idx = Math.min(L.idx || 0, Math.max(0, L.list.length - 1));
   if (L.vol == null) L.vol = 1;
   L.rate ||= 1;
-  const video = h('video', { class: 'md-video', controls: true, preload: 'metadata' });
+  // Chromium'un kendi ses düğmesi kaydırıcıyı yana açıyor; onu ve tam ekran düğmesini gizleyip (style.css) yerine
+  // üstüne dikey kaydırıcı açılan kendi ses düğmemizi ve sahneyi (ses düğmesiyle birlikte) tam ekran yapan düğmeyi koyuyoruz.
+  const video = h('video', { class: 'md-video', controls: true, preload: 'metadata', controlsList: 'nofullscreen nodownload noplaybackrate' });
+  const volIn = h('input', { type: 'range', class: 'md-vol-r', min: 0, max: 100, step: 1, title: t('Ses') });
+  const volPct = h('div', { class: 'md-vol-p' });
+  const volBtn = h('button', { class: 'md-ov-b', title: t('Sesi kapat / aç (M)') });
+  const vol = h('div', { class: 'md-vol' }, h('div', { class: 'md-vol-pop' }, volPct, volIn), volBtn);
+  const fsBtn = h('button', { class: 'md-ov-b', textContent: '⛶', title: t('Tam ekran') + ' (F)' });
+  const ov = h('div', { class: 'md-ov' }, vol, fsBtn);
+  const vbox = h('div', { class: 'md-vbox' }, video, ov);
   const art = h('div', { class: 'md-art' }, h('div', { class: 'md-note', textContent: '🎵' }), h('div', { class: 'md-art-t' }));
   const err = h('div', { class: 'md-err', hidden: true });
   const empty = h('div', { class: 'md-empty' },
     h('div', { class: 'md-big', textContent: '🎬' }),
     h('div', { textContent: t('Ses ya da video dosyası ekle ya da buraya sürükle') }),
     h('button', { class: 'primary', textContent: '＋ ' + t('Dosya ekle'), onclick: () => addFiles() }));
-  const stage = h('div', { class: 'md-stage' }, video, art, err, empty);
+  const stage = h('div', { class: 'md-stage' }, vbox, art, err, empty);
   const listEl = h('div', { class: 'md-list' });
   const rate = h('select', { class: 'md-rate', title: t('Oynatma hızı') },
     ...[0.5, 0.75, 1, 1.25, 1.5, 2].map((r) => h('option', { value: r, textContent: r + '×' })));
@@ -1730,7 +1739,7 @@ function buildMedia(p) {
   function load(play) {
     err.hidden = true;
     const f = L.list[L.idx];
-    empty.hidden = !!f; video.hidden = !f;
+    empty.hidden = !!f; video.hidden = vbox.hidden = !f;
     const audio = !!f && AUDIO_EXT.test(f);
     art.hidden = !audio; stage.classList.toggle('audio', audio);
     if (!f) { video.removeAttribute('src'); video.load(); now.textContent = ''; setTitle(p, L.title); renderList(); save2(); return; }
@@ -1792,6 +1801,33 @@ function buildMedia(p) {
     err.hidden = false; art.hidden = true; video.hidden = true;
   });
   rate.value = L.rate;
+  // Ses: düğmenin üstünde dikey kaydırıcı; üzerine gelince açılır (kaydırıcıya geçerken kapanmaz), tıklayınca
+  // sessiz, tekerlek ±5. Düğmeler oynatırken fare durunca oynatıcının kendi denetimleriyle birlikte gizlenir.
+  function paintVol() {
+    const v = video.muted ? 0 : video.volume;
+    volIn.value = Math.round(v * 100);
+    volIn.style.setProperty('--v', Math.round(v * 100) + '%');
+    volPct.textContent = Math.round(v * 100);
+    volBtn.textContent = v === 0 ? '🔇' : v < 0.5 ? '🔉' : '🔊';
+  }
+  volIn.addEventListener('input', () => { video.muted = false; video.volume = volIn.value / 100; });
+  volBtn.addEventListener('click', () => { video.muted = !video.muted; if (!video.muted && video.volume === 0) video.volume = 0.5; });
+  vol.addEventListener('wheel', (e) => { e.preventDefault(); video.muted = false; video.volume = Math.min(1, Math.max(0, Math.round((video.volume + (e.deltaY < 0 ? 0.05 : -0.05)) * 100) / 100)); }, { passive: false });
+  video.addEventListener('volumechange', paintVol);
+  const toggleFs = () => { if (document.fullscreenElement) document.exitFullscreen(); else if (!stage.classList.contains('audio')) stage.requestFullscreen?.(); };
+  fsBtn.addEventListener('click', toggleFs);
+  video.addEventListener('dblclick', (e) => { e.preventDefault(); toggleFs(); });
+  let idleT;
+  const wake = () => {
+    ov.classList.remove('idle'); stage.classList.remove('idle');
+    clearTimeout(idleT);
+    idleT = setTimeout(() => { if (!video.paused && !vol.matches(':hover')) { ov.classList.add('idle'); stage.classList.add('idle'); } }, 2500);
+  };
+  stage.addEventListener('mousemove', wake);
+  video.addEventListener('play', wake);
+  video.addEventListener('pause', wake);
+  stage.addEventListener('mouseleave', () => { if (!video.paused) { ov.classList.add('idle'); } });
+  paintVol();
   rate.addEventListener('change', () => { L.rate = +rate.value; video.playbackRate = L.rate; save2(); });
   repeat.onclick = () => { L.repeat = !L.repeat; renderList(); save2(); };
   toggleList.onclick = () => { L.hideList = !L.hideList; renderList(); save2(); };
@@ -1813,11 +1849,12 @@ function buildMedia(p) {
     else if (k === 'arrowleft') video.currentTime = Math.max(0, video.currentTime - 5);
     else if (k === 'arrowup') { e.preventDefault(); video.volume = Math.min(1, video.volume + 0.1); }
     else if (k === 'arrowdown') { e.preventDefault(); video.volume = Math.max(0, video.volume - 0.1); }
-    else if (k === 'f') { if (document.fullscreenElement) document.exitFullscreen(); else (stage.classList.contains('audio') ? null : video.requestFullscreen?.()); }
+    else if (k === 'f') toggleFs();
+    else if (k === 'm') video.muted = !video.muted;
     else if (k === 'n') step(1);
     else if (k === 'p') step(-1);
   });
-  p.onDestroy = () => { try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
+  p.onDestroy = () => { clearTimeout(idleT); try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
   load(false);
 }
 // --- Fotoğraf görüntüleyici paneli ---

@@ -15,6 +15,9 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 **Değişiklikler**
 - "＋ Sekme" ve 🔔 bildirimler kısayol çubuğunun en sağına taşındı (sırayla ＋ Sekme, ＋ Çalışma alanı, 🔔). Pencere
   yerleşim düğmeleri üstte kaldı.
+- Medya oynatıcıda ses ayarı artık yana değil, ses düğmesinin üstünde dikey açılır: üzerine gelince açılır, kaydırıcıya
+  geçerken kapanmaz, yüzdeyi gösterir; düğmeye tıklayınca sessiz, tekerlekle ±%5, klavyede M. Tam ekranda da aynı düğme
+  çalışır (tam ekran artık ses düğmesiyle birlikte oynatıcıyı büyütür; çift tık ve F de öyle).
 
 ## 0.3.8 · 2026-10-19
 

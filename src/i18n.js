@@ -35,6 +35,8 @@ window.I18N_EN = {
   'Medya oynatıcıda aç': 'Open in media player',
   'Birlikte aç': 'Open with',
   'Sekme': 'Tab',
+  'Ses': 'Volume',
+  'Sesi kapat / aç (M)': 'Mute / unmute (M)',
   'Kaydet': 'Save',
   'Çalışma alanı': 'Workspace',
   'Çalışma alanı {n}': 'Workspace {n}',
