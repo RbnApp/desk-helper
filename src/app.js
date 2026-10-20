@@ -109,7 +109,7 @@ function defaultState() {
   return { schema: STATE_SCHEMA, shortcuts: defaultShortcuts(), spaces: [sp], activeSpace: sp.id, workspaces: sp.workspaces, activeWs: ws.id, favorites: [], settings: { ...DEFAULT_SETTINGS } };
 }
 
-const DEFAULT_SETTINGS = { sleepMin: '15', lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
+const DEFAULT_SETTINGS = { adblockYT: true, sleepMin: '15', lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
 // Tema rengi: tek renk seçilir; çerçeveler, düğmeler, seçili öğeler, odak çizgileri hep bu renkten gelir (style.css --accent).
 const ACCENTS = ['#4f8cff', '#7c5cff', '#e0559a', '#e5534b', '#f08c2e', '#d4a72c', '#2fb36b', '#17a2b8', '#8a8f9c'];
 
@@ -758,10 +758,9 @@ function buildBrowser(p) {
   const fwd = h('button', { title: t('İleri'), textContent: '→' });
   const reload = h('button', { title: t('Yenile'), textContent: '⟳' });
   const addr = h('input', { class: 'br-addr', spellcheck: false, placeholder: t('Adres yaz veya ara') });
-  const prof = h('button', { class: 'br-prof', title: t('Profil, şifreler ve çerezler') });
+  const prof = h('button', { class: 'br-prof', title: t('Profil') });
   const star = h('button', { class: 'br-in br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
   const keyBtn = h('button', { class: 'br-in br-key', textContent: '🔑', title: t('Bu sitenin şifreleri') });
-  const cookieBtn = h('button', { class: 'br-tool br-cookie', textContent: '🍪', title: t('Bu sitenin çerezlerini temizle') });
   const menuBtn = h('button', { class: 'br-tool br-menu', textContent: '⋮', title: t('Tarayıcı menüsü') });
   for (const b of [back, fwd, reload]) b.classList.add('br-tool');
   // Görünüm: Masaüstü / Tablet / Mobil. Tablet ve mobilde sayfa o genişlikte ortada açılır, site de tablet/telefon
@@ -775,7 +774,7 @@ function buildBrowser(p) {
     return b;
   });
   const devGroup = h('div', { class: 'br-dev', title: t('Görünüm') }, ...devBtns);
-  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, keyBtn, star), cookieBtn, prof, devGroup, menuBtn);
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, keyBtn, star), prof, devGroup, menuBtn);
   const bmBar = h('div', { class: 'br-bm' });
   const pwBar = h('div', { class: 'br-pwbar', hidden: true });
   const views = h('div', { class: 'br-views' });
@@ -994,7 +993,6 @@ function buildBrowser(p) {
   bmBar.addEventListener('wheel', (e) => { if (e.deltaY) { bmBar.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
 
   // Çerez temizle: yalnızca açık sekmedeki sitenin çerezleri, bu profilde. Önce ne silineceği gösterilir.
-  cookieBtn.onclick = () => clearCookies();
   async function clearCookies() {
     const url = curTab()?.url || '';
     const part = partitionFor(L.profile);
@@ -1092,9 +1090,6 @@ function buildBrowser(p) {
         if (!state.browserProfiles.includes(name)) state.browserProfiles.push(name);
         save(); setProfile(name);
       } },
-      '-',
-      priv ? null : { icon: '🔑', label: t('Kayıtlı şifreler…'), action: () => openPasswords(L.profile) },
-      { icon: '🍪', label: t('Bu sitenin çerezlerini temizle…'), action: () => clearCookies() },
       L.profile !== 'default' && !priv ? '-' : null,
       L.profile !== 'default' && !priv ? { icon: '🗑', label: t('"{name}" profilini sil…', { name: L.profile }), danger: true, action: () => deleteProfile(L.profile) } : null,
     ], { align: 'right' });
@@ -3209,6 +3204,7 @@ async function openSettings(tab = 'settings') {
       h('label', { class: 'row' }, t('Her zaman üstte'), chk('alwaysOnTop')),
       h('label', { class: 'row' }, t('Dolu sekmeyi kapatırken sor'), chk('confirmTabClose')),
       h('label', { class: 'row' }, t('Açılışta yeni sürümü denetle'), chk('autoUpdate')),
+      h('label', { class: 'row', title: t('Hesap gerekmez. YouTube değişiklik yaptıkça arada reklam sızabilir; kural listesi haftada bir kendiliğinden güncellenir.') }, t('YouTube\'da reklamları engelle'), chk('adblockYT')),
       h('label', {}, t('Notların kaydedileceği klasör'), notesLbl,
         h('div', { class: 'fav-add' },
           h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; } } }),

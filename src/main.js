@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net, webContents } = require('electron');
 const path = require('path');
 const native = require('./native');
+const adblock = require('./adblock');
 const fs = require('fs');
 const os = require('os');
 
@@ -31,6 +32,7 @@ function dock(where) {
 
 function applySettings(s) {
   settings = s || {};
+  adblock.setEnabled(settings.adblockYT !== false);
   if (!win) return;
   win.setAlwaysOnTop(!!settings.alwaysOnTop);
   nativeTheme.themeSource = settings.theme === 'light' ? 'light' : 'dark';
@@ -58,6 +60,7 @@ function createWindow() {
   Menu.setApplicationMenu(null);
   win.loadFile(path.join(__dirname, 'index.html'));
   session.fromPartition('persist:desk').setUserAgent(CHROME_UA);
+  adblock.hook(session.fromPartition('persist:desk'));
   iptvBridge();
 
   try { native.rescueParked(); } catch {}

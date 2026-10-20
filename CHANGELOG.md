@@ -23,6 +23,10 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Görünmeyen sekmelerdeki web panelleri uyutulur: başka sekmede 15 dakika (ayarlanabilir: kapalı, 5, 15, 30, 60 dk) açılmayan
   web ve tarayıcı panelleri kapatılıp belleği boşaltılır; sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp,
   Telegram, Instagram, X ve ses çalan sayfalar uyutulmaz. Bellek sekmesindeki "Şimdi uyut" ile hemen de yapılabilir.
+- YouTube'da reklam engelleyici: hesap gerekmez. YouTube panelinde ve tarayıcıda açılan youtube.com sayfalarında reklam
+  ve izleme istekleri kesilir, reklam alanları gizlenir; diğer sitelere dokunulmaz. Ayarlar'daki "YouTube'da reklamları
+  engelle" ile kapatılabilir. Kural listesi haftada bir kendiliğinden güncellenir; YouTube değişiklik yaptıkça arada reklam
+  sızabilir.
 
 **Değişiklikler**
 - Windows Görev Yöneticisi'nde uygulama artık "Desk Helper" adıyla görünür (önceden açıklama metni yazıyordu).
@@ -31,6 +35,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Medya oynatıcıda ses ayarı artık yana değil, ses düğmesinin üstünde dikey açılır: üzerine gelince açılır, kaydırıcıya
   geçerken kapanmaz, yüzdeyi gösterir; düğmeye tıklayınca sessiz, tekerlekle ±%5, klavyede M. Tam ekranda da aynı düğme
   çalışır (tam ekran artık ses düğmesiyle birlikte oynatıcıyı büyütür; çift tık ve F de öyle).
+- Tarayıcıda "Kayıtlı şifreler…" ve "Bu sitenin çerezlerini temizle…" artık yalnızca sağdaki ⋮ menüsünde. Profil menüsünden
+  ve adres çubuğunun yanındaki 🍪 düğmesinden kaldırıldı (profil menüsü yalnızca profil seçimi içindir).
 
 ## 0.3.8 · 2026-10-19
 

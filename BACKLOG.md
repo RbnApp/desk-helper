@@ -15,6 +15,17 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- YouTube reklam engelleyici (kullanıcı: "hesap yoksa reklam izlerim"; karar kartı "Evet, ekle"). src/adblock.js,
+  @ghostery/adblocker-electron (MPL-2.0). enableBlockingInSession kullanılmıyor: persist:desk WhatsApp vb. ile ortak, bu
+  yüzden onBeforeRequest isteği yapan sayfanın adresine bakar (webContents.fromId→getURL, yalnız youtube.com). Kozmetik:
+  kütüphanenin preload'u registerPreloadScript ile, IPC işleyicileri yalnız youtube.com için. Motor userData/adblock-engine.bin,
+  7 günde bir fromPrebuiltAdsAndTracking ile yenilenir, ağ yoksa eski. session-created ile tarayıcı profilleri de bağlanır.
+  Ayar adblockYT (vars. açık). Test (xvfb, DH_ADBLOCK_TEST_HOST=127.0.0.1, elle kurallar): "YouTube" sayılan sayfada reklam
+  betiği ve ##.ad-banner engellendi, diğer sitede çalıştı, ayar kapalıyken ikisinde de çalıştı. Gerçek YouTube'da denenmedi.
+- Tarayıcı menüleri (kullanıcı: "iki menüde de çerez temizle ve kayıtlı şifre var, bir de 🍪 ikon; sadece ⋮'da olmalı").
+  Profil menüsünden iki öğe ve adres çubuğundaki 🍪 (br-cookie) kaldırıldı; profil düğmesi ipucu "Profil". 🔑 adres düğmesinin
+  site şifreleri menüsü olduğu gibi. Test: çubuk ← → ⟳ 🔑 ☆ 👤 ⋮, profil menüsü yalnız profiller, ⋮ menüsünde ikisi de var.
+
 - Görev Yöneticisi adı (kullanıcı: "WhatsApp, Telegram, not deft… yazıyor, Desk Helper yazmalı"). electron-builder exe'nin
   FileDescription'ını package.json description'dan alıyor (winPackager signAndEditResources); build.extraMetadata.description
   = "Desk Helper" (yalnızca paketlenen package.json'a, depo açıklaması aynı). Derlemeden sonra exe sürüm bilgisinde doğrula.
