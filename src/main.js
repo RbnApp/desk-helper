@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net, webContents } = require('electron');
 const path = require('path');
 const native = require('./native');
 const fs = require('fs');
@@ -320,6 +320,14 @@ ipcMain.handle('media:pick', async () => {
     filters: [{ name: en ? 'Audio and video' : 'Ses ve video', extensions: ['mp4', 'm4v', 'webm', 'mkv', 'mov', 'avi', 'wmv', 'mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'opus', 'flac', 'wma'] },
       { name: en ? 'All files' : 'Tüm dosyalar', extensions: ['*'] }] });
   return r.canceled ? [] : r.filePaths;
+});
+
+// Bellek: Chromium her web paneli için ayrı işlem açar. İşlemlerin belleği (KB) ve hangi webContents'in hangi işlemde
+// olduğu döner; arayüz bunları panellere eşler (Ayarlar > Bellek).
+ipcMain.handle('app:memory', () => {
+  const procs = app.getAppMetrics().map((m) => ({ pid: m.pid, type: m.type, name: m.name || m.serviceName || '', kb: m.memory.privateBytes || m.memory.workingSetSize || 0 }));
+  const wcs = webContents.getAllWebContents().map((wc) => { try { return { id: wc.id, pid: wc.getOSProcessId(), type: wc.getType(), url: wc.getURL() }; } catch { return null; } }).filter(Boolean);
+  return { procs, wcs, mainWc: win?.webContents.id };
 });
 
 // --- IPTV (medya oynatıcıda M3U listesi) ---

@@ -18,8 +18,14 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   nedeni (ör. "HTTP 404", "biçim desteklenmiyor") ve Tekrar dene / Sonraki kanal. N/P ya da ⏮⏭ ile kanal değişir. Liste
   saklanır, ⟳ ile yenilenir; son izlenen kanal açılışta seçili gelir. Desk Helper kanal sağlamaz. MPEG-2 görüntü ve
   AC-3 ses kullanan kanallar oynatılamaz (oynatıcının desteklemediği biçimler).
+- Ayarlar > 📊 Bellek: Desk Helper'ın ne kadar bellek kullandığını ve bunun hangi panelden geldiğini (WhatsApp, Telegram,
+  tarayıcı, YouTube…) gösterir.
+- Görünmeyen sekmelerdeki web panelleri uyutulur: başka sekmede 15 dakika (ayarlanabilir: kapalı, 5, 15, 30, 60 dk) açılmayan
+  web ve tarayıcı panelleri kapatılıp belleği boşaltılır; sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp,
+  Telegram, Instagram, X ve ses çalan sayfalar uyutulmaz. Bellek sekmesindeki "Şimdi uyut" ile hemen de yapılabilir.
 
 **Değişiklikler**
+- Windows Görev Yöneticisi'nde uygulama artık "Desk Helper" adıyla görünür (önceden açıklama metni yazıyordu).
 - "＋ Sekme" ve 🔔 bildirimler kısayol çubuğunun en sağına taşındı (sırayla ＋ Sekme, ＋ Çalışma alanı, 🔔). Pencere
   yerleşim düğmeleri üstte kaldı.
 - Medya oynatıcıda ses ayarı artık yana değil, ses düğmesinin üstünde dikey açılır: üzerine gelince açılır, kaydırıcıya

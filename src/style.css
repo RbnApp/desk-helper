@@ -534,3 +534,11 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .ph-stage:hover .ph-nav { opacity: .85; }
 .ph-nav:hover { background: rgba(0,0,0,.6); opacity: 1 !important; }
 .photo.md-drop .ph-stage { box-shadow: inset 0 0 0 3px var(--accent); }
+
+/* Ayarlar > Bellek */
+.mem-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow: auto; }
+.mem-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px 70px; gap: 10px; align-items: center; font-size: 12.5px; }
+.mem-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mem-bar { height: 6px; background: var(--panel); border-radius: 3px; overflow: hidden; }
+.mem-bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.mem-v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }

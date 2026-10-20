@@ -15,6 +15,16 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Görev Yöneticisi adı (kullanıcı: "WhatsApp, Telegram, not deft… yazıyor, Desk Helper yazmalı"). electron-builder exe'nin
+  FileDescription'ını package.json description'dan alıyor (winPackager signAndEditResources); build.extraMetadata.description
+  = "Desk Helper" (yalnızca paketlenen package.json'a, depo açıklaması aynı). Derlemeden sonra exe sürüm bilgisinde doğrula.
+- Bellek (kullanıcı: 2,4 GB, "açık uygulamalardan mı?"). Evet: her webview ayrı Chromium işlemi. Ayarlar > 📊 Bellek:
+  app:memory (getAppMetrics privateBytes/workingSet + webContents→pid), arayüz webview.getWebContentsId ile panellere eşler.
+  Uyku: asleep Set (oturumluk), sleepTick her dk; aktif olmayan ws'de settings.sleepMin (vars. '15') dk kalan web/browser
+  paneli destroyPanel, layoutWs aktif ws'de uyandırır; counted servisler (wa/tg/ig/x), __private ve isCurrentlyAudible
+  hariç. openShortcut uyuyan paneli bulup sekmesine geçer. Sekme ipucunda 💤. Test (xvfb): 742 MB → "Şimdi uyut" → 615 MB
+  (tarayıcı paneli 2×84 MB boşaldı), sekmeye dönünce aynı adresle açıldı, zamanlayıcıyla uyudu, "Kapalı"da uyumadı.
+
 - IPTV (kullanıcı: "playere m3u listesi girilerek iptv özelliği"). src/vendor: hls.js 1.6.15 light (354 KB) ve mpegts.js
   1.8.0 (273 KB), Apache-2.0 lisansları yanında; ilk TV yayınında loadScript ile yüklenir. parseM3U (EXTINF öznitelikleri,
   tırnak içi virgül, EXTGRP, EXTVLCOPT ua/referer, #EXT-X- içeren "liste" = tek HLS kanalı). iptvUI(): sanal liste (ROW 34),

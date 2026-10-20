@@ -13,6 +13,9 @@
     "appId": "com.rbnbilisim.deskhelper",
     "productName": "Desk Helper",
     "copyright": "© 2026 rbnbilisim",
+    "extraMetadata": {
+      "description": "Desk Helper"
+    },
     "directories": {
       "buildResources": "build",
       "output": "dist"

@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('desk', {
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
   pickMedia: () => ipcRenderer.invoke('media:pick'),
   pickImage: () => ipcRenderer.invoke('photo:pick'),
+  memory: () => ipcRenderer.invoke('app:memory'),
   iptv: {
     load: (src, refresh) => ipcRenderer.invoke('iptv:load', src, refresh),
     forget: (src) => ipcRenderer.invoke('iptv:forget', src),

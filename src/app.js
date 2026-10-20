@@ -109,7 +109,7 @@ function defaultState() {
   return { schema: STATE_SCHEMA, shortcuts: defaultShortcuts(), spaces: [sp], activeSpace: sp.id, workspaces: sp.workspaces, activeWs: ws.id, favorites: [], settings: { ...DEFAULT_SETTINGS } };
 }
 
-const DEFAULT_SETTINGS = { lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
+const DEFAULT_SETTINGS = { sleepMin: '15', lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
 // Tema rengi: tek renk seçilir; çerçeveler, düğmeler, seçili öğeler, odak çizgileri hep bu renkten gelir (style.css --accent).
 const ACCENTS = ['#4f8cff', '#7c5cff', '#e0559a', '#e5534b', '#f08c2e', '#d4a72c', '#2fb36b', '#17a2b8', '#8a8f9c'];
 
@@ -377,6 +377,7 @@ function layoutWs(ws) {
 
   for (const leaf of leaves(ws.root)) {
     let p = panels.get(leaf.id);
+    if (!p && asleep.has(leaf.id)) { if (ws.id !== state.activeWs) continue; asleep.delete(leaf.id); } // sekmeye gelince uyanır
     if (!p) p = createPanel(ws, leaf);
     p.leaf = leaf;
     const r = rects.get(leaf.id);
@@ -433,6 +434,37 @@ function setActive(ws, id) {
   for (const p of panels.values()) if (p.ws === ws) p.el.classList.toggle('active', p.leaf.id === id);
   save();
 }
+
+// ---------- Uyku: uzun süre görünmeyen web panelleri ----------
+// Başka sekmede kalan ve ayarlardaki süre boyunca açılmayan web/tarayıcı panelleri kapatılır (bellek boşalır); sekmesine
+// geçince aynı adresle yeniden açılır. Bildirim sayacı olan servisler (WhatsApp, Telegram, Instagram, X), ses çalan
+// sayfalar ve gizli tarayıcı uyutulmaz. Uyku yalnızca bu oturumluk (asleep), duruma yazılmaz.
+const asleep = new Set();
+function canSleep(p) {
+  if (p.leaf.kind !== 'web' && p.leaf.kind !== 'browser') return false;
+  if (counted(serviceOf(p.leaf)) || p.leaf.profile === '__private') return false;
+  return ![...p.body.querySelectorAll('webview')].some((w) => { try { return w.isCurrentlyAudible(); } catch { return false; } });
+}
+function sleepTick() {
+  const min = +(state.settings.sleepMin ?? 15) || 0;
+  const now = Date.now();
+  let changed = false;
+  for (const [id, p] of [...panels]) {
+    if (p.ws.id === state.activeWs) { p.hiddenAt = 0; continue; }
+    p.hiddenAt ||= now;
+    if (min > 0 && now - p.hiddenAt >= min * 60000 && canSleep(p)) { destroyPanel(id); asleep.add(id); changed = true; }
+  }
+  if (changed) renderTabs();
+  return changed;
+}
+// "Şimdi uyut": başka sekmelerdeki uyutulabilir panelleri süre beklemeden uyut.
+function sleepNow() {
+  let n = 0;
+  for (const [id, p] of [...panels]) if (p.ws.id !== state.activeWs && canSleep(p)) { destroyPanel(id); asleep.add(id); n++; }
+  if (n) renderTabs();
+  return n;
+}
+setInterval(() => { if (state) sleepTick(); }, 60000);
 
 function destroyPanel(id, { close = false } = {}) {
   const p = panels.get(id);
@@ -2409,6 +2441,12 @@ function openPanelOf(sc) {
 }
 function openShortcut(sc) {
   const open = sc.id && !allowsMulti(sc) ? openPanelOf(sc) : null;
+  if (!open && sc.id && !allowsMulti(sc)) { // uyuyan panel: sekmesine geçince uyanır
+    for (const ws of state.workspaces) {
+      const leaf = leaves(ws.root).find((l) => asleep.has(l.id) && l.sc === sc.id);
+      if (leaf) { switchWs(ws.id); setActive(ws, leaf.id); return; }
+    }
+  }
   if (!open) return addPanel(sc);
   if (state.activeWs !== open.ws.id) switchWs(open.ws.id);
   setActive(open.ws, open.leaf.id);
@@ -2634,7 +2672,10 @@ function renderTabs() {
     const name = h('span', { class: 'name', textContent: ws.name });
     const ls = leaves(ws.root);
     const icons = h('span', { class: 'icons' }, ...ls.slice(0, 5).map(leafIcon), ls.length > 5 ? '…' : null);
-    const tip = ws.name + (ls.length ? '\n\n' + t('Açık:') + ' ' + ls.map((l) => l.title).join(', ') : '\n\n' + t('(boş)')) + '\n\n' + t('Çift tık / sağ tık: yeniden adlandır');
+    const zz = ls.filter((l) => asleep.has(l.id));
+    const tip = ws.name + (ls.length ? '\n\n' + t('Açık:') + ' ' + ls.map((l) => l.title).join(', ') : '\n\n' + t('(boş)'))
+      + (zz.length ? '\n💤 ' + t('Uyuyor (bellek boşaltıldı, sekmeye gelince açılır):') + ' ' + zz.map((l) => l.title).join(', ') : '')
+      + '\n\n' + t('Çift tık / sağ tık: yeniden adlandır');
     const tab = h('div', { class: 'tab' + (ws.id === state.activeWs ? ' active' : ''), title: tip },
       ls.length ? icons : null, name, unread ? h('span', { class: 'badge', textContent: unread }) : null,
       h('button', { class: 'x', textContent: '✕', title: t('Sekmeyi kapat'), onclick: (e) => { e.stopPropagation(); closeWs(ws); } }));
@@ -3200,16 +3241,66 @@ async function openSettings(tab = 'settings') {
     });
     const openLink = (url) => { api.close(); openInDeskBrowser(url); };
 
+    // Bellek: hangi panel ne kadar kullanıyor (Chromium her web paneli için ayrı işlem açar) ve uyku ayarı.
+    const memList = h('div', { class: 'mem-list' }, h('div', { class: 'hint', textContent: '…' }));
+    const memTotal = h('b');
+    async function fillMem() {
+      const m = await window.desk.memory();
+      const pidOf = new Map(m.wcs.map((w) => [w.id, w.pid]));
+      const mainPid = pidOf.get(m.mainWc);
+      const labels = new Map();
+      for (const p of panels.values()) {
+        const wvs = [...p.body.querySelectorAll('webview')];
+        for (const wv of wvs) {
+          let pid; try { pid = pidOf.get(wv.getWebContentsId()); } catch {}
+          if (!pid) continue;
+          if (!labels.has(pid)) labels.set(pid, new Set());
+          labels.get(pid).add((p.leaf.title || p.leaf.name || '') + (p.leaf.kind === 'browser' && wvs.length > 1 ? ' ' + t('({n} sekme)', { n: wvs.length }) : ''));
+        }
+      }
+      const rows = new Map();
+      const add = (key, label, kb) => { const r = rows.get(key) || { label, kb: 0 }; r.kb += kb; rows.set(key, r); };
+      for (const x of m.procs) {
+        if (labels.has(x.pid)) add('p' + x.pid, [...labels.get(x.pid)].join(', '), x.kb);
+        else if (x.pid === mainPid) add('ui', t('Desk Helper arayüzü (sekmeler, not defteri, dosyalar, medya)'), x.kb);
+        else if (x.type === 'Browser') add('main', t('Ana işlem'), x.kb);
+        else if (x.type === 'GPU') add('gpu', t('Ekran kartı işlemi (GPU)'), x.kb);
+        else if (x.type === 'Tab') add('bg', t('Arka plandaki sayfalar'), x.kb);
+        else add('util', t('Ağ ve yardımcı işlemler'), x.kb);
+      }
+      const list = [...rows.values()].sort((a, b) => b.kb - a.kb);
+      const total = list.reduce((a, r) => a + r.kb, 0), max = list[0]?.kb || 1;
+      const mb = (kb) => Math.round(kb / 1024).toLocaleString(lang === 'en' ? 'en' : 'tr') + ' MB';
+      memTotal.textContent = mb(total);
+      memList.replaceChildren(...list.map((r) => h('div', { class: 'mem-row' },
+        h('span', { class: 'mem-l', textContent: r.label, title: r.label }),
+        h('span', { class: 'mem-bar' }, h('i', { style: `width:${Math.max(2, r.kb / max * 100)}%` })),
+        h('span', { class: 'mem-v', textContent: mb(r.kb) }))),
+        asleep.size ? h('div', { class: 'hint', textContent: '💤 ' + t('Uyuyan panel: {n} (bellek kullanmıyor)', { n: asleep.size }) }) : null);
+    }
+    const memPane = h('div', { class: 'pane mem' },
+      h('div', { class: 'hint', textContent: t('Her web paneli (WhatsApp, Telegram, YouTube, tarayıcı sekmeleri…) içinde ayrı bir Chrome sayfası çalışır; belleğin çoğu bunlardan gelir. Aynı siteleri Chrome\'da açmak da aşağı yukarı aynı belleği kullanır.') }),
+      h('div', { class: 'row' }, h('span', {}, t('Toplam') + ': ', memTotal),
+        h('span', { class: 'fav-add' },
+          h('button', { textContent: '⟳ ' + t('Yenile'), onclick: () => fillMem() }),
+          h('button', { textContent: '💤 ' + t('Şimdi uyut'), title: t('Başka sekmelerdeki uyutulabilir panelleri hemen uyut'), onclick: () => { sleepNow(); setTimeout(fillMem, 1500); } }))),
+      memList,
+      h('label', { class: 'row' }, t('Görünmeyen sekmelerdeki web panellerini uyut'),
+        sel('sleepMin', [['0', t('Kapalı')], ['5', t('{n} dakika sonra', { n: 5 })], ['15', t('{n} dakika sonra', { n: 15 })], ['30', t('{n} dakika sonra', { n: 30 })], ['60', t('1 saat sonra')]])),
+      h('div', { class: 'hint', textContent: t('Uyuyan panel sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp, Telegram, Instagram ve X bildirim kaçmasın diye, ses çalan sayfalar da hiç uyutulmaz.') }));
+
     const tabs = h('div', { class: 'dtabs' });
     const show = (which) => {
-      settingsPane.hidden = which !== 'settings'; aboutPane.hidden = which !== 'about'; notesPane.hidden = which !== 'notes';
+      settingsPane.hidden = which !== 'settings'; aboutPane.hidden = which !== 'about'; notesPane.hidden = which !== 'notes'; memPane.hidden = which !== 'mem';
+      if (which === 'mem') fillMem();
       tabs.replaceChildren(
         h('button', { class: which === 'settings' ? 'on' : '', textContent: '⚙ ' + t('Ayarlar'), onclick: () => show('settings') }),
         h('button', { class: which === 'notes' ? 'on' : '', textContent: '✨ ' + t('Yenilikler'), onclick: () => show('notes') }),
+        h('button', { class: which === 'mem' ? 'on' : '', textContent: '📊 ' + t('Bellek'), onclick: () => show('mem') }),
         h('button', { class: which === 'about' ? 'on' : '', textContent: 'ⓘ ' + t('Hakkında'), onclick: () => show('about') }));
     };
     show(tab);
-    return [tabs, settingsPane, notesPane, aboutPane];
+    return [tabs, settingsPane, notesPane, memPane, aboutPane];
   } });
 }
 
