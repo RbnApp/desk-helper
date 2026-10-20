@@ -23,6 +23,7 @@ window.I18N_EN = {
   'Fotoğraf görüntüleyicide aç': 'Open in photo viewer',
   'Bir resim aç ya da buraya sürükle': 'Open an image or drop it here',
   'Resim aç…': 'Open image…',
+  'Dosya aç': 'Open file',
   'Uzaklaştır': 'Zoom out',
   'Yakınlaştır': 'Zoom in',
   'Sığdır': 'Fit',

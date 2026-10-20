@@ -2266,7 +2266,7 @@ function buildPhoto(p) {
   const zoomL = h('span', { class: 'ph-zoom' });
   const tb = (txt, title, fn) => h('button', { class: 'md-tool', textContent: txt, title, onclick: fn });
   const bar = h('div', { class: 'md-bar' },
-    tb('📂', t('Resim aç…'), () => pickImage()),
+    tb('📂 ' + t('Dosya aç'), t('Resim aç…'), () => pickImage()),
     name, count,
     tb('−', t('Uzaklaştır'), () => zoomBy(1 / 1.25)), zoomL, tb('+', t('Yakınlaştır'), () => zoomBy(1.25)),
     tb('⤢', t('Sığdır') + ' (0)', () => fit()), tb('1:1', t('Gerçek boyut') + ' (1)', () => actual()),

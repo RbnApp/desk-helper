@@ -37,6 +37,7 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   çalışır (tam ekran artık ses düğmesiyle birlikte oynatıcıyı büyütür; çift tık ve F de öyle).
 - Tarayıcıda "Kayıtlı şifreler…" ve "Bu sitenin çerezlerini temizle…" artık yalnızca sağdaki ⋮ menüsünde. Profil menüsünden
   ve adres çubuğunun yanındaki 🍪 düğmesinden kaldırıldı (profil menüsü yalnızca profil seçimi içindir).
+- Fotoğraf görüntüleyicide sol üstteki 📂 düğmesinde artık "Dosya aç" yazıyor (önceden yalnızca simgeydi).
 
 ## 0.3.8 · 2026-10-19
 

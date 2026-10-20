@@ -15,6 +15,8 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Fotoğraf görüntüleyici "Dosya aç" (kullanıcı: "şurda dosya aç yazmalı, yeni keşfettim"): araç çubuğundaki 📂 düğmesi
+  "📂 Dosya aç" etiketli, ipucu "Resim aç…". i18n 'Dosya aç' → 'Open file'.
 - YouTube reklam engelleyici (kullanıcı: "hesap yoksa reklam izlerim"; karar kartı "Evet, ekle"). src/adblock.js,
   @ghostery/adblocker-electron (MPL-2.0). enableBlockingInSession kullanılmıyor: persist:desk WhatsApp vb. ile ortak, bu
   yüzden onBeforeRequest isteği yapan sayfanın adresine bakar (webContents.fromId→getURL, yalnız youtube.com). Kozmetik:
