@@ -15,6 +15,10 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Duraklatma işareti (kullanıcı: "duraklatıldığında ekranda pause simgesi çıkmalı, YouTube stili, başlatınca fade ile
+  kaybolmalı"). .md-pp (vbox içinde, pointer-events yok, CSS ile iki çubuk; emoji değil): pause → .on, play → .out
+  (0,5 sn büyüyerek solma), emptied/ended → gizli; ses modunda display none. Test (xvfb): yüklenince ve oynarken gizli,
+  duraklatınca görünür, oynatınca 0,15 sn'de %51, 0,85 sn'de gizli; tam ekranda görünür.
 - Oynatma listesi alt düğmeleri (kullanıcı: "listenin altında listeyi temizle ve medya ekle butonları olsun"). Dosyalar
   görünümü: .md-items (kayan) + .md-lf (sabit alt çubuk: Medya ekle → addFiles, Listeyi temizle; liste boşken pasif).
   .md-lh'deki 🗑 kaldırıldı. Test (xvfb): 0/3/63 öğede çubuk listenin dibinde, temizle sonrası pasif.

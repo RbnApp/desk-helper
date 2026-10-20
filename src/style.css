@@ -446,6 +446,15 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .md-stage.audio .md-ov-b:hover { background: rgba(0,0,0,.08); }
 .md-stage.audio .md-ov > .md-ov-b:last-child { display: none; }
 .md-ov.idle { opacity: 0; pointer-events: none; }
+.md-pp { position: absolute; left: 50%; top: calc(50% - 20px); width: 72px; height: 72px; margin: -36px 0 0 -36px; border-radius: 50%;
+  background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; gap: 10px; pointer-events: none; z-index: 1;
+  opacity: 0; visibility: hidden; }
+.md-pp i { width: 8px; height: 28px; border-radius: 2px; background: #fff; }
+.md-pp.on { opacity: 1; visibility: visible; animation: md-pp-in .18s ease-out; }
+.md-pp.out { visibility: visible; animation: md-pp-out .5s ease-out forwards; }
+@keyframes md-pp-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
+@keyframes md-pp-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(1.5); visibility: hidden; } }
+.md-stage.audio .md-pp { display: none; }
 .md-stage.idle { cursor: none; }
 .md-ov-b { width: 34px; height: 34px; border-radius: 50%; background: none; color: #fff; font-size: 16px; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 1px 2px rgba(0,0,0,.8)); }
 .md-ov-b:hover { background: rgba(255,255,255,.16); }

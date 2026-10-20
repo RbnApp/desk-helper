@@ -1768,7 +1768,9 @@ function buildMedia(p) {
   const vol = h('div', { class: 'md-vol' }, h('div', { class: 'md-vol-pop' }, volPct, volIn), volBtn);
   const fsBtn = h('button', { class: 'md-ov-b', textContent: '⛶', title: t('Tam ekran') + ' (F)' });
   const ov = h('div', { class: 'md-ov' }, vol, fsBtn);
-  const vbox = h('div', { class: 'md-vbox' }, video, ov);
+  // Duraklatılınca ortada YouTube'daki gibi ⏸ işareti; oynatınca büyüyerek solar (style.css .md-pp).
+  const pp = h('div', { class: 'md-pp' }, h('i'), h('i'));
+  const vbox = h('div', { class: 'md-vbox' }, video, pp, ov);
   const art = h('div', { class: 'md-art' }, h('div', { class: 'md-note', textContent: '🎵' }), h('div', { class: 'md-art-t' }));
   const err = h('div', { class: 'md-err', hidden: true });
   const empty = h('div', { class: 'md-empty' },
@@ -1917,6 +1919,10 @@ function buildMedia(p) {
   stage.addEventListener('mousemove', wake);
   video.addEventListener('play', wake);
   video.addEventListener('pause', wake);
+  video.addEventListener('pause', () => { if (!video.ended && video.currentSrc) pp.className = 'md-pp on'; });
+  video.addEventListener('play', () => { if (pp.classList.contains('on')) pp.className = 'md-pp out'; });
+  video.addEventListener('emptied', () => { pp.className = 'md-pp'; });
+  video.addEventListener('ended', () => { pp.className = 'md-pp'; });
   stage.addEventListener('mouseleave', () => { if (!video.paused) { ov.classList.add('idle'); } });
   paintVol();
   rate.addEventListener('change', () => { L.rate = +rate.value; video.playbackRate = L.rate; save2(); });

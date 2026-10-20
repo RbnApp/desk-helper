@@ -40,6 +40,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Fotoğraf görüntüleyicide sol üstteki 📂 düğmesinde artık "Dosya aç" yazıyor (önceden yalnızca simgeydi).
 - Medya oynatıcıda oynatma listesinin altında "＋ Medya ekle" ve "🗑 Listeyi temizle" düğmeleri var; liste uzayınca da
   altta sabit kalırlar. Başlıktaki küçük 🗑 düğmesi bunun yerine kaldırıldı.
+- Medya oynatıcıda video duraklatılınca ortada YouTube'daki gibi ⏸ işareti çıkar, oynatınca büyüyerek kaybolur. Tam
+  ekranda da görünür; ses dosyalarında gösterilmez.
 
 ## 0.3.8 · 2026-10-19
 
