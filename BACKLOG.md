@@ -15,6 +15,12 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Oturum geri yükleme (kullanıcı: "kapatıp açınca ilk açtığım sayfalar geliyor, en son izlediğim video değil"). Neden 1:
+  buildWeb yalnızca did-navigate'te leaf.url yazıyordu; YouTube (ve Telegram #) SPA geçişleri did-navigate-in-page →
+  eklendi (isMainFrame). Tarayıcı panelinde sekme adresi zaten iki olayda da güncelleniyordu. Neden 2: save() 300 ms
+  gecikmeli; kapanış bu sürede olursa son adres kayboluyordu → beforeunload'da bekleyen kayıt state:save-sync (sendSync)
+  ile hemen yazılır. Test (xvfb, yerel SPA sayfası, kapat-aç): web paneli ?v=42, tarayıcı ?v=8 ile geri geldi, 50 ms
+  sonra kapatınca da (önce ikisi de eski adresle geliyordu).
 - Duraklatma işareti (kullanıcı: "duraklatıldığında ekranda pause simgesi çıkmalı, YouTube stili, başlatınca fade ile
   kaybolmalı"). .md-pp (vbox içinde, pointer-events yok, CSS ile iki çubuk; emoji değil): pause → .on, play → .out
   (0,5 sn büyüyerek solma), emptied/ended → gizli; ses modunda display none. Test (xvfb): yüklenince ve oynarken gizli,

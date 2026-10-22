@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('desk', {
   loadState: () => ipcRenderer.invoke('state:load'),
   saveState: (s) => ipcRenderer.invoke('state:save', s),
+  saveStateNow: (s) => ipcRenderer.sendSync('state:save-sync', s),
   backupState: (tag) => ipcRenderer.invoke('state:backup', tag),
   info: () => ipcRenderer.invoke('app:info'),
   changelog: () => ipcRenderer.invoke('app:changelog'),

@@ -287,13 +287,16 @@ ipcMain.handle('state:backup', (_e, tag) => {
   fs.copyFileSync(statePath(), path.join(dataDir(), `state.backup-${String(tag).replace(/\W/g, '')}-${Date.now()}.json`));
   return true;
 });
-ipcMain.handle('state:save', (_e, state) => {
+function writeState(state) {
   fs.mkdirSync(dataDir(), { recursive: true });
   const tmp = statePath() + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
   fs.renameSync(tmp, statePath());
   return true;
-});
+}
+ipcMain.handle('state:save', (_e, state) => writeState(state));
+// Pencere kapanırken (beforeunload) bekleyen son kayıt: eşzamanlı, kapanmadan önce diske yazılır.
+ipcMain.on('state:save-sync', (e, state) => { try { e.returnValue = writeState(state); } catch { e.returnValue = false; } });
 
 // --- Favoriler: program, dosya, klasör seçme ve başlatma ---
 ipcMain.handle('dialog:pick', async (_e, kind) => {

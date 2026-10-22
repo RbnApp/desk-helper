@@ -43,6 +43,11 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Medya oynatıcıda video duraklatılınca ortada YouTube'daki gibi ⏸ işareti çıkar, oynatınca büyüyerek kaybolur. Tam
   ekranda da görünür; ses dosyalarında gösterilmez.
 
+**Düzeltmeler**
+- Uygulama ya da bilgisayar kapatılıp açılınca sayfalar en son kalınan yerden açılır. YouTube panelinde başka videolara
+  geçince adres hatırlanmıyordu ve açılışta ilk açılan video geliyordu (YouTube sayfayı yenilemeden adres değiştirdiği
+  için). Ayrıca kapatmadan hemen önce yapılan son gezinti kaydedilmeden kalabiliyordu; artık kapanırken de kaydedilir.
+
 ## 0.3.8 · 2026-10-19
 
 **Yeni**

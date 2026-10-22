@@ -234,8 +234,14 @@ function save() {
   if (saveBlocked) return;
   const sp = curSpace(); if (sp) sp.activeWs = state.activeWs;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => window.desk.saveState(JSON.parse(JSON.stringify(state))), 300);
+  saveTimer = setTimeout(() => { saveTimer = null; window.desk.saveState(JSON.parse(JSON.stringify(state))); }, 300);
 }
+// Pencere kapanırken bekleyen kayıt (son 300 ms'deki gezinti) kaybolmasın: eşzamanlı yaz.
+window.addEventListener('beforeunload', () => {
+  if (!saveTimer || saveBlocked) return;
+  clearTimeout(saveTimer); saveTimer = null;
+  try { window.desk.saveStateNow(JSON.parse(JSON.stringify(state))); } catch {}
+});
 
 // ---------- Çalışma alanları ----------
 // Her çalışma alanının kendi sekmeleri ve panel düzeni var; kısayollar, favoriler, alt çubuk, yer imleri, şifreler,
@@ -1429,7 +1435,9 @@ function buildWeb(p) {
     const m = /^\((\d+)\+?\)/.exec(e.title);
     setUnread(p, m ? +m[1] : 0);
   });
+  // YouTube gibi siteler sayfayı yeniden yüklemeden adres değiştirir (did-navigate-in-page); son adres hatırlansın.
   wv.addEventListener('did-navigate', (e) => { p.leaf.url = e.url; save(); });
+  wv.addEventListener('did-navigate-in-page', (e) => { if (e.isMainFrame) { p.leaf.url = e.url; save(); } });
   wv.addEventListener('did-fail-load', (e) => {
     if (e.errorCode === -3 || !e.isMainFrame) return; // -3: iptal edilen yükleme, hata değil
     p.body.querySelector('.ferr')?.remove();
