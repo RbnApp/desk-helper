@@ -15,6 +15,18 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Medya oynatıcıda YouTube (kullanıcı: "YouTube linki eklenince oynatabilmeli, playlist linki sağda liste olarak").
+  YouTube'un resmi IFrame Player API'si; indirme / yt-dlp yok. src/yt-player.html, main.js'te dhyt:// şeması
+  (registerSchemesAsPrivileged standard+secure) ile persist:ytplayer oturumunda sunulur; gömme isteklerine Referer
+  https://com.rbnbilisim.deskhelper/ eklenir (YouTube'un uygulama içi gömme kuralı, yoksa hata 153). Mesajlar
+  console.log('DHYT …') → webview console-message; komutlar executeJavaScript('dh.…'). Listede video
+  https://www.youtube.com/watch?v=ID, açılmamış liste https://www.youtube.com/playlist?list=ID(&v=başlangıç): açılınca
+  cuePlaylist + getPlaylist (en çok 200) ile videolara dönüşür, listede olanlar tekrar eklenmez. Adlar: oynarken
+  getVideoData().title, listede oEmbed (yt:title IPC, 3 eşzamanlı), L.ytt'de; listeden çıkanların adı silinir. Hatalar
+  2/5/100/101/150/152/153/list → mesaj + Sonrakine geç + YouTube'da aç. adblock: dhyt: sayfası YouTube sayılır. Test (xvfb,
+  sahte iframe_api — bu ortamdan YouTube'a erişilemiyor): modal ile youtu.be linki, oynatma ve ad, oynatma listesi (&v ile
+  doğru videodan başladı, tekrar yok), 150 hatası, dosyaya geçince YouTube durdu, Referer başlığı doğru, geçersiz link
+  uyarısı. Gerçek YouTube'da denenmedi.
 - Sağ tıkla yapıştırma (kullanıcı, Windows: "YouTube'a, not defterine yapıştıramıyorum, sadece adres çubuğuna").
   Linux'ta yeniden üretilemedi (menüden ve Ctrl+V her yerde çalıştı). Ayrım: adres çubuğundaki "Yapıştır ve git"
   clip:read (clipboard.readText) kullanıyordu, "Yapıştır" ise Chromium komutu (webContents.paste / wv.paste) → Windows'ta

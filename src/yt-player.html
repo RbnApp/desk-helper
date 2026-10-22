@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- Medya oynatıcının YouTube kısmı: YouTube'un resmi IFrame Player API'si (gömülü oynatıcı). main.js bu sayfayı
+     dhyt://player/ adresinden, persist:ytplayer oturumunda sunar ve gömülü oynatıcı isteklerine uygulamayı tanıtan
+     Referer'ı ekler (YouTube'un uygulama içi gömme kuralı). Desk Helper'a mesajlar console.log('DHYT {...}') ile gider,
+     komutlar executeJavaScript('dh.xxx(...)') ile gelir. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  #p { width: 100%; height: 100%; display: block; border: 0; }
+</style>
+</head>
+<body>
+<div id="p"></div>
+<script>
+  const post = (m) => console.log('DHYT ' + JSON.stringify(m));
+  let player = null, ready = false, pending = null, cueing = null, cueTimer = 0, tick = 0;
+  function run(x) {
+    if (!ready) { pending = x; return; }
+    clearTimeout(cueTimer); cueing = null;
+    if (x.list && !x.v) {
+      // Oynatma listesi: önce yalnızca yüklenir (cue), video kimlikleri Desk Helper'ın listesine aktarılır.
+      cueing = x;
+      player.cuePlaylist({ list: x.list, listType: 'playlist', index: 0 });
+      cueTimer = setTimeout(() => { if (cueing) { cueing = null; post({ type: 'error', code: 'list' }); } }, 20000);
+      return;
+    }
+    const o = { videoId: x.v, startSeconds: Math.max(0, Math.floor(x.start || 0)) };
+    if (x.play) player.loadVideoById(o); else player.cueVideoById(o);
+    if (x.rate) setTimeout(() => { try { player.setPlaybackRate(x.rate); } catch {} }, 500);
+  }
+  function listDone() {
+    if (!cueing) return;
+    const ids = player.getPlaylist?.() || [];
+    if (!ids.length) return;
+    const x = cueing; cueing = null; clearTimeout(cueTimer);
+    post({ type: 'playlist', list: x.list, ids });
+  }
+  window.onYouTubeIframeAPIReady = () => {
+    player = new YT.Player('p', {
+      width: '100%', height: '100%',
+      playerVars: { autoplay: 1, playsinline: 1, rel: 0, origin: location.origin },
+      events: {
+        onReady: () => { ready = true; post({ type: 'ready' }); if (pending) { const x = pending; pending = null; run(x); } },
+        onStateChange: (e) => {
+          const s = e.data;
+          if (s === 5 || s === -1) { listDone(); if (cueing) return; }
+          clearInterval(tick);
+          if (s === 1) {
+            const d = player.getVideoData?.() || {};
+            post({ type: 'playing', id: d.video_id, title: d.title, t: player.getCurrentTime() });
+            tick = setInterval(() => post({ type: 'time', t: player.getCurrentTime() }), 5000);
+          } else if (s === 2) post({ type: 'paused', t: player.getCurrentTime() });
+          else if (s === 0) post({ type: 'ended' });
+        },
+        onPlaybackRateChange: (e) => post({ type: 'rate', rate: e.data }),
+        onError: (e) => { if (cueing) { cueing = null; clearTimeout(cueTimer); } post({ type: 'error', code: e.data }); },
+      },
+    });
+  };
+  window.dh = {
+    load: run,
+    play: () => player?.playVideo(),
+    pause: () => player?.pauseVideo(),
+    stop: () => { clearInterval(tick); try { player?.stopVideo(); } catch {} },
+    toggle: () => { if (!player) return; if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo(); },
+    seek: (d) => { if (player) player.seekTo(Math.max(0, player.getCurrentTime() + d), true); },
+    rate: (r) => { try { player?.setPlaybackRate(r); } catch {} },
+    time: () => (player ? player.getCurrentTime() : 0),
+  };
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

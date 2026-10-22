@@ -16,7 +16,8 @@ const WEEK = 7 * 24 * 3600 * 1000;
 const cachePath = () => path.join(app.getPath('userData'), 'adblock-engine.bin');
 // DH_ADBLOCK_TEST_HOST: yalnızca otomatik testte YouTube yerine yerel bir sunucuyu saymak için.
 const YT = new RegExp('(^|\\.)(youtube\\.com' + (process.env.DH_ADBLOCK_TEST_HOST ? '|' + process.env.DH_ADBLOCK_TEST_HOST.replace(/\./g, '\\.') : '') + ')$', 'i');
-const isYT = (u) => { try { return YT.test(new URL(u).hostname); } catch { return false; } };
+// dhyt://player: medya oynatıcının YouTube sayfası (gömülü YouTube oynatıcısı) da YouTube sayılır.
+const isYT = (u) => { try { return String(u).startsWith('dhyt:') || YT.test(new URL(u).hostname); } catch { return false; } };
 const pageOf = (id) => { try { return webContents.fromId(id)?.getURL() || ''; } catch { return ''; } };
 
 async function load() {

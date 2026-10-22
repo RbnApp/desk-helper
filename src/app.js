@@ -1715,6 +1715,24 @@ document.addEventListener('contextmenu', (e) => {
 // panelde saklanır. Oynatılamayan dosyada (ör. bazı mkv/avi codec'leri) açık bir mesaj ve son çare "Varsayılan programda aç".
 const MEDIA_EXT = /\.(mp4|m4v|webm|mkv|mov|avi|wmv|mp3|m4a|aac|wav|ogg|oga|opus|flac|wma|m3u8?)$/i;
 const M3U_EXT = /\.m3u8?$/i;
+// YouTube linkleri (video: watch, youtu.be, shorts, live, embed; oynatma listesi: list=). Listede video
+// https://www.youtube.com/watch?v=ID, henüz açılmamış oynatma listesi https://www.youtube.com/playlist?list=ID olarak durur.
+function ytParse(u) {
+  let x; try { x = new URL(String(u).trim()); } catch { return null; }
+  if (!/(^|\.)(youtube\.com|youtube-nocookie\.com|youtu\.be)$/i.test(x.hostname)) return null;
+  const vid = (q) => (/^[\w-]{11}$/.test(q || '') ? q : '');
+  let v = vid(x.searchParams.get('v'));
+  if (!v && /youtu\.be$/i.test(x.hostname)) v = vid(x.pathname.slice(1).split('/')[0]);
+  if (!v) { const m = /^\/(shorts|live|embed|v)\/([\w-]{11})/.exec(x.pathname); if (m) v = m[2]; }
+  let list = x.searchParams.get('list') || '';
+  if (!/^[\w-]{10,64}$/.test(list)) list = '';
+  if (list.startsWith('RD') && v) list = ''; // YouTube'un otomatik "Mix" listeleri gömülü oynatıcıda listelenemiyor
+  return v || list ? { v, list } : null;
+}
+const ytUrl = (v) => 'https://www.youtube.com/watch?v=' + v;
+const ytListUrl = (list, v) => 'https://www.youtube.com/playlist?list=' + list + (v ? '&v=' + v : '');
+const ytOf = (f) => (/^https:\/\/www\.youtube\.com\/(watch|playlist)\?/.test(f || '') ? ytParse(f) : null);
+const ytIsList = (f) => /^https:\/\/www\.youtube\.com\/playlist\?/.test(f || '');
 
 // --- IPTV: M3U listesi ---
 // #EXTINF:-1 tvg-id=".." tvg-name=".." tvg-logo=".." group-title="..",Kanal adı  ardından yayın adresi.
@@ -1789,8 +1807,11 @@ function buildMedia(p) {
   const empty = h('div', { class: 'md-empty' },
     h('div', { class: 'md-big', textContent: '🎬' }),
     h('div', { textContent: t('Ses ya da video dosyası ekle ya da buraya sürükle') }),
-    h('button', { class: 'primary', textContent: '＋ ' + t('Dosya ekle'), onclick: () => addFiles() }));
-  const stage = h('div', { class: 'md-stage' }, vbox, art, err, empty);
+    h('div', { class: 'md-empty-b' },
+      h('button', { class: 'primary', textContent: '＋ ' + t('Dosya ekle'), onclick: () => addFiles() }),
+      h('button', { textContent: '▶ ' + t('YouTube linki'), onclick: () => addLink() })));
+  const ytBox = h('div', { class: 'md-yt', hidden: true });
+  const stage = h('div', { class: 'md-stage' }, vbox, ytBox, art, err, empty);
   const listEl = h('div', { class: 'md-list' });
   const rate = h('select', { class: 'md-rate', title: t('Oynatma hızı') },
     ...[0.5, 0.75, 1, 1.25, 1.5, 2].map((r) => h('option', { value: r, textContent: r + '×' })));
@@ -1800,7 +1821,7 @@ function buildMedia(p) {
   const bar = h('div', { class: 'md-bar' },
     h('button', { class: 'md-tool', title: t('Önceki'), textContent: '⏮', onclick: () => step(-1) }),
     h('button', { class: 'md-tool', title: t('Sonraki'), textContent: '⏭', onclick: () => step(1) }),
-    h('button', { class: 'md-tool', title: t('Dosya ekle'), textContent: '＋', onclick: () => addFiles() }),
+    h('button', { class: 'md-tool', title: t('Medya ekle'), textContent: '＋', onclick: (e) => addMenu(e.currentTarget) }),
     h('span', { class: 'md-now' }), rate, repeat, tvBtn, toggleList);
   const main = h('div', { class: 'md-main' }, stage, listEl);
   p.body.append(bar, main);
@@ -1825,21 +1846,34 @@ function buildMedia(p) {
     listEl.replaceChildren(viewTabs,
       h('div', { class: 'md-lh' }, h('span', { textContent: t('Oynatma listesi') + ` (${L.list.length})` })),
       h('div', { class: 'md-items' }, ...L.list.map((f, i) => {
-        const row = h('div', { class: 'md-item' + (i === L.idx && !L.tvOn ? ' on' : ''), title: f },
-          h('span', { class: 'md-i', textContent: AUDIO_EXT.test(f) ? '🎵' : '🎞' }), h('span', { class: 'md-n', textContent: baseName(f) }),
+        const yt = ytOf(f);
+        const row = h('div', { class: 'md-item' + (i === L.idx && !L.tvOn ? ' on' : '') + (yt ? ' yt' : ''), title: f },
+          h('span', { class: 'md-i', textContent: yt ? '▶' : AUDIO_EXT.test(f) ? '🎵' : '🎞' }), h('span', { class: 'md-n', textContent: mediaName(f) }),
           h('button', { class: 'x', textContent: '✕', title: t('Listeden çıkar'), onclick: (e) => { e.stopPropagation(); remove(i); } }));
         row.addEventListener('dblclick', () => { L.idx = i; L.pos = 0; load(true); });
         row.addEventListener('click', () => { L.idx = i; L.pos = 0; load(true); });
         return row;
       })),
       h('div', { class: 'md-lf' },
-        h('button', { textContent: '＋ ' + t('Medya ekle'), title: t('Dosya ekle'), onclick: () => addFiles() }),
+        h('button', { textContent: '＋ ' + t('Medya ekle'), onclick: (e) => addMenu(e.currentTarget) }),
         h('button', { textContent: '🗑 ' + t('Listeyi temizle'), disabled: !L.list.length, onclick: () => { L.list = []; L.idx = 0; load(false); } })));
   }
   function load(play) {
     tv.stop(); L.tvOn = false;
     err.hidden = true;
     const f = L.list[L.idx];
+    const yt = ytOf(f);
+    ytBox.hidden = !yt;
+    if (!yt) ytStop();
+    if (yt) {
+      try { video.pause(); } catch {}
+      if (video.getAttribute('src')) { video.removeAttribute('src'); video.load(); }
+      empty.hidden = true; vbox.hidden = video.hidden = true; art.hidden = true; stage.classList.remove('audio');
+      now.textContent = mediaName(f); setTitle(p, L.title + ' · ' + mediaName(f));
+      ytCall('dh.load(' + JSON.stringify(ytIsList(f) ? { list: yt.list } : { v: yt.v, start: L.pos || 0, play: !!play, rate: L.rate }) + ')');
+      renderList(); save2(); ytTitles();
+      return;
+    }
     empty.hidden = !!f; video.hidden = vbox.hidden = !f;
     const audio = !!f && AUDIO_EXT.test(f);
     art.hidden = !audio; stage.classList.toggle('audio', audio);
@@ -1884,6 +1918,120 @@ function buildMedia(p) {
     save2();
   };
   async function addFiles() { p.addMedia(await window.desk.pickMedia() || []); }
+  function addMenu(at) {
+    contextMenu(at, p.body, [
+      { icon: '🎞', label: t('Dosya seç…'), action: () => addFiles() },
+      { icon: '▶', label: t('YouTube linki…'), action: () => addLink() },
+    ]);
+  }
+  // YouTube linkleri: tek video listeye eklenir; oynatma listesi linki önce tek satır olarak eklenir, açılınca
+  // içindeki videolara dönüşür (YouTube'un gömülü oynatıcısı en fazla 200 video veriyor).
+  function addLinks(urls) {
+    const items = [];
+    for (const u of urls) {
+      const y = ytParse(u);
+      if (y) items.push(y.list ? ytListUrl(y.list, y.v) : ytUrl(y.v));
+    }
+    if (items.length) { L.hideList = false; L.listView = 'files'; p.addMedia(items); }
+    return items.length;
+  }
+  async function addLink() {
+    const clip = (await window.desk.readText().catch(() => '') || '').trim();
+    const r = await modal({ title: t('YouTube linki ekle'), icon: '▶', text: t('Bir YouTube videosunun ya da oynatma listesinin linkini yapıştır.'),
+      fields: [{ name: 'url', label: t('Link'), value: ytParse(clip) ? clip : '' }], okText: t('Ekle') });
+    const u = r?.url?.trim();
+    if (!u) return;
+    if (!addLinks([u])) await modal({ title: t('YouTube linki değil'), icon: '⚠', text: t('Bu bir YouTube video ya da oynatma listesi linki değil. Örnek: https://www.youtube.com/watch?v=… ya da https://youtu.be/…'), okText: t('Tamam') });
+  }
+  function mediaName(f) {
+    const y = ytOf(f);
+    if (!y) return baseName(f);
+    if (ytIsList(f)) return t('YouTube oynatma listesi') + ' · ' + y.list;
+    return L.ytt[y.v] || 'YouTube · ' + y.v;
+  }
+
+  // --- YouTube: gömülü oynatıcı (main.js persist:ytplayer, src/yt-player.html). Panelde ilk YouTube videosunda kurulur.
+  L.ytt ||= {}; // video kimliği -> ad
+  let ytv = null, ytDom = false, ytQ = [], ytSaveAt = 0;
+  function ytCall(js) {
+    if (!ytv) {
+      ytv = document.createElement('webview');
+      ytv.className = 'md-ytv';
+      ytv.setAttribute('partition', 'persist:ytplayer');
+      ytv.setAttribute('src', 'dhyt://player/');
+      ytv.addEventListener('dom-ready', () => { if (ytDom) return; ytDom = true; for (const x of ytQ.splice(0)) ytv.executeJavaScript(x).catch(() => {}); });
+      ytv.addEventListener('console-message', (e) => {
+        const m = /^DHYT (.*)$/s.exec(e.message || '');
+        if (m) { try { onYT(JSON.parse(m[1])); } catch {} }
+      });
+      ytBox.append(ytv);
+    }
+    if (ytDom) ytv.executeJavaScript(js).catch(() => {}); else ytQ.push(js);
+  }
+  function ytStop() { if (ytv) ytCall('dh.stop()'); }
+  p.ytStop = () => { ytBox.hidden = true; ytStop(); };
+  function onYT(m) {
+    const f = L.list[L.idx], y = ytOf(f);
+    if (!y || L.tvOn) return;
+    if (m.type === 'playing') {
+      err.hidden = true; ytBox.hidden = false;
+      if (m.title && m.id === y.v && L.ytt[y.v] !== m.title) { L.ytt[y.v] = m.title; now.textContent = m.title; setTitle(p, L.title + ' · ' + m.title); renderList(); save2(); }
+    } else if (m.type === 'time' || m.type === 'paused') {
+      L.pos = m.t || 0;
+      if (m.type === 'paused' || Date.now() - ytSaveAt > 5000) { ytSaveAt = Date.now(); save2(); }
+    } else if (m.type === 'ended') { L.pos = 0; step(1); }
+    else if (m.type === 'rate') { L.rate = m.rate; rate.value = L.rate; save2(); }
+    else if (m.type === 'playlist' && ytIsList(f) && m.list === y.list) {
+      // Listede zaten olan videolar yeniden eklenmez (bağlantıdaki başlangıç videosu hariç).
+      const have = new Set(L.list.filter((_, i) => i !== L.idx));
+      const ids = m.ids.filter((x) => /^[\w-]{11}$/.test(x) && (x === y.v || !have.has(ytUrl(x))));
+      if (!ids.length) return ytFail('list');
+      L.list.splice(L.idx, 1, ...ids.map(ytUrl));
+      L.idx += Math.max(0, ids.indexOf(y.v)); L.pos = 0;
+      load(true);
+    } else if (m.type === 'error') ytFail(m.code);
+  }
+  function ytFail(code) {
+    const f = L.list[L.idx];
+    const msg = {
+      2: t('YouTube bu linki tanımadı (video kimliği hatalı olabilir).'),
+      5: t('Bu video gömülü oynatıcıda oynatılamadı.'),
+      100: t('Video bulunamadı: silinmiş ya da gizli olabilir.'),
+      101: t('Videonun sahibi YouTube dışında oynatılmasına izin vermiyor.'),
+      150: t('Videonun sahibi YouTube dışında oynatılmasına izin vermiyor.'),
+      152: t('Videonun sahibi YouTube dışında oynatılmasına izin vermiyor.'),
+      153: t('YouTube oynatıcısı bu videoyu açmadı (hata 153).'),
+      list: t('Oynatma listesi açılamadı: gizli, boş ya da YouTube\'un otomatik karışık listesi olabilir.'),
+    }[code] || t('YouTube videosu açılamadı (hata {code}).', { code });
+    err.replaceChildren(
+      h('div', { class: 'md-big', textContent: '⚠' }),
+      h('div', { class: 'md-err-t', textContent: msg }),
+      h('div', { class: 'md-err-f', textContent: mediaName(f) }),
+      h('div', { class: 'md-err-b' },
+        L.list.length > 1 ? h('button', { textContent: t('Sonrakine geç'), onclick: () => step(1) }) : null,
+        h('button', { textContent: t('YouTube\'da aç'), onclick: () => openInDeskBrowser(f, p.ws) })));
+    err.hidden = false; ytBox.hidden = true;
+  }
+  // Listede adı bilinmeyen YouTube videolarının adları (oEmbed), en çok 3'ü aynı anda; listede olmayanların adı silinir.
+  let ytNaming = false;
+  async function ytTitles() {
+    if (ytNaming) return;
+    ytNaming = true;
+    try {
+      const ids = new Set(L.list.map((f) => (ytIsList(f) ? '' : ytOf(f)?.v)).filter(Boolean));
+      for (const k of Object.keys(L.ytt)) if (!ids.has(k)) delete L.ytt[k];
+      const need = [...ids].filter((v) => !L.ytt[v]);
+      let changed = 0;
+      const worker = async () => {
+        for (let v; (v = need.shift());) {
+          const r = await window.desk.ytTitle(v);
+          if (r?.title) { L.ytt[v] = r.title; if (++changed % 10 === 0) renderList(); }
+        }
+      };
+      await Promise.all([worker(), worker(), worker()]);
+      if (changed) { renderList(); const f = L.list[L.idx]; if (ytOf(f) && !L.tvOn) now.textContent = mediaName(f); save2(); }
+    } finally { ytNaming = false; }
+  }
 
   video.addEventListener('ended', () => (L.tvOn ? tv.dropped() : step(1)));
   video.addEventListener('volumechange', () => { L.vol = video.volume; save2(); });
@@ -1938,22 +2086,36 @@ function buildMedia(p) {
   video.addEventListener('ended', () => { pp.className = 'md-pp'; });
   stage.addEventListener('mouseleave', () => { if (!video.paused) { ov.classList.add('idle'); } });
   paintVol();
-  rate.addEventListener('change', () => { L.rate = +rate.value; video.playbackRate = L.rate; save2(); });
+  rate.addEventListener('change', () => { L.rate = +rate.value; video.playbackRate = L.rate; if (ytOf(L.list[L.idx])) ytCall(`dh.rate(${L.rate})`); save2(); });
   repeat.onclick = () => { L.repeat = !L.repeat; renderList(); save2(); };
   toggleList.onclick = () => { L.hideList = !L.hideList; renderList(); save2(); };
   // Sürükle-bırak: Gezgin'den ya da Desk Helper'ın dosya panelinden ses/video dosyaları.
-  p.body.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); p.body.classList.add('md-drop'); } });
+  p.body.addEventListener('dragover', (e) => { const ty = [...(e.dataTransfer?.types || [])]; if (ty.includes('Files') || ty.includes('text/uri-list')) { e.preventDefault(); p.body.classList.add('md-drop'); } });
   p.body.addEventListener('dragleave', (e) => { if (!p.body.contains(e.relatedTarget)) p.body.classList.remove('md-drop'); });
   p.body.addEventListener('drop', (e) => {
     p.body.classList.remove('md-drop');
     const files = [...(e.dataTransfer?.files || [])].map((f) => window.desk.pathForFile(f)).filter((x) => x && MEDIA_EXT.test(x));
-    if (!files.length) return;
+    if (!files.length) {
+      // Tarayıcıdan sürüklenen YouTube linki
+      const urls = (e.dataTransfer?.getData('text/uri-list') || e.dataTransfer?.getData('text/plain') || '').split(/\s+/).filter((x) => x && !x.startsWith('#'));
+      if (urls.some((u) => ytParse(u))) { e.preventDefault(); e.stopPropagation(); addLinks(urls); }
+      return;
+    }
     e.preventDefault(); e.stopPropagation(); p.addMedia(files);
   });
   // Klavye: boşluk oynat/duraklat, ←/→ 5 sn, ↑/↓ ses, F tam ekran, N/P sonraki/önceki.
   p.body.addEventListener('keydown', (e) => {
     if (e.target.closest('select, input, button')) return;
     const k = e.key.toLowerCase();
+    // Ctrl+V: panodaki YouTube linkini listeye ekle
+    if (e.ctrlKey && k === 'v') { window.desk.readText().then((x) => { if (ytParse(x)) addLinks([x]); }).catch(() => {}); return; }
+    if (ytOf(L.list[L.idx]) && !L.tvOn) {
+      if (k === ' ') { e.preventDefault(); ytCall('dh.toggle()'); }
+      else if (k === 'arrowright' || k === 'arrowleft') ytCall(`dh.seek(${k === 'arrowright' ? 5 : -5})`);
+      else if (k === 'n') step(1);
+      else if (k === 'p') step(-1);
+      return;
+    }
     if (k === ' ') { e.preventDefault(); if (video.paused) video.play().catch(() => {}); else video.pause(); }
     else if (k === 'arrowright') video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
     else if (k === 'arrowleft') video.currentTime = Math.max(0, video.currentTime - 5);
@@ -1967,6 +2129,7 @@ function buildMedia(p) {
   const tv = iptvUI({ p, L, video, vbox, err, empty, art, stage, now, save2, renderList });
   p.onDestroy = () => { clearTimeout(idleT); tv.stop(); if (L.tvOn) { try { video.removeAttribute('src'); video.load(); } catch {} return; } try { L.pos = video.currentTime; video.pause(); video.removeAttribute('src'); video.load(); } catch {} };
   if (L.tvOn && L.tv?.chan) tv.resume(); else load(false);
+  if (L.list.some((f) => ytOf(f))) ytTitles();
   if (L.tv?.src) tv.ensure();
 }
 
@@ -2142,6 +2305,7 @@ function iptvUI({ p, L, video, vbox, err, empty, art, stage, now, save2, renderL
   async function play(ch, { auto = false } = {}) {
     stop();
     const my = seq;
+    p.ytStop?.();
     cur = ch; L.tvOn = true; L.tv.chan = ch.url; save2();
     if (!auto) { autoRetry = 0; }
     played = false;

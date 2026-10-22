@@ -42,6 +42,12 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   altta sabit kalırlar. Başlıktaki küçük 🗑 düğmesi bunun yerine kaldırıldı.
 - Medya oynatıcıda video duraklatılınca ortada YouTube'daki gibi ⏸ işareti çıkar, oynatınca büyüyerek kaybolur. Tam
   ekranda da görünür; ses dosyalarında gösterilmez.
+- Medya oynatıcıda YouTube: "＋ Medya ekle" > "YouTube linki…" (ya da panodaki linkle Ctrl+V, ya da linki oynatıcıya
+  sürükleyerek) bir YouTube videosu eklenir ve oynatıcının içinde YouTube'un kendi gömülü oynatıcısıyla oynar.
+  Oynatma listesi linki eklenince içindeki videolar (en çok 200) sağdaki listeye adlarıyla gelir ve sırayla oynar;
+  yerel dosyalarla aynı listede karışık durabilir, ⏮⏭, tekrar, hız ve kaldığı yer hatırlama çalışır. Sahibi YouTube
+  dışında oynatılmasını kapatmış videolarda nedeni ve "YouTube'da aç" düğmesi çıkar. YouTube'un otomatik "Mix"
+  listeleri listelenemez; video indirilmez, YouTube hesabı gerekmez.
 
 **Düzeltmeler**
 - Uygulama ya da bilgisayar kapatılıp açılınca sayfalar en son kalınan yerden açılır. YouTube panelinde başka videolara

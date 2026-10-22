@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('desk', {
   loadState: () => ipcRenderer.invoke('state:load'),
   saveState: (s) => ipcRenderer.invoke('state:save', s),
   saveStateNow: (s) => ipcRenderer.sendSync('state:save-sync', s),
+  ytTitle: (id) => ipcRenderer.invoke('yt:title', id),
   backupState: (tag) => ipcRenderer.invoke('state:backup', tag),
   info: () => ipcRenderer.invoke('app:info'),
   changelog: () => ipcRenderer.invoke('app:changelog'),

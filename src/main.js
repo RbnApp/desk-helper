@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net, webContents } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net, webContents, protocol } = require('electron');
 const path = require('path');
 const native = require('./native');
 const adblock = require('./adblock');
@@ -6,6 +6,8 @@ const fs = require('fs');
 const os = require('os');
 
 app.setAppUserModelId('com.rbnbilisim.deskhelper');
+// Medya oynatıcının YouTube sayfası (yt-player.html) bu adresten sunulur; hazır olmadan önce kaydedilmeli.
+protocol.registerSchemesAsPrivileged([{ scheme: 'dhyt', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const dataDir = () => app.getPath('userData');
 const statePath = () => path.join(dataDir(), 'state.json');
@@ -62,6 +64,7 @@ function createWindow() {
   session.fromPartition('persist:desk').setUserAgent(CHROME_UA);
   adblock.hook(session.fromPartition('persist:desk'));
   iptvBridge();
+  ytPlayerBridge();
 
   try { native.rescueParked(); } catch {}
   docker = native.createDocker({
@@ -346,6 +349,34 @@ const iptvDir = () => path.join(dataDir(), 'iptv');
 const iptvCacheFile = (src) => path.join(iptvDir(), require('crypto').createHash('sha1').update(src).digest('hex').slice(0, 16) + '.m3u');
 const streamHeaders = new Map(); // origin -> { ua, referer }
 const originOf = (u) => { try { return new URL(u).origin; } catch { return ''; } };
+// --- Medya oynatıcıda YouTube ---
+// YouTube'un resmi gömülü oynatıcısı (IFrame Player API) persist:ytplayer oturumunda, dhyt://player/ sayfasında çalışır.
+// YouTube uygulama içi gömmelerde istemcinin kendini Referer ile tanıtmasını istiyor (yoksa "Hata 153"): mobil
+// uygulamalardaki gibi https://<uygulama kimliği>/ gönderilir. Video akışına dokunulmaz.
+const YT_REFERER = 'https://com.rbnbilisim.deskhelper/';
+function ytPlayerBridge() {
+  const ses = session.fromPartition('persist:ytplayer');
+  if (ses.protocol.isProtocolHandled('dhyt')) return;
+  ses.setUserAgent(CHROME_UA);
+  ses.protocol.handle('dhyt', () => new Response(fs.readFileSync(path.join(__dirname, 'yt-player.html')), { headers: { 'content-type': 'text/html; charset=utf-8' } }));
+  ses.webRequest.onBeforeSendHeaders({ urls: ['https://www.youtube.com/*', 'https://www.youtube-nocookie.com/*'] }, (d, cb) => {
+    const h = d.requestHeaders;
+    const ref = h.Referer || h.referer || '';
+    if (!ref || ref.startsWith('dhyt:')) { delete h.referer; h.Referer = YT_REFERER; }
+    cb({ requestHeaders: h });
+  });
+}
+// Oynatma listesindeki YouTube videolarının adları (YouTube'un herkese açık oEmbed adresi; anahtar gerekmez).
+ipcMain.handle('yt:title', async (_e, id) => {
+  if (!/^[\w-]{6,20}$/.test(id || '')) return null;
+  try {
+    const r = await net.fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + id));
+    if (!r.ok) return null;
+    const j = await r.json();
+    return { title: j.title || '', author: j.author_name || '' };
+  } catch { return null; }
+});
+
 function iptvBridge() {
   const ses = session.defaultSession;
   const mine = (d) => win && !win.isDestroyed() && d.webContentsId === win.webContents.id && /^https?:/.test(d.url) && ['xhr', 'media', 'other'].includes(d.resourceType);
