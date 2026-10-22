@@ -47,6 +47,9 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Uygulama ya da bilgisayar kapatılıp açılınca sayfalar en son kalınan yerden açılır. YouTube panelinde başka videolara
   geçince adres hatırlanmıyordu ve açılışta ilk açılan video geliyordu (YouTube sayfayı yenilemeden adres değiştirdiği
   için). Ayrıca kapatmadan hemen önce yapılan son gezinti kaydedilmeden kalabiliyordu; artık kapanırken de kaydedilir.
+- Sağ tıkla yapıştırma: başka bir programdan kopyalanan yazı sağ tık > Yapıştır ile YouTube'a, web panellerine ve not
+  defterine yapıştırılamıyordu (yalnızca adres çubuğundaki "Yapıştır ve git" çalışıyordu). Kes / Kopyala / Yapıştır artık
+  doğrudan pano üzerinden çalışır.
 
 ## 0.3.8 · 2026-10-19
 

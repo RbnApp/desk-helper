@@ -666,9 +666,10 @@ window.desk.onWebCtx((wcId, q) => {
     !link && !q.isEditable && !q.selectionText ? { icon: '🔗', label: t('Sayfa adresini kopyala'), action: () => window.desk.copyText(wv.getURL()) } : null,
     !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '</>', label: t('Sayfa kaynağını görüntüle'), key: 'Ctrl+U', action: () => viewSource(wcId) } : null,
     link ? '-' : null,
-    q.isEditable ? { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: !q.editFlags.canCut, action: () => wv.cut() } : null,
-    q.isEditable || q.selectionText ? { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: q.isEditable && !q.editFlags.canCopy, action: () => wv.copy() } : null,
-    q.isEditable ? { icon: '📋', label: t('Yapıştır'), key: 'Ctrl+V', disabled: !q.editFlags.canPaste, action: () => wv.paste() } : null,
+    // Pano işlemleri metin üzerinden (bkz. yazı kutusu menüsü): Windows'ta wv.paste() menüden çalışmıyordu.
+    q.isEditable ? { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: !q.selectionText, action: async () => { await window.desk.copyText(q.selectionText); wv.focus(); wv.delete(); } } : null,
+    q.isEditable || q.selectionText ? { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: !q.selectionText, action: () => window.desk.copyText(q.selectionText) } : null,
+    q.isEditable ? { icon: '📋', label: t('Yapıştır'), key: 'Ctrl+V', action: async () => { const text = await window.desk.readText(); wv.focus(); if (text) wv.insertText(text); } } : null,
     q.isEditable ? { icon: '', label: t('Tümünü seç'), key: 'Ctrl+A', action: () => wv.selectAll() } : null,
     q.isEditable || q.selectionText ? '-' : null,
     { icon: '←', label: t('Geri'), disabled: !canBack, action: () => wv.goBack() },
@@ -1689,12 +1690,16 @@ document.addEventListener('contextmenu', (e) => {
   e.preventDefault(); e.stopPropagation();
   const ro = el.readOnly, pass = el.type === 'password';
   const s0 = el.selectionStart ?? 0, s1 = el.selectionEnd ?? 0, hasSel = s1 > s0;
-  const run = (cmd) => { el.focus(); try { el.setSelectionRange(s0, s1); } catch {} window.desk.editCmd(cmd); };
+  // Kes/Kopyala/Yapıştır pano metni üzerinden (clip:read/clip:write) ve insertText ile: Windows'ta Chromium'un kendi
+  // yapıştır komutu (webContents.paste) menüden çağrılınca hiçbir şey yapmıyordu; yalnızca "Yapıştır ve git" çalışıyordu.
+  const sel = () => { el.focus(); try { el.setSelectionRange(s0, s1); } catch {} };
+  const put = (text) => { sel(); if (!document.execCommand('insertText', false, text)) { el.setRangeText(text, s0, s1, 'end'); el.dispatchEvent(new Event('input', { bubbles: true })); } };
+  const picked = () => el.value.slice(s0, s1);
   const isAddr = el.classList.contains('br-addr');
   contextMenu(e, document.body, [
-    { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: ro || pass || !hasSel, action: () => run('cut') },
-    { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: pass || !hasSel, action: () => run('copy') },
-    { icon: '📋', label: t('Yapıştır'), key: 'Ctrl+V', disabled: ro, action: () => run('paste') },
+    { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: ro || pass || !hasSel, action: async () => { await window.desk.copyText(picked()); put(''); } },
+    { icon: '⧉', label: t('Kopyala'), key: 'Ctrl+C', disabled: pass || !hasSel, action: () => { window.desk.copyText(picked()); sel(); } },
+    { icon: '📋', label: t('Yapıştır'), key: 'Ctrl+V', disabled: ro, action: async () => { const text = await window.desk.readText(); if (text) put(text); else sel(); } },
     isAddr ? { icon: '↵', label: t('Yapıştır ve git'), action: async () => {
       const text = (await window.desk.readText() || '').trim(); if (!text) return;
       el.focus(); el.value = text; el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));

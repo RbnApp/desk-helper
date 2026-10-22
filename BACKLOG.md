@@ -15,6 +15,13 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.3.9'da çıkacak)
 
+- Sağ tıkla yapıştırma (kullanıcı, Windows: "YouTube'a, not defterine yapıştıramıyorum, sadece adres çubuğuna").
+  Linux'ta yeniden üretilemedi (menüden ve Ctrl+V her yerde çalıştı). Ayrım: adres çubuğundaki "Yapıştır ve git"
+  clip:read (clipboard.readText) kullanıyordu, "Yapıştır" ise Chromium komutu (webContents.paste / wv.paste) → Windows'ta
+  menüden çağrılınca çalışmadığı varsayıldı. Artık uygulama kutularında Yapıştır = readText + execCommand('insertText')
+  (geri alınabilir), Kes/Kopyala = seçili metin → clip:write; web panellerinde Yapıştır = readText + wv.insertText (canPaste'e
+  bakılmaz), Kopyala/Kes = q.selectionText → clip:write (+ wv.delete). Test (xvfb): not ve web kutusunda menüden Yapıştır,
+  web'de Kes ("merhaba dünya" → " dünya", pano "merhaba"). Windows'ta doğrulanmadı; Ctrl+V'nin çalışıp çalışmadığı sorulacak.
 - Oturum geri yükleme (kullanıcı: "kapatıp açınca ilk açtığım sayfalar geliyor, en son izlediğim video değil"). Neden 1:
   buildWeb yalnızca did-navigate'te leaf.url yazıyordu; YouTube (ve Telegram #) SPA geçişleri did-navigate-in-page →
   eklendi (isMainFrame). Tarayıcı panelinde sekme adresi zaten iki olayda da güncelleniyordu. Neden 2: save() 300 ms
