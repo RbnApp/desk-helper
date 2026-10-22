@@ -3,7 +3,7 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
-## 0.3.9 · hazırlanıyor
+## 0.3.9 · 2026-10-22
 
 **Yeni**
 - Çalışma alanları: birbirinden ayrı, her biri kendi sekmeleri ve panel düzeniyle sıfırdan başlayan alanlar (ör. İş, Ev,

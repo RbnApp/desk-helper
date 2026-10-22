@@ -1,9 +1,9 @@
 # Desk Helper · bekleyen istekler
 
 Kullanıcı istekleri burada toplanır; kullanıcı "derle" deyince hepsi tek sürümde çıkar.
-Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sürümlerin notları: CHANGELOG.md.
+Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sürümlerin notları: CHANGELOG.md.
 
-## Sıradaki sürüm (0.3.8) için
+## Sıradaki sürüm (0.4.1) için
 
 - Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
   kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
@@ -13,7 +13,9 @@ Sıradaki sürüm: **0.3.8** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
-## Kodda hazır (0.3.9'da çıkacak)
+## Kodda hazır (0.4.1'de çıkacak)
+
+## 0.3.9'da çıktı (2026-10-22)
 
 - Medya oynatıcıda YouTube (kullanıcı: "YouTube linki eklenince oynatabilmeli, playlist linki sağda liste olarak").
   YouTube'un resmi IFrame Player API'si; indirme / yt-dlp yok. src/yt-player.html, main.js'te dhyt:// şeması
