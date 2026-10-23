@@ -1,9 +1,9 @@
 # Desk Helper · bekleyen istekler
 
 Kullanıcı istekleri burada toplanır; kullanıcı "derle" deyince hepsi tek sürümde çıkar.
-Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sürümlerin notları: CHANGELOG.md.
+Sıradaki sürüm: **0.4.0** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
 
-## Sıradaki sürüm (0.4.1) için
+## Sıradaki sürüm (0.4.0) için
 
 - Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
   kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
@@ -13,7 +13,7 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
-## Kodda hazır (0.4.1'de çıkacak)
+## Kodda hazır (0.4.0'da çıkacak)
 
 - Uyutma kapalı (kullanıcı 0.3.9 sonrası: "uzun süre başka sekmede kalırsam YouTube sayfayı yeniliyor ya da kapatıyor;
   sadece uygulama kapanınca kaldığı yerde kalsın demiştim"). DEFAULT_SETTINGS.sleepMin '0'; settings.sleepOff041 bayrağıyla

@@ -1,5 +1,5 @@
 // Sürüm kuralına göre bir sonraki sürüme geç (bkz. VERSIONING.md).
-// Kullanım: npm run bump          -> 0.1.1 -> 0.1.2 ... 0.1.9 -> 0.2.1
+// Kullanım: npm run bump          -> 0.3.8 -> 0.3.9 -> 0.4.0 -> 0.4.1 ... 0.9.9 -> 1.0.0
 //           npm run bump -- --dry -> yalnızca ne olacağını yazar
 const fs = require('fs');
 const path = require('path');
@@ -8,8 +8,8 @@ function next(version) {
   let [major, minor, patch] = version.split('.').map(Number);
   if (![major, minor, patch].every(Number.isInteger)) throw new Error(`Geçersiz sürüm: ${version}`);
   patch += 1;
-  if (patch > 9) { patch = 1; minor += 1; }
-  if (minor > 9) { minor = 1; major += 1; }
+  if (patch > 9) { patch = 0; minor += 1; }
+  if (minor > 9) { minor = 0; major += 1; }
   return `${major}.${minor}.${patch}`;
 }
 

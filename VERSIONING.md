@@ -1,13 +1,15 @@
 # Sürüm kuralı
 
-Desk Helper sürümleri `ANA.ARA.YAMA` biçimindedir ve **sıfır kullanılmaz**: ARA ve YAMA her zaman 1 ile 9 arasındadır.
+Desk Helper sürümleri `ANA.ARA.YAMA` biçimindedir; her basamak **0 ile 9** arasındadır (0 dahil).
 
-- İlk sürüm **0.1.1**.
-- Her yeni sürümde YAMA bir artar: 0.1.1 → 0.1.2 → … → 0.1.9
-- YAMA 9'dan sonra ARA bir artar, YAMA 1'e döner: **0.1.9 → 0.2.1**
-- ARA 9'dan sonra ANA bir artar, ARA ve YAMA 1'e döner: 0.9.9 → 1.1.1
+- Her yeni sürümde YAMA bir artar: 0.4.0 → 0.4.1 → … → 0.4.9
+- YAMA 9'dan sonra ARA bir artar, YAMA 0'a döner: **0.4.9 → 0.5.0**
+- ARA 9'dan sonra ANA bir artar, ARA ve YAMA 0'a döner: **0.9.9 → 1.0.0**
 
-Örnek sıra: 0.1.1, 0.1.2, …, 0.1.9, 0.2.1, 0.2.2, …, 0.9.9, 1.1.1
+Örnek sıra: 0.3.9, 0.4.0, 0.4.1, …, 0.4.9, 0.5.0, …, 0.9.9, 1.0.0
+
+Not: 0.1.1 – 0.3.9 arası eski kuralla (sıfır kullanılmadan, 0.2.9 → 0.3.1) çıktı; bu numaralar değiştirilmedi.
+2026-10-23'ten beri sıfır kullanılıyor, 0.3.9'dan sonraki sürüm 0.4.0.
 
 ## Nasıl uygulanır
 1. `npm run bump` — package.json ve package-lock.json'daki sürümü kurala göre bir sonrakine geçirir.
@@ -16,7 +18,3 @@ Desk Helper sürümleri `ANA.ARA.YAMA` biçimindedir ve **sıfır kullanılmaz**
 
 Sürüm numarası uygulamada Hakkında penceresinde, kurulum dosyasının adında ve Windows'taki
 program bilgisinde görünür.
-
-## Not
-Bu kuraldan önce iki deneme derlemesi dağıtıldı (0.1.0 ve 0.2.0). Sayım kural gereği 0.1.1'den
-yeniden başladı; 0.1.1 kurulumu 0.2.0'ın üzerine sorunsuz kurulur.

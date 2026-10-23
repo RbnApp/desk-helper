@@ -1,9 +1,9 @@
 # Desk Helper · Sürüm notları
 
-Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
+Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
-## 0.4.1 · hazırlanıyor
+## 0.4.0 · hazırlanıyor
 
 **Düzeltmeler**
 - Başka sekmede uzun süre kalan sayfalar (YouTube vb.) artık kapatılıp yenilenmez. 0.3.9'da bellek için gelen "uyutma"
