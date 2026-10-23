@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- Ekran görüntüsü: alan seçimi (shots.js). Donmuş ekran görüntüsünün üstünde sürükleyerek alan seçilir. -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; user-select: none; background: #000; }
+  #bg { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #dim { position: fixed; inset: 0; background: rgba(0,0,0,.35); }
+  #sel { position: fixed; display: none; outline: 1px solid #4f8cff; box-shadow: 0 0 0 9999px rgba(0,0,0,.45); background-repeat: no-repeat; }
+  #size { position: fixed; display: none; padding: 2px 6px; border-radius: 4px; background: #4f8cff; color: #fff; font: 12px/18px "Segoe UI", system-ui, sans-serif; }
+  #hint { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 9px; background: rgba(20,22,28,.88); color: #e6e6ea; font: 13px "Segoe UI", system-ui, sans-serif; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  #hint b { color: #fff; }
+  body.drag #dim, body.drag #hint { display: none; }
+</style>
+</head>
+<body>
+<img id="bg" alt="">
+<div id="dim"></div>
+<div id="sel"></div>
+<div id="size"></div>
+<div id="hint"></div>
+<script>
+  const bg = document.getElementById('bg'), sel = document.getElementById('sel'), size = document.getElementById('size'), hint = document.getElementById('hint');
+  let start = null, rect = null, url = '';
+  window.shot.onImage((u, o) => {
+    url = u;
+    hint.innerHTML = o && o.en
+      ? 'Drag to select an area · <b>Enter</b> or double-click: whole screen · <b>Esc</b>: cancel'
+      : 'Alan seçmek için sürükle · <b>Enter</b> ya da çift tık: tüm ekran · <b>Esc</b>: vazgeç';
+    bg.onload = () => window.shot.shown();
+    bg.src = u;
+  });
+  const draw = () => {
+    if (!rect) { sel.style.display = size.style.display = 'none'; return; }
+    Object.assign(sel.style, { display: 'block', left: rect.x + 'px', top: rect.y + 'px', width: rect.width + 'px', height: rect.height + 'px',
+      backgroundImage: `url(${url})`, backgroundSize: `${innerWidth}px ${innerHeight}px`, backgroundPosition: `${-rect.x - 1}px ${-rect.y - 1}px` });
+    const k = devicePixelRatio || 1;
+    size.textContent = `${Math.round(rect.width * k)} × ${Math.round(rect.height * k)}`;
+    Object.assign(size.style, { display: 'block', left: rect.x + 'px', top: Math.max(0, rect.y - 24) + 'px' });
+  };
+  addEventListener('mousedown', (e) => { if (e.button !== 0) return; start = { x: e.clientX, y: e.clientY }; rect = null; document.body.classList.add('drag'); draw(); });
+  addEventListener('mousemove', (e) => {
+    if (!start) return;
+    const x = Math.min(start.x, e.clientX), y = Math.min(start.y, e.clientY);
+    rect = { x, y, width: Math.abs(e.clientX - start.x), height: Math.abs(e.clientY - start.y) };
+    draw();
+  });
+  addEventListener('mouseup', () => {
+    if (!start) return;
+    start = null;
+    if (rect && rect.width >= 4 && rect.height >= 4) window.shot.select(rect);
+    else { rect = null; document.body.classList.remove('drag'); draw(); }
+  });
+  addEventListener('dblclick', () => window.shot.select(null));
+  addEventListener('contextmenu', (e) => { e.preventDefault(); window.shot.cancel(); });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') window.shot.cancel();
+    else if (e.key === 'Enter') window.shot.select(rect && rect.width >= 4 ? rect : null);
+  });
+</script>
+</body>
+</html>

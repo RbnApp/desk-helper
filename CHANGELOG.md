@@ -5,6 +5,14 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.0 · hazırlanıyor
 
+**Yeni**
+- Ekran görüntüsü: Shift+PrintScreen (Desk Helper arka plandayken de çalışır) ya da kısayol çubuğunun sağındaki 📷 >
+  ＋ ile. Ekran donar, istediğin alanı fareyle seçersin; tüm ekran için Enter ya da çift tık, vazgeçmek için Esc ya da
+  sağ tık. Görüntü Resimler\Screenshots\Desk Helper klasörüne kaydedilir ve panoya da kopyalanır (hemen yapıştırılabilir).
+  Sağ altta açılan küçük panelde son görüntüler önizlemeyle listelenir: görüntüyü tutup başka bir programa (WhatsApp,
+  Word, klasör…) sürükleyip bırakabilirsin; üstüne gelince 📋 panoya kopyala, 📂 klasörde göster, 🗑 sil (Geri Dönüşüm
+  Kutusu'na). Çift tık görüntüyü açar. Panel küçültülüp kapatılabilir, 📷 ile yeniden açılır.
+
 **Düzeltmeler**
 - Başka sekmede uzun süre kalan sayfalar (YouTube vb.) artık kapatılıp yenilenmez. 0.3.9'da bellek için gelen "uyutma"
   varsayılan olarak 15 dakikada açıktı; artık kapalı ve 0.3.9'da 15 dakikada kalanlarda da kapatıldı. İstersen

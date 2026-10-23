@@ -15,6 +15,15 @@ Sıradaki sürüm: **0.4.0** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.0'da çıkacak)
 
+- Ekran görüntüsü eklentisi (kullanıcı: AgentShot gibi sağ altta panel, sürükleyip başka uygulamaya götür, çöp ve klasör
+  ikonları, Resimler\Screenshots altına yeni klasör, Shift+PrintScreen). src/shots.js: globalShortcut Shift+PrintScreen
+  (alınamazsa panelde not), desktopCapturer imlecin ekranı tam çözünürlük → shot.html (shot-preload.js) çerçevesiz
+  'screen-saver' üstte pencere, donmuş görüntüde alan seçimi (Enter/çift tık tüm ekran, Esc/sağ tık vazgeç) → crop →
+  pictures/Screenshots/Desk Helper/"Ekran görüntüsü YYYY-MM-DD HH.MM.SS.png" + panoya (Electron 44: clipboard.write +
+  ClipboardItem image/png; writeImage yok). shot:new → app.js #shots paneli (settings.shotsOpen/shotsMin), list() son 40.
+  Sürükle: dragstart → shot:drag → webContents.startDrag({file, icon}). Sil: shell.trashItem. Pencere gizliyse Windows
+  bildirimi. Test (xvfb): alan 400×250 kaydedildi + panoda image/png, Enter tüm ekran 1600×900, Esc dosya yazmadı, panelde
+  kartlar, sil, küçült/kapat/aç. Windows'ta (PrintScreen tuşu, çoklu ekran, DPI, sürükle-bırak) denenmedi.
 - Uyutma kapalı (kullanıcı 0.3.9 sonrası: "uzun süre başka sekmede kalırsam YouTube sayfayı yeniliyor ya da kapatıyor;
   sadece uygulama kapanınca kaldığı yerde kalsın demiştim"). DEFAULT_SETTINGS.sleepMin '0'; settings.sleepOff041 bayrağıyla
   bir kez '15' → '0' (elle 5/30/60 seçen korunur). Bellek sekmesindeki seçim ve "Şimdi uyut" duruyor.

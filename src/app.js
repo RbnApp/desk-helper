@@ -2782,6 +2782,82 @@ function leafIcon(l) {
   return emo();
 }
 
+// --- Ekran görüntüleri: sağ altta küçük panel (main: shots.js) ---
+// Shift+PrintScreen ya da "Yakala" ile alınan görüntüler Resimler\Screenshots\Desk Helper'a kaydedilir ve burada
+// listelenir. Görüntü sürüklenip başka uygulamaya bırakılabilir (dosyanın kendisi gider); üstüne gelince 📋 panoya
+// kopyala, 📂 klasörde göster, 🗑 sil (Geri Dönüşüm Kutusu'na). Çift tık Windows'un resim görüntüleyicisinde açar.
+let shotItems = [], shotHotkey = true;
+// Kısa bilgi notu (pencerenin altında, birkaç saniye).
+function toast(msg) {
+  let el = $('#toast');
+  if (!el) { el = h('div', { id: 'toast' }); document.body.append(el); }
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2500);
+}
+const fmtSize = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+function shotsPanel() {
+  let el = $('#shots');
+  if (el) return el;
+  el = h('div', { id: 'shots', hidden: true },
+    h('div', { class: 'sh-head' },
+      h('span', { class: 'sh-title' }, h('span', { textContent: '📷' }), h('b', { textContent: t('Ekran görüntüleri') }), h('span', { class: 'sh-count' })),
+      h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (Shift+PrintScreen)', onclick: () => takeShot() }),
+      h('button', { class: 'sh-b', textContent: '📂', title: t('Klasörü aç'), onclick: () => window.desk.shots.reveal() }),
+      h('button', { class: 'sh-b sh-min', textContent: '⌄', title: t('Küçült'), onclick: () => { state.settings.shotsMin = !state.settings.shotsMin; save(); renderShots(); } }),
+      h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => toggleShots(false) })),
+    h('div', { class: 'sh-list' }));
+  document.body.append(el);
+  return el;
+}
+function toggleShots(on = !state.settings.shotsOpen) {
+  state.settings.shotsOpen = on;
+  if (on) state.settings.shotsMin = false;
+  save(); renderShots();
+  if (on) window.desk.shots.list().then((l) => { shotItems = l; renderShots(); });
+}
+async function takeShot() {
+  // Desk Helper'ın kendisi değil, arkasındaki ekran istenir diye pencere öndeyse önce küçültmüyoruz: kullanıcı
+  // Desk Helper'ın da görüntüsünü almak isteyebilir. Alan seçimi ekranı zaten tüm ekranı gösterir.
+  await window.desk.shots.capture();
+}
+function renderShots() {
+  const el = shotsPanel();
+  const open = !!state.settings.shotsOpen;
+  el.hidden = !open;
+  $('#shotBtn')?.classList.toggle('on', open);
+  if (!open) return;
+  el.classList.toggle('min', !!state.settings.shotsMin);
+  el.querySelector('.sh-min').textContent = state.settings.shotsMin ? '⌃' : '⌄';
+  el.querySelector('.sh-min').title = state.settings.shotsMin ? t('Büyüt') : t('Küçült');
+  el.querySelector('.sh-count').textContent = shotItems.length || '';
+  const list = el.querySelector('.sh-list');
+  if (!shotItems.length) {
+    list.replaceChildren(h('div', { class: 'sh-empty' },
+      h('div', { textContent: t('Henüz ekran görüntüsü yok.') }),
+      h('div', { textContent: shotHotkey ? t('Shift+PrintScreen ile ya da ＋ ile al.') : t('Shift+PrintScreen başka bir program tarafından kullanılıyor; ＋ ile al.') })));
+    return;
+  }
+  list.replaceChildren(...shotItems.map((it) => {
+    const img = h('img', { src: fileUrl(it.path) + '?t=' + Math.round(it.time), alt: '', draggable: false, loading: 'lazy' });
+    const card = h('div', { class: 'sh-card', draggable: true, title: it.name + '\n' + t('Başka bir uygulamaya sürükleyebilirsin') },
+      h('div', { class: 'sh-img' }, img,
+        h('div', { class: 'sh-acts' },
+          h('button', { textContent: '📋', title: t('Panoya kopyala'), onclick: (e) => { e.stopPropagation(); window.desk.shots.copy(it.path).then((ok) => ok && toast(t('Panoya kopyalandı'))); } }),
+          h('button', { textContent: '📂', title: t('Klasörde göster'), onclick: (e) => { e.stopPropagation(); window.desk.shots.reveal(it.path); } }),
+          h('button', { textContent: '🗑', title: t('Sil'), onclick: async (e) => { e.stopPropagation(); if (await window.desk.shots.remove(it.path)) { shotItems = shotItems.filter((x) => x !== it); renderShots(); } } }))),
+      h('div', { class: 'sh-meta' }, h('span', { class: 'sh-name', textContent: it.name }), h('span', { class: 'sh-dim', textContent: `${it.width}×${it.height}  ${fmtSize(it.size)}` })));
+    card.addEventListener('dragstart', (e) => { e.preventDefault(); window.desk.shots.drag(it.path); });
+    card.addEventListener('dblclick', () => window.desk.open(it.path));
+    return card;
+  }));
+}
+window.desk.shots?.onNew((it) => {
+  shotItems = [it, ...shotItems.filter((x) => x.path !== it.path)];
+  state.settings.shotsOpen = true; state.settings.shotsMin = false; save();
+  renderShots();
+});
+window.desk.shots?.onError((m) => toast(t('Ekran görüntüsü alınamadı: {err}', { err: m })));
+
 // Zil: toplam okunmamış rozeti; açılır listede servisler ve sayıları, Rahatsız etme.
 function dndOn() { const u = state.settings.dndUntil || 0; return u === -1 || u > Date.now(); }
 function renderBell() {
@@ -3615,6 +3691,9 @@ async function start(saved) {
   $('#addSpace').onclick = newSpace;
   $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
+  $('#shotBtn').onclick = () => toggleShots();
+  window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
+  if (state.settings.shotsOpen) window.desk.shots.list().then((l) => { shotItems = l; renderShots(); });
   applyDnd();
   $('#favBtn').onclick = openFavorites;
   $('#brand').onclick = () => openSettings();

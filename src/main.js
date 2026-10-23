@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, s
 const path = require('path');
 const native = require('./native');
 const adblock = require('./adblock');
+const shots = require('./shots');
 const fs = require('fs');
 const os = require('os');
 
@@ -65,6 +66,7 @@ function createWindow() {
   adblock.hook(session.fromPartition('persist:desk'));
   iptvBridge();
   ytPlayerBridge();
+  shots.init(() => (win && !win.isDestroyed() ? win : null), () => settings.lang);
 
   try { native.rescueParked(); } catch {}
   docker = native.createDocker({
