@@ -3,6 +3,17 @@
 Sürüm kuralı: X.Y.Z, Y ve Z 1–9 arası (0.2.9 → 0.3.1). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.4.1 · hazırlanıyor
+
+**Düzeltmeler**
+- Başka sekmede uzun süre kalan sayfalar (YouTube vb.) artık kapatılıp yenilenmez. 0.3.9'da bellek için gelen "uyutma"
+  varsayılan olarak 15 dakikada açıktı; artık kapalı ve 0.3.9'da 15 dakikada kalanlarda da kapatıldı. İstersen
+  Ayarlar > 📊 Bellek'ten yine açılabilir. Uygulama kapatılıp açılınca sayfaların kaldığı yerden açılması aynen sürüyor.
+- YouTube reklam engelleyici güçlendirildi: 0.3.9'da video reklamları çıkmaya devam ediyordu, çünkü YouTube reklamları
+  videonun kendi bilgisiyle birlikte gönderiyor. Artık reklam bilgisi sayfaya ulaşmadan siliniyor; yine de bir reklam
+  başlarsa sessize alınıp hemen atlanıyor. Ana sayfadaki ve önerilerdeki reklam kutuları ile "reklam engelleyici
+  kullanıyorsun" uyarısı da gizleniyor.
+
 ## 0.3.9 · 2026-10-22
 
 **Yeni**

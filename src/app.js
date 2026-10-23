@@ -109,7 +109,7 @@ function defaultState() {
   return { schema: STATE_SCHEMA, shortcuts: defaultShortcuts(), spaces: [sp], activeSpace: sp.id, workspaces: sp.workspaces, activeWs: ws.id, favorites: [], settings: { ...DEFAULT_SETTINGS } };
 }
 
-const DEFAULT_SETTINGS = { adblockYT: true, sleepMin: '15', lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
+const DEFAULT_SETTINGS = { adblockYT: true, sleepMin: '0', lang: 'tr', theme: 'dark', startWithWindows: false, alwaysOnTop: false, startDock: 'last', notesDir: '', confirmTabClose: true, accent: '#4f8cff', autoUpdate: true };
 // Tema rengi: tek renk seçilir; çerçeveler, düğmeler, seçili öğeler, odak çizgileri hep bu renkten gelir (style.css --accent).
 const ACCENTS = ['#4f8cff', '#7c5cff', '#e0559a', '#e5534b', '#f08c2e', '#d4a72c', '#2fb36b', '#17a2b8', '#8a8f9c'];
 
@@ -452,7 +452,7 @@ function canSleep(p) {
   return ![...p.body.querySelectorAll('webview')].some((w) => { try { return w.isCurrentlyAudible(); } catch { return false; } });
 }
 function sleepTick() {
-  const min = +(state.settings.sleepMin ?? 15) || 0;
+  const min = +(state.settings.sleepMin ?? 0) || 0;
   const now = Date.now();
   let changed = false;
   for (const [id, p] of [...panels]) {
@@ -3599,6 +3599,9 @@ async function start(saved) {
   state.appbar ||= [];
   state.bookmarks ||= {};
   state.settings = { ...DEFAULT_SETTINGS, ...(state.settings || {}) };
+  // 0.3.9'da uyutma varsayılan olarak 15 dk açıktı; kullanıcı sekmelerin yenilenmesini istemedi. Kimse elle seçmediği
+  // için 15'te kalanlar bir kez kapatılır (elle 5/30/60 seçenlerinki korunur).
+  if (!state.settings.sleepOff041) { if (state.settings.sleepMin === '15') state.settings.sleepMin = '0'; state.settings.sleepOff041 = true; }
   applySettings();
   translateStatic();
   renderShortcuts();

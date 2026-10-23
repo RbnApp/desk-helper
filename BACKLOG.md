@@ -15,6 +15,19 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, Y ve Z 1–9). Çıkan sü
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Uyutma kapalı (kullanıcı 0.3.9 sonrası: "uzun süre başka sekmede kalırsam YouTube sayfayı yeniliyor ya da kapatıyor;
+  sadece uygulama kapanınca kaldığı yerde kalsın demiştim"). DEFAULT_SETTINGS.sleepMin '0'; settings.sleepOff041 bayrağıyla
+  bir kez '15' → '0' (elle 5/30/60 seçen korunur). Bellek sekmesindeki seçim ve "Şimdi uyut" duruyor.
+- YouTube reklamları (kullanıcı: "hâlâ reklam çıkıyor"). Ghostery yalnız ağ + kozmetik idi; YouTube video reklamı
+  player yanıtının içinde (adPlacements/playerAds/adSlots) ve Electron'da kozmetik betikler IPC ile geç kalıyor.
+  webview-preload.js: adblock:yt-page (sendSync; açık ve isYT) → contextBridge.executeInMainWorld(dhYtAdblock) sayfa
+  betiklerinden önce: JSON.parse ve Response.json Proxy'si ile prune (+ auxiliaryUi.messageRenderers.
+  enforcementMessageViewModel), ytInitialPlayerResponse/ytInitialData setter; 300 ms'de .ad-showing videosunu sessize alıp
+  sona atla + Atla düğmesi, sonra sesi geri aç; reklam kutuları CSS ile gizli. Ghostery katmanı duruyor. Test (xvfb, yerel
+  sahte "YouTube" sayfası, DH_ADBLOCK_TEST_HOST): üç yolda alanlar silindi, reklam videosu sona atlandı ve ses geri açıldı,
+  reklam kutusu gizlendi; başka sitede ve ayar kapalıyken dokunulmadı. Gerçek YouTube'da denenmedi; YouTube değiştikçe
+  güncelleme gerekebilir.
+
 ## 0.3.9'da çıktı (2026-10-22)
 
 - Medya oynatıcıda YouTube (kullanıcı: "YouTube linki eklenince oynatabilmeli, playlist linki sağda liste olarak").

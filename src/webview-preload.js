@@ -1,6 +1,61 @@
 // Web panelleri (WhatsApp, Telegram, tarayıcı…) için: sayfanın bildirimine tıklanınca Desk Helper'a haber ver,
 // Desk Helper öne gelip o panele geçsin. Sayfanın kendi tıklama davranışı (ör. sohbeti açmak) aynen çalışır.
-const { ipcRenderer, webFrame } = require('electron');
+const { ipcRenderer, webFrame, contextBridge } = require('electron');
+
+// --- YouTube reklam engelleyici, sayfa tarafı (Ayarlar > "YouTube'da reklamları engelle"; main.js adblock.js karar verir) ---
+// YouTube video reklamlarını ayrı adreslerden değil, videonun bilgisiyle aynı yanıtın içinde (adPlacements, playerAds…)
+// gönderiyor; bu yüzden yalnızca ağ isteklerini kesmek yetmiyor (0.3.9'da reklamlar çıkmaya devam etti). Sayfanın
+// betiklerinden önce, sayfanın kendi dünyasında: video bilgisindeki reklam alanları silinir (JSON.parse, fetch yanıtları,
+// sayfaya gömülü ytInitialPlayerResponse); yine de bir reklam başlarsa sessize alınıp sonuna atlanır ve "Atla"ya basılır;
+// sayfadaki reklam kutuları gizlenir.
+function dhYtAdblock() {
+  if (window.__dhYtAb) return;
+  window.__dhYtAb = true;
+  const KEYS = ['adPlacements', 'adSlots', 'playerAds', 'adBreakHeartbeatParams'];
+  const prune = (o) => {
+    try {
+      if (!o || typeof o !== 'object') return o;
+      for (const k of KEYS) if (k in o) delete o[k];
+      const mr = o.auxiliaryUi && o.auxiliaryUi.messageRenderers;
+      if (mr && mr.enforcementMessageViewModel) delete mr.enforcementMessageViewModel; // "reklam engelleyici" uyarısı
+      if (o.playerResponse && typeof o.playerResponse === 'object') prune(o.playerResponse);
+      if (Array.isArray(o)) for (const x of o) if (x && typeof x === 'object' && x.playerResponse) prune(x.playerResponse);
+    } catch {}
+    return o;
+  };
+  const parse = JSON.parse;
+  JSON.parse = new Proxy(parse, { apply: (f, self, args) => prune(Reflect.apply(f, self, args)) });
+  const json = Response.prototype.json;
+  Response.prototype.json = new Proxy(json, { apply: (f, self, args) => Reflect.apply(f, self, args).then(prune) });
+  for (const name of ['ytInitialPlayerResponse', 'ytInitialData']) {
+    let val;
+    try { Object.defineProperty(window, name, { configurable: true, get: () => val, set: (v) => { val = prune(v); } }); } catch {}
+  }
+  let muted = false;
+  setInterval(() => {
+    const pl = document.querySelector('.html5-video-player.ad-showing, .html5-video-player.ad-interrupting');
+    const v = pl && pl.querySelector('video');
+    if (v) {
+      if (!v.muted) { v.muted = true; muted = true; }
+      if (isFinite(v.duration) && v.duration > 0 && v.currentTime < v.duration - 0.1) v.currentTime = v.duration;
+      const skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button');
+      if (skip) skip.click();
+    } else if (muted) {
+      const main = document.querySelector('.html5-video-player video');
+      if (main) main.muted = false;
+      muted = false;
+    }
+  }, 300);
+  const css = 'ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, ytd-promoted-sparkles-web-renderer, ytd-promoted-video-renderer,'
+    + ' ytd-display-ad-renderer, ytd-banner-promo-renderer, ytd-statement-banner-renderer, ytd-player-legacy-desktop-watch-ads-renderer,'
+    + ' #masthead-ad, #player-ads, .ytp-ad-overlay-container, .ytp-featured-product, ytd-merch-shelf-renderer,'
+    + ' ytd-rich-item-renderer:has(ytd-ad-slot-renderer), ytd-enforcement-message-view-model, tp-yt-paper-dialog:has(ytd-enforcement-message-view-model)'
+    + ' { display: none !important; }';
+  const addCss = () => { if (document.getElementById('dh-yt-ab')) return; const st = document.createElement('style'); st.id = 'dh-yt-ab'; st.textContent = css; (document.head || document.documentElement).append(st); };
+  if (document.documentElement) addCss(); else document.addEventListener('DOMContentLoaded', addCss);
+  document.addEventListener('DOMContentLoaded', addCss);
+}
+try { if (ipcRenderer.sendSync('adblock:yt-page', location.href)) contextBridge.executeInMainWorld({ func: dhYtAdblock }); } catch {}
 
 window.addEventListener('message', (e) => {
   if (e.source === window && e.data && e.data.__deskNotifClick) ipcRenderer.sendToHost('desk-notif-click');

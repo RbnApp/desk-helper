@@ -65,6 +65,9 @@ ipcMain.handle('@ghostery/adblocker/inject-cosmetic-filters', (event, url, msg) 
   if (!enabled || !blocker || !isYT(url)) return;
   return blocker.onInjectCosmeticFilters(event, url, msg);
 });
+// webview-preload.js: bu sayfada YouTube reklam betiği çalışsın mı (açık mı, sayfa YouTube mu). Eşzamanlı; sayfa
+// betiklerinden önce sorulur.
+ipcMain.on('adblock:yt-page', (e, url) => { e.returnValue = !!(enabled && isYT(url) && !String(url).startsWith('dhyt:')); });
 ipcMain.handle('@ghostery/adblocker/is-mutation-observer-enabled', () => !!(enabled && blocker?.config.enableMutationObserver));
 
 function setEnabled(on) {
