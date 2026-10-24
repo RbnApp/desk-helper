@@ -1,9 +1,9 @@
 # Desk Helper · bekleyen istekler
 
 Kullanıcı istekleri burada toplanır; kullanıcı "derle" deyince hepsi tek sürümde çıkar.
-Sıradaki sürüm: **0.4.0** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
+Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
 
-## Sıradaki sürüm (0.4.0) için
+## Sıradaki sürüm (0.4.1) için
 
 - Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
   kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
@@ -13,7 +13,9 @@ Sıradaki sürüm: **0.4.0** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
-## Kodda hazır (0.4.0'da çıkacak)
+## Kodda hazır (0.4.1'de çıkacak)
+
+## 0.4.0'da çıktı (2026-10-24)
 
 - WhatsApp'ta zıplama (kullanıcı: "yazarken mesaj geldikçe uygulama zıplıyor"). setUnread → renderTabs: .tab .badge
   satır içi olduğundan sekme genişliyor, #tabs sarılınca #topbar yüksekliği değişip #stage (tüm paneller) 19 px kayıyordu
