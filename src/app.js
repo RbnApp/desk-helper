@@ -2754,7 +2754,9 @@ const serviceUnread = (sv) => !counted(sv) ? 0 : Math.max(0, ...[...panels.value
 function setUnread(p, n) {
   const sv = serviceOf(p.leaf);
   if (sv && !counted(sv)) n = 0;
-  p.unread = n;
+  // Sayfa başlığı değişse de sayı (ve harici tarayıcı başlığı) aynıysa hiçbir şeyi yeniden çizme
+  if (p.unread === n && p.shownExtra === (p.titleExtra || '')) return;
+  p.unread = n; p.shownExtra = p.titleExtra || '';
   setTitle(p, p.leaf.title + (n ? `  (${n})` : '') + (p.titleExtra || ''));
   renderTabs(); renderBell();
 }
@@ -2923,6 +2925,7 @@ function applyDnd() {
 // ---------- Sekmeler ----------
 function renderTabs() {
   const box = $('#tabs');
+  const keep = box.scrollTop;
   box.replaceChildren(...state.workspaces.map((ws) => {
     const unread = unreadOf([...panels.values()].filter((p) => p.ws === ws));
     const name = h('span', { class: 'name', textContent: ws.name });
@@ -2949,7 +2952,14 @@ function renderTabs() {
     tab.addEventListener('contextmenu', (e) => { e.preventDefault(); rename(); });
     return tab;
   }));
-  $('#tabs .tab.active')?.scrollIntoView({ block: 'nearest' }); // 2 sırayı aşınca aktif sekme görünür kalsın
+  // 2 sırayı aşınca aktif sekme görünür kalsın. scrollIntoView değil: o, pencerenin kendisini de kaydırabiliyor.
+  box.scrollTop = keep;
+  const act = $('#tabs .tab.active');
+  if (act) {
+    const top = act.offsetTop - box.offsetTop, bottom = top + act.offsetHeight;
+    if (top < box.scrollTop) box.scrollTop = top;
+    else if (bottom > box.scrollTop + box.clientHeight) box.scrollTop = bottom - box.clientHeight;
+  }
 }
 
 // Sekmeyi sürükleyerek sırala: 5px'ten az hareket tıklama sayılır; 2 sıraya sarılmış çubukta da çalışır.

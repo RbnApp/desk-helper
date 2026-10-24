@@ -14,6 +14,9 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   Kutusu'na). Çift tık görüntüyü açar. Panel küçültülüp kapatılabilir, 📷 ile yeniden açılır.
 
 **Düzeltmeler**
+- WhatsApp'ta yazarken mesaj geldikçe uygulamanın zıplaması düzeldi: sekmedeki okunmamış sayısı sekmeyi genişletiyordu,
+  sekmeler ikinci satıra taşınca altındaki her şey aşağı kayıyordu. Sayı artık sekmenin köşesinde küçük bir rozet; sekmeler
+  ve paneller yerinden oynamaz. Sayı değişmedikçe hiçbir şey yeniden çizilmez.
 - Başka sekmede uzun süre kalan sayfalar (YouTube vb.) artık kapatılıp yenilenmez. 0.3.9'da bellek için gelen "uyutma"
   varsayılan olarak 15 dakikada açıktı; artık kapalı ve 0.3.9'da 15 dakikada kalanlarda da kapatıldı. İstersen
   Ayarlar > 📊 Bellek'ten yine açılabilir. Uygulama kapatılıp açılınca sayfaların kaldığı yerden açılması aynen sürüyor.

@@ -30,13 +30,17 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--a
 
 body { display: flex; flex-direction: column; }
 #topbar { display: flex; align-items: flex-end; gap: 4px; padding: 6px 8px 0; background: var(--bar); }
+#topbar > #tabs { margin-top: -6px; padding-top: 6px; } /* rozet sekmenin üst köşesine taşabilsin (#tabs taşanı kırpar) */
 #topbar > .icon, #dock { align-self: flex-end; }
 /* Sekmeler en fazla 2 sıra; fazlası için dikey kaydırma çubuğu */
-#tabs { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2px; max-height: 66px; overflow-y: auto; overflow-x: hidden; min-width: 0; flex: 0 1 auto; }
-.tab { display: flex; align-items: center; gap: 6px; padding: 7px 10px 7px 14px; border-radius: 8px 8px 0 0; color: var(--muted); max-width: 220px; white-space: nowrap; cursor: pointer; }
+#tabs { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2px; max-height: 72px; box-sizing: border-box; overflow-y: auto; overflow-x: hidden; min-width: 0; flex: 0 1 auto; }
+.tab { display: flex; align-items: center; gap: 6px; padding: 7px 10px 7px 14px; border-radius: 8px 8px 0 0; color: var(--muted); max-width: 220px; white-space: nowrap; cursor: pointer; position: relative; }
 .tab.active { background: var(--bg); color: var(--text); box-shadow: inset 0 2px 0 var(--accent); }
 .tab .name { overflow: hidden; text-overflow: ellipsis; }
-.tab .badge { background: #25d366; color: #000; border-radius: 9px; font-size: 11px; padding: 0 6px; font-weight: 600; }
+/* Okunmamış rozeti sekmenin köşesinde, genişliği etkilemez: mesaj geldikçe sekmeler kayıp ikinci satıra taşmasın,
+   altındaki her şey (WhatsApp'ta yazarken) aşağı yukarı zıplamasın. */
+.tab .badge { position: absolute; top: -5px; right: -4px; z-index: 1; background: #25d366; color: #000; border-radius: 9px; font-size: 10px; line-height: 15px;
+  min-width: 15px; text-align: center; padding: 0 4px; font-weight: 700; pointer-events: none; box-sizing: border-box; }
 .tab .x { opacity: 0; padding: 0 4px; }
 .tab:hover .x, .tab.active .x { opacity: .7; }
 .tab input { width: 120px; padding: 1px 4px; }

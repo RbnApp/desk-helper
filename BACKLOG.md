@@ -15,6 +15,11 @@ Sıradaki sürüm: **0.4.0** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.0'da çıkacak)
 
+- WhatsApp'ta zıplama (kullanıcı: "yazarken mesaj geldikçe uygulama zıplıyor"). setUnread → renderTabs: .tab .badge
+  satır içi olduğundan sekme genişliyor, #tabs sarılınca #topbar yüksekliği değişip #stage (tüm paneller) 19 px kayıyordu
+  (xvfb'de 700–1500 genişlikte 4 genişlikte yakalandı; sekmeler her mesajda yatayda da kayıyordu). Rozet artık
+  position:absolute köşede (#tabs padding-top 6/margin-top -6, yükseklik aynı); setUnread sayı ve titleExtra aynıysa
+  çıkar; renderTabs scrollIntoView yerine #tabs.scrollTop'u elle ayarlar. Test: 0 dikey sıçrama, 0 yatay kayma.
 - Ekran görüntüsü eklentisi (kullanıcı: AgentShot gibi sağ altta panel, sürükleyip başka uygulamaya götür, çöp ve klasör
   ikonları, Resimler\Screenshots altına yeni klasör, Shift+PrintScreen). src/shots.js: globalShortcut Shift+PrintScreen
   (alınamazsa panelde not), desktopCapturer imlecin ekranı tam çözünürlük → shot.html (shot-preload.js) çerçevesiz
