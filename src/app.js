@@ -113,6 +113,22 @@ const DEFAULT_SETTINGS = { adblockYT: true, sleepMin: '0', lang: 'tr', theme: 'd
 // Tema rengi: tek renk seçilir; çerçeveler, düğmeler, seçili öğeler, odak çizgileri hep bu renkten gelir (style.css --accent).
 const ACCENTS = ['#4f8cff', '#7c5cff', '#e0559a', '#e5534b', '#f08c2e', '#d4a72c', '#2fb36b', '#17a2b8', '#8a8f9c'];
 
+// Sabit kısayollar: üst çubuktan hiçbir yolla kaldırılamaz (sağ tıkta "Üst çubuktan kaldır" yok, Düzenle'de "Sil" yok).
+// Eski düzende eksiklerse her açılışta yerlerine geri eklenir.
+const PINNED_SC = ['wa', 'tg', 'yt', 'deskbrowser'];
+const isPinned = (sc) => PINNED_SC.includes(sc?.id);
+function ensurePinned(s) {
+  const def = { wa: () => webShortcuts()[0], tg: () => webShortcuts()[1], yt: youtubeShortcut, deskbrowser: deskBrowserShortcut };
+  const at = (id) => s.shortcuts.findIndex((x) => x.id === id);
+  for (const id of PINNED_SC) {
+    if (at(id) >= 0) continue;
+    // WhatsApp başa, Telegram WhatsApp'ın arkasına, YouTube Instagram/X'in, Tarayıcı YouTube'un arkasına (yoksa sona).
+    const after = { wa: [], tg: ['wa'], yt: ['x', 'ig', 'tg', 'wa'], deskbrowser: ['yt'] }[id].map(at).find((i) => i >= 0);
+    s.shortcuts.splice(after == null ? (id === 'wa' ? 0 : s.shortcuts.length) : after + 1, 0, def[id]());
+  }
+  return s;
+}
+
 // Önceki sürümlerden gelen durum: WhatsApp/Telegram web panellerini kurulu uygulamalara çevir.
 function migrate(s) {
   if ((s.schema || 1) >= STATE_SCHEMA) return s;
@@ -3194,7 +3210,9 @@ function renderShortcuts() {
           '-',
           { icon: '🎨', label: t('Simgeyi değiştir…'), action: () => iconDialog(sc, 'sc') },
           { label: t('Düzenle…'), action: () => editShortcut(sc) },
-        ]);
+          isPinned(sc) ? null : '-',
+          isPinned(sc) ? null : { icon: '🗑', label: t('Üst çubuktan kaldır'), danger: true, action: () => removeShortcut(sc) },
+        ].filter(Boolean));
       });
       return b;
     }),
@@ -3244,6 +3262,13 @@ async function newShortcut() {
   }
 }
 
+function removeShortcut(sc) {
+  if (isPinned(sc)) return;
+  state.shortcuts = state.shortcuts.filter((s) => s !== sc);
+  appbarRemove('sc', sc.id);
+  renderShortcuts(); renderAppbar(); save();
+  toast(t('"{name}" üst çubuktan kaldırıldı', { name: sc.name }));
+}
 async function editShortcut(sc) {
   const fields = [{ name: 'name', label: t('Ad'), value: sc.name }, { name: 'emo', label: t('Simge (emoji)'), value: sc.emo || '🌐' }];
   if (sc.kind === 'web') fields.splice(1, 0, { name: 'url', label: t('Adres (web sitesi)'), value: sc.url });
@@ -3251,9 +3276,9 @@ async function editShortcut(sc) {
   if (sc.native?.type === 'app') fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'desktop',
     options: [['desktop', t('Masaüstü uygulaması (bilgisayarda kurulu)')], ['web', t('Uygulama içi web (Desk Helper\'ın içinde)')]] });
   if (sc.kind === 'browser' && sc.id !== 'deskbrowser') fields.splice(1, 0, { name: 'burl', label: t('Adres (web sitesi)'), value: sc.url || '' });
-  const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: t('Sil') });
+  const r = await modal({ title: t('Kısayolu düzenle'), fields, danger: isPinned(sc) ? null : t('Sil') });
   if (!r) return;
-  if (r === 'danger') { state.shortcuts = state.shortcuts.filter((s) => s !== sc); appbarRemove('sc', sc.id); }
+  if (r === 'danger') { if (!isPinned(sc)) { state.shortcuts = state.shortcuts.filter((s) => s !== sc); appbarRemove('sc', sc.id); } }
   else {
     sc.name = r.name || sc.name; sc.emo = r.emo;
     if (sc.kind === 'web') sc.url = r.url;
@@ -3826,7 +3851,7 @@ async function startupFailed(err, saved) {
 }
 
 async function start(saved) {
-  state = saved?.workspaces?.length ? migrate(saved) : defaultState();
+  state = saved?.workspaces?.length ? ensurePinned(migrate(saved)) : defaultState();
   linkSpace();
   state.favorites ||= [];
   state.appbar ||= [];

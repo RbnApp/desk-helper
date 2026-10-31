@@ -145,6 +145,8 @@ window.I18N_EN = {
   'Yan listeyi göster': 'Show side list',
   'Dosyalar listesi': 'Files list',
   'TV kanalları': 'TV channels',
+  'Üst çubuktan kaldır': 'Remove from top bar',
+  '"{name}" üst çubuktan kaldırıldı': '"{name}" removed from the top bar',
   'Desk Helper zaten açık': 'Desk Helper is already running',
   'Hareketli fotoğrafı oynat': 'Play motion photo',
   'HAREKET': 'MOTION',

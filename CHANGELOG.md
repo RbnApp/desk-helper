@@ -12,6 +12,9 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   🔇 / 🔊 sesi açar-kapatır, seçim hatırlanır. Hareketli olmayan fotoğraflarda düğme görünmez.
 
 **Değişiklikler**
+- Kısayol çubuğunda sağ tık > "Üst çubuktan kaldır": kısayolu kaldırmak için artık Düzenle'ye girmek gerekmiyor.
+  WhatsApp, Telegram, YouTube ve Tarayıcı sabit: sağ tıkta kaldır seçeneği, Düzenle'de "Sil" yok. Önceden silinmişlerse
+  bir sonraki açılışta yerlerine geri gelirler.
 - Medya oynatıcının üst çubuğu yenilendi: solda "Dosya", "Oynatma" ve "Görünüm" menüleri, tam ortada ⏮ ⏹ ▶/⏸ ⏭
   düğmeleri. Dosya: dosya ekle, YouTube linki ekle, IPTV listesi aç, listeyi temizle, varsayılan programda aç. Oynatma:
   oynat/duraklat, durdur, önceki/sonraki, 5 sn geri/ileri, hız, listeyi tekrarla ve ses (kapat/aç, azalt, artır).

@@ -15,6 +15,12 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Kısayol sağ tık > "Üst çubuktan kaldır" (kullanıcı: "Düzenle'ye basıp silmek zorunda kalıyoruz; WhatsApp, Telegram,
+  Tarayıcı ve YouTube silinememeli, sabit"). PINNED_SC = wa, tg, yt, deskbrowser: menüde kaldır yok, editShortcut'ta
+  danger yok, removeShortcut reddeder; ensurePinned(state) her açılışta eksikleri yerine ekler (wa başa, tg wa'nın, yt
+  x/ig'nin, deskbrowser yt'nin arkasına). Alt çubuktan kaldırma serbest (yalnızca alt çubuk kısayolu). Test: menüler,
+  kaldırma + toast, Düzenle düğmeleri, wa/yt/deskbrowser silinmiş state.json'da üçü de doğru yere geldi.
+
 - Medya oynatıcı menü çubuğu (kullanıcı: "Dosya gibi menüler, mantıklı kategorize dropdown; play stop ileri geri üst
   çubukta ortada"). buildMedia: .md-bar grid (.md-bl menüler + .md-now | .md-bc ⏮ ⏹ ▶ ⏭ | .md-br hız/🔁/📺/☰).
   PopMenu ile fileMenu/playMenu/viewMenu (Hız alt menü). togglePlay/stopPlay/seekBy ortak (YouTube dh.toggle/stop/seek,
