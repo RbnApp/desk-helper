@@ -3,6 +3,11 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.4.4 · hazırlanıyor
+
+**Düzeltilen**
+- Klasör kutuları artık programların gerçek simgelerini gösteriyor: kısayolda seçilmiş özel .ico, Steam/oyun .url simgeleri ve hedef programın kendi simgesi okunuyor (önceden aynı türdeki kısayollar hep aynı genel simgeyi alıyordu).
+
 ## 0.4.3 · 2026-10-31
 
 **Yeni**

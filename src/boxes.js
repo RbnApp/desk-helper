@@ -51,35 +51,107 @@ const boxOf = (sender) => { const w = BrowserWindow.fromWebContents(sender); for
 // --- Klasör içeriği ---
 const IMG = /\.(png|jpe?g|gif|webp|bmp)$/i;
 const iconCache = new Map(); // yol|mtime -> data URL
-async function iconFor(file, st) {
-  const key = file + '|' + st.mtimeMs;
-  if (iconCache.has(key)) return iconCache.get(key);
-  let url = '';
+// Windows: kısayolun gerçek simgesi. Electron'un app.getFileIcon'ı .lnk ve .url dosyalarında simgeyi uzantıya göre
+// önbellekliyor (hepsine aynı genel simge geliyordu). Burada simge Gezgin'in yaptığı gibi bulunur: .lnk'de IconLocation
+// (kullanıcının seçtiği .ico / exe ve sıra numarası), yoksa hedef program; .url'de IconFile/IconIndex; exe, dll, ico'da
+// dosyanın kendisi; diğer dosyalarda ilişkili program simgesi. 64 px, tek PowerShell çağrısıyla toplu.
+const PS_ICONS = String.raw`
+$ErrorActionPreference = 'SilentlyContinue'
+$list = @(Get-Content -Encoding UTF8 -LiteralPath $env:DH_ICONS_IN | Where-Object { $_ })
+Add-Type -AssemblyName System.Drawing
+Add-Type -TypeDefinition @"
+using System; using System.Runtime.InteropServices;
+public static class DhIco {
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern uint PrivateExtractIcons(string file, int idx, int cx, int cy, IntPtr[] icons, uint[] ids, uint n, uint flags);
+  [DllImport("user32.dll")] public static extern bool DestroyIcon(IntPtr h);
+}
+"@
+$sh = New-Object -ComObject WScript.Shell
+function Png($ico) { $bmp = $ico.ToBitmap(); $ms = New-Object IO.MemoryStream; $bmp.Save($ms, [Drawing.Imaging.ImageFormat]::Png); [Convert]::ToBase64String($ms.ToArray()) }
+function FromFile($f, $i) {
+  if (-not $f) { return $null }
+  $f = [Environment]::ExpandEnvironmentVariables($f.Trim().Trim('"'))
+  if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { return $null }
+  $h = New-Object IntPtr[] 1; $ids = New-Object uint32[] 1
+  $n = [DhIco]::PrivateExtractIcons($f, [int]$i, 64, 64, $h, $ids, 1, 0)
+  if ($n -ge 1 -and $n -ne 4294967295 -and $h[0] -ne [IntPtr]::Zero) { $r = Png ([Drawing.Icon]::FromHandle($h[0])); [void][DhIco]::DestroyIcon($h[0]); return $r }
+  return $null
+}
+$out = @{}
+foreach ($p in $list) {
+  $b = $null
   try {
-    if (IMG.test(file)) {
-      const img = WIN ? await nativeImage.createThumbnailFromPath(file, { width: 96, height: 96 }) : nativeImage.createFromPath(file).resize({ width: 96 });
-      url = img.isEmpty() ? '' : img.toDataURL();
-    }
-    if (!url) {
-      // Kısayolun kendi simgesi yerine hedefin simgesi (okla birlikte değil) daha temiz görünür; olmazsa dosyanın simgesi.
-      let src = file;
-      if (WIN && /\.lnk$/i.test(file)) { try { const l = shell.readShortcutLink(file); src = l.icon && fs.existsSync(l.icon) ? l.icon : (l.target && fs.existsSync(l.target) ? l.target : file); } catch {} }
-      url = (await app.getFileIcon(src, { size: 'large' })).toDataURL();
-    }
+    if ($p -like '*.lnk') {
+      $s = $sh.CreateShortcut($p)
+      $loc = [string]$s.IconLocation; $k = $loc.LastIndexOf(',')
+      if ($k -ge 0) { $b = FromFile $loc.Substring(0, $k) $loc.Substring($k + 1) } else { $b = FromFile $loc 0 }
+      if (-not $b) { $b = FromFile $s.TargetPath 0 }
+    } elseif ($p -like '*.url') {
+      $ini = Get-Content -LiteralPath $p
+      $f = (($ini | Where-Object { $_ -match '^IconFile=' } | Select-Object -First 1) -replace '^IconFile=', '')
+      $i = (($ini | Where-Object { $_ -match '^IconIndex=' } | Select-Object -First 1) -replace '^IconIndex=', '')
+      if (-not $i) { $i = 0 }
+      $b = FromFile $f $i
+    } else { $b = FromFile $p 0 }
+    if (-not $b -and (Test-Path -LiteralPath $p -PathType Leaf)) { $ico = [Drawing.Icon]::ExtractAssociatedIcon($p); if ($ico) { $b = Png $ico } }
   } catch {}
-  iconCache.set(key, url);
-  return url;
+  if ($b) { $out[$p] = 'data:image/png;base64,' + $b }
+}
+$out | ConvertTo-Json -Compress | Set-Content -Encoding UTF8 -LiteralPath $env:DH_ICONS_OUT`;
+function winIcons(files) {
+  if (!WIN || !files.length) return Promise.resolve({});
+  const os = require('os');
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const inF = path.join(os.tmpdir(), `dh-icons-${id}-in.json`), outF = path.join(os.tmpdir(), `dh-icons-${id}-out.json`);
+  fs.writeFileSync(inF, files.join('\r\n'), 'utf8'); // satır başına bir yol (PS 5.1'de ConvertFrom-Json diziyi tek nesne verir)
+  return new Promise((res) => {
+    const { spawn } = require('child_process');
+    const p = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(PS_ICONS, 'utf16le').toString('base64')],
+      { windowsHide: true, env: { ...process.env, DH_ICONS_IN: inF, DH_ICONS_OUT: outF } });
+    const kill = setTimeout(() => { try { p.kill(); } catch {} }, 30000);
+    const done = () => {
+      clearTimeout(kill);
+      let r = {};
+      try { r = JSON.parse(fs.readFileSync(outF, 'utf8').replace(/^\uFEFF/, '')) || {}; } catch {}
+      for (const f of [inF, outF]) try { fs.unlinkSync(f); } catch {}
+      res(r);
+    };
+    p.on('exit', done); p.on('error', done);
+  });
+}
+async function thumbOf(file) {
+  try {
+    const img = WIN ? await nativeImage.createThumbnailFromPath(file, { width: 96, height: 96 }) : nativeImage.createFromPath(file).resize({ width: 96 });
+    return img.isEmpty() ? '' : img.toDataURL();
+  } catch { return ''; }
+}
+async function fillIcons(entries) {
+  const need = entries.filter((e) => !iconCache.has(e.key));
+  const imgs = need.filter((e) => IMG.test(e.file));
+  for (const e of imgs) { const u = await thumbOf(e.file); if (u) iconCache.set(e.key, u); }
+  const rest = need.filter((e) => !iconCache.has(e.key) && !e.dir);
+  const got = await winIcons(rest.map((e) => e.file));
+  for (const e of rest) if (got[e.file]) iconCache.set(e.key, got[e.file]);
+  for (const e of need) {
+    if (iconCache.has(e.key)) continue;
+    let url = '';
+    try { url = (await app.getFileIcon(e.file, { size: 'large' })).toDataURL(); } catch {}
+    // Klasör ya da bulunamayan simge: boş bırakılır, kutu 📁 / 📄 gösterir. Önbelleğe yalnız bulunan yazılır.
+    if (url && !e.dir) iconCache.set(e.key, url); else if (e.dir) iconCache.set(e.key, '');
+  }
 }
 async function items(box) {
   let names = [];
   try { names = fs.readdirSync(box.folder); } catch { return { error: 'folder' }; }
-  const out = [];
+  const entries = [];
   for (const n of names) {
     if (n.startsWith('.') || /^desktop\.ini$/i.test(n) || /^thumbs\.db$/i.test(n)) continue;
     const file = path.join(box.folder, n);
     let st; try { st = fs.statSync(file); } catch { continue; }
-    out.push({ path: file, name: st.isDirectory() ? n : n.replace(/\.(lnk|url)$/i, ''), dir: st.isDirectory(), icon: await iconFor(file, st) });
+    entries.push({ file, n, dir: st.isDirectory(), key: file + '|' + st.mtimeMs });
   }
+  await fillIcons(entries);
+  const out = entries.map((e) => ({ path: e.file, name: e.dir ? e.n : e.n.replace(/\.(lnk|url)$/i, ''), dir: e.dir, icon: iconCache.get(e.key) || '' }));
   const order = box.order || [];
   out.sort((a, b) => { const ia = order.indexOf(a.path), ib = order.indexOf(b.path); if (ia >= 0 || ib >= 0) return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib); return a.name.localeCompare(b.name, 'tr'); });
   return { items: out };
