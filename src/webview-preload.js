@@ -7,9 +7,24 @@ const { ipcRenderer, webFrame, contextBridge } = require('electron');
 // (sunucu tarafı reklam); bunlar için: reklam oynarken sessize al, 16 kat hızlandır, "Atla" çıkınca bas. Reklamın sonuna
 // atlamıyoruz ve video bilgisindeki reklam alanlarını (adPlacements…) silmiyoruz: 0.4.0'da ikisi de yapılıyordu ve gömülü
 // reklamlı videolarda oynatıcı reklamın yerini bulamayıp sürekli donuyordu (video hiç izlenemiyordu).
-function dhYtAdblock() {
+function dhYtAdblock(stalled) {
   if (window.__dhYtAb) return;
   window.__dhYtAb = true;
+  // Bekçi: izleme sayfasında video oynatılmak istendiği halde 12 saniye ilerlemezse (sürekli yükleniyor, donmuş ya da
+  // oynatıcı hata gösteriyor) engelleyici bu panelde kapatılıp sayfa yeniden yüklenir; video ne olursa olsun izlenebilsin.
+  let still = 0, lastT = -1, lastSrc = '';
+  setInterval(() => {
+    if (!/^\/(watch|shorts\/)/.test(location.pathname) || document.hidden) { still = 0; return; }
+    const pl = document.querySelector('#movie_player.html5-video-player');
+    const v = pl && pl.querySelector('video');
+    if (!pl || pl.classList.contains('ad-showing') || pl.classList.contains('ad-interrupting')) { still = 0; return; }
+    const err = pl.classList.contains('ytp-error') || !!pl.querySelector('.ytp-error:not([style*="display: none"])');
+    const wants = v && (!v.paused || pl.classList.contains('buffering-mode') || pl.classList.contains('unstarted-mode'));
+    if (v && v.src !== lastSrc) { lastSrc = v.src; still = 0; lastT = v.currentTime; return; }
+    if (err || (wants && v.currentTime === lastT && v.readyState < 3)) still++; else still = 0;
+    if (v) lastT = v.currentTime;
+    if (still >= 12) { still = -1e9; stalled(); }
+  }, 1000);
   let saved = null; // reklamdan önceki { muted, rate }
   setInterval(() => {
     const pl = document.querySelector('.html5-video-player.ad-showing, .html5-video-player.ad-interrupting');
@@ -35,7 +50,11 @@ function dhYtAdblock() {
   if (document.documentElement) addCss(); else document.addEventListener('DOMContentLoaded', addCss);
   document.addEventListener('DOMContentLoaded', addCss);
 }
-try { if (ipcRenderer.sendSync('adblock:yt-page', location.href)) contextBridge.executeInMainWorld({ func: dhYtAdblock }); } catch {}
+try {
+  if (ipcRenderer.sendSync('adblock:yt-page', location.href)) {
+    contextBridge.executeInMainWorld({ func: dhYtAdblock, args: [() => ipcRenderer.send('adblock:yt-stalled')] });
+  }
+} catch {}
 
 window.addEventListener('message', (e) => {
   if (e.source === window && e.data && e.data.__deskNotifClick) ipcRenderer.sendToHost('desk-notif-click');

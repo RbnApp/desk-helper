@@ -3,6 +3,17 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.4.3 · hazırlanıyor
+
+**Düzeltilen**
+- YouTube videolarının açılmayıp donması (0.4.1'de de sürüyordu). Reklam engelleyicinin kural listesi YouTube için 30
+  kadar küçük betik getiriyor (video bilgisinden reklam alanlarını silen, YouTube'un yanıtlarını değiştiren betikler).
+  Bunlar sayfa açıldıktan sonra geç ekleniyordu ve oynatıcı yarı değiştirilmiş bilgiyle kalıp donuyordu. Artık bu
+  betikler çalıştırılmıyor; reklam istekleri yine kesiliyor, reklam alanları yine gizleniyor.
+- Güvence: bir YouTube videosu yine de 12 saniye boyunca oynamazsa (sürekli yükleniyor ya da hata veriyor), o panelde
+  reklam engelleyici kapatılıp sayfa kendiliğinden yeniden yüklenir ve "Video oynamadı; bu YouTube panelinde reklam
+  engelleyici kapatıldı" notu çıkar. Uygulama yeniden açılınca engelleyici o panelde yine açık olur.
+
 ## 0.4.2 · 2026-10-31
 
 **Değişen**

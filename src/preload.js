@@ -111,6 +111,7 @@ contextBridge.exposeInMainWorld('desk', {
     onTitle: (fn) => ipcRenderer.on('native:title', (_e, id, t) => fn(id, t)),
   },
   onAlreadyRunning: (fn) => ipcRenderer.on('app:already-running', () => fn()),
+  onYtStalled: (fn) => ipcRenderer.on('adblock:yt-stalled', () => fn()),
   onWebCtx: (fn) => ipcRenderer.on('web:ctx', (_e, wcId, p) => fn(wcId, p)),
   onWebLink: (fn) => ipcRenderer.on('web:link', (_e, wcId, url, mode) => fn(wcId, url, mode)),
   openExternal: (url) => ipcRenderer.invoke('open:external', url),

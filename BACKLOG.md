@@ -15,6 +15,15 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- YouTube hâlâ açılmıyor (kullanıcı, 0.4.1). Bulunan: Ghostery'nin hazır listesi youtube.com için 30 scriptlet getiriyor
+  (json-prune, replace-fetch-response, json-edit-xhr-request, set-constant…); kütüphane bunları executeJavaScript ile
+  sayfa yüklendikten sonra ekliyor. 0.4.0'daki kendi budamamızla aynı tür değişiklik; çıkarım: donmanın nedeni bu
+  (sandbox'tan youtube.com'a erişim yok, gerçek sayfada denenemedi). Düzeltme: adblock.js scriptlet'leri çalıştırmıyor,
+  yalnızca CSS. Ek güvence: webview-preload'da bekçi, izleme sayfasında video 12 sn ilerlemezse ya da oynatıcı hata
+  gösterirse 'adblock:yt-stalled'; main o webContents'i muaf tutar (uygulama kapanana kadar) ve sayfayı yeniler, toast.
+  Test: sahte /watch sayfası (DH_ADBLOCK_TEST_HOST) donunca 1 kez yeniden yüklendi, engelleyici kapandı, not çıktı;
+  oynayan videoda hiçbir şey olmadı. Windows'ta gerçek YouTube ile doğrulanmalı.
+
 ## 0.4.2'de çıktı (2026-10-31)
 
 - Ekran görüntüleri şeridi alt çubuğun sağ köşesinde (kullanıcı: 0.4.1'deki büyük 📷 kutucuğu istemedi, 0.4.0'daki
