@@ -15,6 +15,14 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Resim işaretleme (kullanıcı öneri 5'i seçti: "bazı resimlerin bazı yerlerini işaretlemek gerekebiliyor"). src/annotate.js
+  (window.Annotate.open(file, {onSaved})): #annot tam pencere katmanı (z 90, suspendNative), tuval resmin kendi
+  çözünürlüğünde, şekil listesi + redo yığını, her değişiklikte baştan çizim. Araçlar pen/mark/arrow/rect/ellipse/text/
+  blur (pikselleştirme), kalınlık resim boyuna göre (unit = max kenar/400). Kaydet: main shots.js annot:save → yanına
+  "(işaretli[ n]).png", shots klasörüyse shot:new; annot:copy → copyPng. Giriş: shots kartında ✏️, foto araç çubuğunda
+  "✏️ İşaretle" (kaydedince yeni dosyaya geçer). Test (xvfb): 7 araçla çizim, yazı kutusu, Ctrl+Z/Y, Ctrl+C panoda
+  image/png, Ctrl+S "foto (işaretli).png" + foto görüntüleyici ona geçti, kaydetmeden Esc'de soru, "Kaydetmeden kapat".
+
 - Hazır servis simgeleri sabit (kullanıcı: "Düzenle başka simge, Simgeyi değiştir başka simge; WhatsApp, Telegram,
   Instagram, X, YouTube, Tarayıcı simgeleri değişememeli"). ICON_LOCKED (id → varsayılan emo): sağ tık ve alt çubuk
   menüsünde Simgeyi değiştir yok, iconDialog reddeder, editShortcut'ta emo alanı yok; ensurePinned customIcon/icon siler,

@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('desk', {
   pick: (kind) => ipcRenderer.invoke('dialog:pick', kind),
   pickMedia: () => ipcRenderer.invoke('media:pick'),
   pickImage: () => ipcRenderer.invoke('photo:pick'),
+  annot: {
+    save: (file, bytes) => ipcRenderer.invoke('annot:save', file, bytes),
+    copy: (bytes) => ipcRenderer.invoke('annot:copy', bytes),
+  },
   photoMotion: (file) => ipcRenderer.invoke('photo:motion', file),
   memory: () => ipcRenderer.invoke('app:memory'),
   iptv: {

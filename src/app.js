@@ -2586,6 +2586,7 @@ function buildPhoto(p) {
     tb('−', t('Uzaklaştır'), () => zoomBy(1 / 1.25)), zoomL, tb('+', t('Yakınlaştır'), () => zoomBy(1.25)),
     tb('⤢', t('Sığdır') + ' (0)', () => fit()), tb('1:1', t('Gerçek boyut') + ' (1)', () => actual()),
     tb('⟲', t('Sola döndür'), () => rotate(-90)), tb('⟳', t('Sağa döndür') + ' (R)', () => rotate(90)),
+    tb('✏️ ' + t('İşaretle'), t('Resmin üstüne ok, kutu, yazı ekle ya da bir yerini bulanıklaştır'), () => { if (L.file) window.Annotate.open(L.file, { onSaved: (out) => open(out) }); }),
     tb('⛶', t('Tam ekran') + ' (F)', () => (document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen?.())));
   p.body.append(bar, stage);
   p.body.classList.add('photo');
@@ -3028,6 +3029,7 @@ function renderShots() {
     const card = h('div', { class: 'sh-card', draggable: true, title: it.name + '\n' + t('Başka bir uygulamaya sürükleyebilirsin') },
       h('div', { class: 'sh-img' }, img,
         h('div', { class: 'sh-acts' },
+          h('button', { textContent: '✏️', title: t('İşaretle (ok, kutu, yazı, bulanıklaştır…)'), onclick: (e) => { e.stopPropagation(); toggleShots(false); window.Annotate.open(it.path); } }),
           h('button', { textContent: '📋', title: t('Panoya kopyala'), onclick: (e) => { e.stopPropagation(); window.desk.shots.copy(it.path).then((ok) => ok && toast(t('Panoya kopyalandı'))); } }),
           h('button', { textContent: '📂', title: t('Klasörde göster'), onclick: (e) => { e.stopPropagation(); window.desk.shots.reveal(it.path); } }),
           h('button', { textContent: '🗑', title: t('Sil'), onclick: async (e) => { e.stopPropagation(); if (await window.desk.shots.remove(it.path)) { shotItems = shotItems.filter((x) => x !== it); renderShots(); } } }))),

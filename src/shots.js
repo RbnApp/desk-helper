@@ -155,6 +155,19 @@ ipcMain.on('shot:drag', (e, file) => {
   e.sender.startDrag({ file, icon });
 });
 
+// İşaretleme (annotate.js): aslı bozulmaz, yanına "<ad> (işaretli).png" (varsa "(işaretli 2)"…) yazılır. Ekran görüntüleri
+// klasörüne yazıldıysa panel de günceller.
+ipcMain.handle('annot:save', (_e, file, bytes) => {
+  const src = path.resolve(String(file || ''));
+  const folder = path.dirname(src), base = path.basename(src, path.extname(src)).replace(/ \(işaretli( \d+)?\)$/, '');
+  let out = path.join(folder, base + ' (işaretli).png'), i = 2;
+  while (fs.existsSync(out)) out = path.join(folder, `${base} (işaretli ${i++}).png`);
+  fs.writeFileSync(out, Buffer.from(bytes));
+  if (inDir(out)) getWin()?.webContents.send('shot:new', info(out));
+  return out;
+});
+ipcMain.handle('annot:copy', (_e, bytes) => copyPng(Buffer.from(bytes)));
+
 function init(win, lang) {
   getWin = win; getLang = lang;
   try { hotkeyOk = globalShortcut.register(HOTKEY, () => capture()); } catch { hotkeyOk = false; }

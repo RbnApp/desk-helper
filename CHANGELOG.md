@@ -6,6 +6,11 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 ## 0.4.1 · hazırlanıyor
 
 **Yeni**
+- Resim işaretleme: ekran görüntüleri panelinde görüntünün üstündeki ✏️ ile ya da fotoğraf görüntüleyicide "✏️ İşaretle"
+  ile açılır. Kalem, vurgu (fosforlu kalem), ok, kutu, daire, yazı ve bulanıklaştır (seçilen yer okunamayacak şekilde
+  kareli olur; kişisel bilgileri gizlemek için). 6 renk, 3 kalınlık; Shift ile tam kare / tam daire. Geri al (Ctrl+Z),
+  yinele (Ctrl+Y), panoya kopyala (Ctrl+C), kaydet (Ctrl+S). Asıl resim bozulmaz: yanına "<ad> (işaretli).png" olarak
+  kaydedilir. Kaydetmeden kapatırken sorar. Kısayollar: P kalem, H vurgu, A ok, R kutu, E daire, T yazı, B bulanıklaştır.
 - Fotoğraf görüntüleyicide hareketli fotoğraflar: telefonla çekilen "hareketli fotoğraf"larda (Samsung, Google Pixel ve
   benzerleri; JPEG'in içinde kısa bir video olur) sol üstte Windows Fotoğraflar'daki gibi "HAREKET" düğmesi çıkar.
   Basınca kısa video resmin üstünde bir kez oynar, bitince fotoğrafa döner (oynarken yeniden basınca durur). Yanındaki
