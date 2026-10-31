@@ -1820,11 +1820,20 @@ function buildMedia(p) {
   const repeat = h('button', { class: 'md-tool', title: t('Listeyi tekrarla') , textContent: '🔁' });
   const toggleList = h('button', { class: 'md-tool', title: t('Oynatma listesi'), textContent: '☰' });
   const tvBtn = h('button', { class: 'md-tool', title: t('IPTV: M3U kanal listesi'), textContent: '📺', onclick: () => { L.hideList = false; L.listView = 'tv'; renderList(); save2(); if (!L.tv?.src) tv.ask(); } });
+  // Üst çubuk: solda Dosya / Oynatma / Görünüm menüleri, ortada ⏮ ⏹ ▶ ⏭, sağda hız, tekrar, TV ve liste düğmeleri
+  // (panel daralınca sağdakiler gizlenir; hepsi menülerde de var).
+  const menuB = (label, items) => h('button', { class: 'md-menu', textContent: label, onclick: (e) => PopMenu.open(e.currentTarget, items()) });
+  const playB = h('button', { class: 'md-tool md-play', title: t('Oynat') + ' (' + t('Boşluk') + ')', textContent: '▶', onclick: () => togglePlay() });
   const bar = h('div', { class: 'md-bar' },
-    h('button', { class: 'md-tool', title: t('Önceki'), textContent: '⏮', onclick: () => step(-1) }),
-    h('button', { class: 'md-tool', title: t('Sonraki'), textContent: '⏭', onclick: () => step(1) }),
-    h('button', { class: 'md-tool', title: t('Medya ekle'), textContent: '＋', onclick: (e) => addMenu(e.currentTarget) }),
-    h('span', { class: 'md-now' }), rate, repeat, tvBtn, toggleList);
+    h('div', { class: 'md-bl' },
+      menuB(t('Dosya'), () => fileMenu()), menuB(t('Oynatma'), () => playMenu()), menuB(t('Görünüm'), () => viewMenu()),
+      h('span', { class: 'md-now' })),
+    h('div', { class: 'md-bc' },
+      h('button', { class: 'md-tool', title: t('Önceki') + ' (P)', textContent: '⏮', onclick: () => step(-1) }),
+      h('button', { class: 'md-tool', title: t('Durdur'), textContent: '⏹', onclick: () => stopPlay() }),
+      playB,
+      h('button', { class: 'md-tool', title: t('Sonraki') + ' (N)', textContent: '⏭', onclick: () => step(1) })),
+    h('div', { class: 'md-br' }, rate, repeat, tvBtn, toggleList));
   const main = h('div', { class: 'md-main' }, stage, listEl);
   p.body.append(bar, main);
   p.body.classList.add('media');
@@ -1862,6 +1871,7 @@ function buildMedia(p) {
   }
   function load(play) {
     tv.stop(); L.tvOn = false;
+    ytPlaying = false; paintPlay();
     err.hidden = true;
     const f = L.list[L.idx];
     const yt = ytOf(f);
@@ -1975,6 +1985,7 @@ function buildMedia(p) {
   function onYT(m) {
     const f = L.list[L.idx], y = ytOf(f);
     if (!y || L.tvOn) return;
+    if (m.type === 'playing' || m.type === 'paused' || m.type === 'ended') { ytPlaying = m.type === 'playing'; paintPlay(); }
     if (m.type === 'playing') {
       err.hidden = true; ytBox.hidden = false;
       if (m.title && m.id === y.v && L.ytt[y.v] !== m.title) { L.ytt[y.v] = m.title; now.textContent = m.title; setTitle(p, L.title + ' · ' + m.title); renderList(); save2(); }
@@ -2091,6 +2102,71 @@ function buildMedia(p) {
   rate.addEventListener('change', () => { L.rate = +rate.value; video.playbackRate = L.rate; if (ytOf(L.list[L.idx])) ytCall(`dh.rate(${L.rate})`); save2(); });
   repeat.onclick = () => { L.repeat = !L.repeat; renderList(); save2(); };
   toggleList.onclick = () => { L.hideList = !L.hideList; renderList(); save2(); };
+  // --- Oynatma denetimleri (üst çubuk, menüler ve klavye ortak) ---
+  const onYTItem = () => !!ytOf(L.list[L.idx]) && !L.tvOn;
+  let ytPlaying = false;
+  const isPlaying = () => (onYTItem() ? ytPlaying : !!video.currentSrc && !video.paused && !video.ended);
+  function paintPlay() {
+    const on = isPlaying();
+    playB.textContent = on ? '⏸' : '▶';
+    playB.title = (on ? t('Duraklat') : t('Oynat')) + ' (' + t('Boşluk') + ')';
+  }
+  function togglePlay() {
+    if (onYTItem()) { ytCall('dh.toggle()'); return; }
+    if (!video.currentSrc) { if (L.list.length && !L.tvOn) load(true); return; }
+    if (video.paused || video.ended) video.play().catch(() => {}); else video.pause();
+  }
+  function stopPlay() {
+    if (onYTItem()) { ytCall('dh.stop()'); ytPlaying = false; L.pos = 0; save2(); paintPlay(); return; }
+    try { video.pause(); if (!L.tvOn) { video.currentTime = 0; L.pos = 0; save2(); } } catch {}
+  }
+  function seekBy(d) {
+    if (onYTItem()) { ytCall(`dh.seek(${d})`); return; }
+    if (L.tvOn || !video.currentSrc) return;
+    video.currentTime = Math.min(video.duration || 0, Math.max(0, video.currentTime + d));
+  }
+  const setRate = (r) => { rate.value = r; rate.dispatchEvent(new Event('change')); };
+  const volBy = (d) => { video.muted = false; video.volume = Math.min(1, Math.max(0, Math.round((video.volume + d) * 100) / 100)); };
+  for (const ev of ['play', 'pause', 'ended', 'emptied', 'loadstart']) video.addEventListener(ev, paintPlay);
+  function fileMenu() {
+    return [
+      { icon: '🎞', label: t('Dosya ekle…'), action: () => addFiles() },
+      { icon: '▶', label: t('YouTube linki ekle…'), key: 'Ctrl+V', action: () => addLink() },
+      { icon: '📺', label: t('IPTV listesi aç…'), action: () => { L.hideList = false; L.listView = 'tv'; renderList(); save2(); tv.ask(); } },
+      '-',
+      { icon: '🗑', label: t('Listeyi temizle'), disabled: !L.list.length, action: () => { L.list = []; L.idx = 0; load(false); } },
+      { icon: '↗', label: t('Varsayılan programda aç'), disabled: !L.list[L.idx] || !!ytOf(L.list[L.idx]) || L.tvOn, action: () => window.desk.open(L.list[L.idx]) },
+    ];
+  }
+  function playMenu() {
+    const has = L.tvOn || !!L.list.length;
+    const media = !L.tvOn && has;
+    return [
+      { icon: isPlaying() ? '⏸' : '▶', label: isPlaying() ? t('Duraklat') : t('Oynat'), key: t('Boşluk'), disabled: !has, action: () => togglePlay() },
+      { icon: '⏹', label: t('Durdur'), disabled: !has, action: () => stopPlay() },
+      { icon: '⏮', label: t('Önceki'), key: 'P', disabled: !has, action: () => step(-1) },
+      { icon: '⏭', label: t('Sonraki'), key: 'N', disabled: !has, action: () => step(1) },
+      '-',
+      { icon: '⏪', label: t('5 sn geri'), key: '←', disabled: !media, action: () => seekBy(-5) },
+      { icon: '⏩', label: t('5 sn ileri'), key: '→', disabled: !media, action: () => seekBy(5) },
+      { icon: '⏱', label: t('Hız') + ' · ' + L.rate + '×', disabled: !media, sub: [0.5, 0.75, 1, 1.25, 1.5, 2].map((r) => ({ label: r + '×', checked: L.rate === r, action: () => setRate(r) })) },
+      { icon: '🔁', label: t('Listeyi tekrarla'), checked: !!L.repeat, action: () => repeat.click() },
+      '-',
+      { header: t('Ses') },
+      { icon: video.muted ? '🔊' : '🔇', label: video.muted ? t('Sesi aç') : t('Sesi kapat'), key: 'M', action: () => { video.muted = !video.muted; } },
+      { icon: '🔉', label: t('Sesi azalt'), key: '↓', action: () => volBy(-0.1) },
+      { icon: '🔊', label: t('Sesi artır'), key: '↑', action: () => volBy(0.1) },
+    ];
+  }
+  function viewMenu() {
+    return [
+      { icon: '⛶', label: t('Tam ekran'), key: 'F', disabled: stage.classList.contains('audio') || !!ytOf(L.list[L.idx]) && !L.tvOn, action: () => toggleFs() },
+      '-',
+      { icon: '☰', label: t('Yan listeyi göster'), checked: !L.hideList, action: () => toggleList.click() },
+      { icon: '🎞', label: t('Dosyalar listesi'), checked: !L.hideList && (L.listView || 'files') === 'files', action: () => { L.hideList = false; L.listView = 'files'; renderList(); save2(); } },
+      { icon: '📺', label: t('TV kanalları'), checked: !L.hideList && L.listView === 'tv', action: () => tvBtn.click() },
+    ];
+  }
   // Sürükle-bırak: Gezgin'den ya da Desk Helper'ın dosya panelinden ses/video dosyaları.
   p.body.addEventListener('dragover', (e) => { const ty = [...(e.dataTransfer?.types || [])]; if (ty.includes('Files') || ty.includes('text/uri-list')) { e.preventDefault(); p.body.classList.add('md-drop'); } });
   p.body.addEventListener('dragleave', (e) => { if (!p.body.contains(e.relatedTarget)) p.body.classList.remove('md-drop'); });
@@ -2112,8 +2188,8 @@ function buildMedia(p) {
     // Ctrl+V: panodaki YouTube linkini listeye ekle
     if (e.ctrlKey && k === 'v') { window.desk.readText().then((x) => { if (ytParse(x)) addLinks([x]); }).catch(() => {}); return; }
     if (ytOf(L.list[L.idx]) && !L.tvOn) {
-      if (k === ' ') { e.preventDefault(); ytCall('dh.toggle()'); }
-      else if (k === 'arrowright' || k === 'arrowleft') ytCall(`dh.seek(${k === 'arrowright' ? 5 : -5})`);
+      if (k === ' ') { e.preventDefault(); togglePlay(); }
+      else if (k === 'arrowright' || k === 'arrowleft') seekBy(k === 'arrowright' ? 5 : -5);
       else if (k === 'n') step(1);
       else if (k === 'p') step(-1);
       return;

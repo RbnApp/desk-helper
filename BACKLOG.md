@@ -15,6 +15,13 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Medya oynatıcı menü çubuğu (kullanıcı: "Dosya gibi menüler, mantıklı kategorize dropdown; play stop ileri geri üst
+  çubukta ortada"). buildMedia: .md-bar grid (.md-bl menüler + .md-now | .md-bc ⏮ ⏹ ▶ ⏭ | .md-br hız/🔁/📺/☰).
+  PopMenu ile fileMenu/playMenu/viewMenu (Hız alt menü). togglePlay/stopPlay/seekBy ortak (YouTube dh.toggle/stop/seek,
+  dosya, TV); ▶/⏸ video olayları ve DHYT playing/paused/ended ile güncellenir. .media container query: ≤600 px sağdakiler
+  ve ad gizli, düğmeler menülerden sonra ortada. Test: ortalama barMid=cMid, play/durdur/sonraki, 3 menü, dar panelde
+  çakışma yok.
+
 - Medya oynatıcı yan liste (kullanıcı: "dosyalar ve iptv yan liste alanları eşit değil, geçişte sağa sola kayıyor, iptv
   ile aynı olsun"): .md-list 260 px, .md-list.tv 300 px idi; ikisi de 300 px. Test: 4 geçişte liste x=1093 w=300 sabit.
 

@@ -426,6 +426,28 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 /* Medya oynatıcı */
 .pbody.media { display: flex; flex-direction: column; }
 .md-bar { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-bottom: 1px solid var(--line); flex: none; }
+/* Medya oynatıcı: solda menüler, tam ortada oynatma düğmeleri, sağda hızlı düğmeler; dar panelde sağdakiler ve dosya adı gizlenir */
+.media { container-type: inline-size; }
+.media > .md-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.md-bl, .md-br { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.md-br { justify-content: flex-end; gap: 4px; }
+.md-bc { display: flex; align-items: center; gap: 2px; padding: 0 8px; }
+.md-menu { height: 28px; padding: 0 9px; border-radius: 7px; background: none; color: var(--text); font-size: 12.5px; flex: none; }
+.md-menu:hover, .md-menu.open { background: var(--panel); }
+.md-bc .md-tool { font-size: 14px; color: var(--text); }
+.md-play { min-width: 34px; height: 30px; border-radius: 15px; background: var(--accent-soft); color: var(--text); font-size: 14px !important; }
+.md-play:hover { background: var(--accent); color: var(--on-accent); }
+/* Dar panel: sağdaki düğmeler ve dosya adı gizlenir, oynatma düğmeleri menülerden sonra kalan alanın ortasına geçer
+   (tam ortada menülerle çakışırdı) */
+@container (max-width: 600px) {
+  .md-br, .md-bl .md-now { display: none; }
+  .media > .md-bar { grid-template-columns: auto minmax(0, 1fr); overflow: hidden; }
+  .md-bc { justify-content: center; padding: 0; }
+}
+@container (max-width: 400px) {
+  .md-menu { padding: 0 6px; }
+  .md-bc .md-tool { min-width: 24px; padding: 0 3px; }
+}
 .md-tool { min-width: 30px; height: 28px; padding: 0 6px; border-radius: 7px; color: var(--muted); background: none; }
 .md-tool:hover { background: var(--panel); color: var(--text); }
 .md-tool.on { color: var(--on-accent); background: var(--accent); }

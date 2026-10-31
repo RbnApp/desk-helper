@@ -12,6 +12,11 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   🔇 / 🔊 sesi açar-kapatır, seçim hatırlanır. Hareketli olmayan fotoğraflarda düğme görünmez.
 
 **Değişiklikler**
+- Medya oynatıcının üst çubuğu yenilendi: solda "Dosya", "Oynatma" ve "Görünüm" menüleri, tam ortada ⏮ ⏹ ▶/⏸ ⏭
+  düğmeleri. Dosya: dosya ekle, YouTube linki ekle, IPTV listesi aç, listeyi temizle, varsayılan programda aç. Oynatma:
+  oynat/duraklat, durdur, önceki/sonraki, 5 sn geri/ileri, hız, listeyi tekrarla ve ses (kapat/aç, azalt, artır).
+  Görünüm: tam ekran, yan listeyi göster, Dosyalar / TV kanalları. Menülerde kısayol tuşları da yazıyor. Hız, tekrar, TV
+  ve liste düğmeleri sağda kaldı; panel daralınca gizlenir (hepsi menülerde var).
 - Medya oynatıcıda sağdaki liste "Dosyalar" ve "TV" sekmelerinde artık aynı genişlikte: sekme değiştirince oynatıcı ve
   liste sağa sola kaymaz. Dosyalar listesi TV'deki kadar genişledi, alttaki "＋ Medya ekle" ve "Listeyi temizle" de rahat sığar.
 - Desk Helper açıkken yeniden çalıştırılınca (masaüstü simgesi, Başlat menüsü…) ikinci kopya açılmaz; zaten açık olan
