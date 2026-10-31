@@ -12,6 +12,13 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
   CHANGELOG'daki bölümden alır. Yani "derle" = sürüm artır, CHANGELOG'u tarihle, main'e gönder. Elle Release yok.
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
+- Masaüstü bileşenleri (2026-10-31, kullanıcı onayladı): (1) Sistem paneli: masaüstünde ayrı, çerçevesiz pencere;
+  saat/tarih, hava (Open-Meteo), telemetri, müzik (2. adım), yoğun işlemler, donanım; fiyatlar YOK. Konum sağ/sol/üst/
+  alt kenar ya da serbest, monitör seçimi, hatırlanır; davranış: yer ayırsın (AppBar) / her zaman üstte / arkada
+  (varsayılan için kullanıcı kararı bekleniyor). 📊 ve tepsi menüsünden aç/kapa. Veri katmanı src/sysinfo.js yazıldı
+  (henüz main.js'e bağlı değil, test edilmedi). (2) Ardından aynı altyapıyla klasör kutuları (kullanıcı "Desk
+  Helper'a ekle" dedi): her kutu gerçek bir klasöre bağlı, içindeki kısayollar gerçek simgeleriyle, tıkla aç,
+  sürükle-bırak ekle, klasör izlenir; kutu adı/emoji/renk/boyut/konum ayarlanır.
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
