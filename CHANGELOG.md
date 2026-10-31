@@ -3,7 +3,7 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
-## 0.4.2 · 2026-10-31
+## 0.4.2 · hazırlanıyor
 
 **Değişen**
 - Ekran görüntüleri yine 0.4.0'daki gibi küçük bir şerit: "📷 Ekran görüntüleri (sayı) ＋ 📂 ⌃ ✕". Artık alt çubuğun
