@@ -15,6 +15,10 @@ Sıradaki sürüm: **0.4.2** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.2'de çıkacak)
 
+- Ekran görüntüleri şeridi alt çubuğun sağ köşesinde (kullanıcı: 0.4.1'deki büyük 📷 kutucuğu istemedi, 0.4.0'daki
+  şeridin aynısını "sağ alt köşede, alt çubukta" istedi). Şerit: 📷 başlık + (sayı), ＋, 📂, ok, ✕; liste şeridin üstünde
+  açılır, sağ kenarı hizalı, en az 300 px. Ok düğmesi sabit (CSS ile döndürülen ok), yalnızca yönü değişir.
+
 ## 0.4.1'de çıktı (2026-10-31)
 
 - WhatsApp bildirimine tıklama (kullanıcı: "sağdan bildirim çıkıyor, üstüne basınca hiçbir şey olmuyor"). Neden (çıkarım,

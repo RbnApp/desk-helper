@@ -136,6 +136,7 @@ ipcMain.on('shot:select', (e, rect) => {
 
 ipcMain.handle('shot:capture', () => capture());
 ipcMain.handle('shot:list', () => list());
+ipcMain.handle('shot:count', () => { try { return fs.readdirSync(dir()).filter((n) => /\.png$/i.test(n)).length; } catch { return 0; } });
 ipcMain.handle('shot:info', () => ({ dir: dir(), hotkey: HOTKEY, hotkeyOk }));
 // Silinen görüntü Geri Dönüşüm Kutusu'na gider (yanlışlıkla silineni geri almak mümkün).
 ipcMain.handle('shot:delete', async (_e, file) => { if (!inDir(file)) return false; thumbs.delete(file); try { await shell.trashItem(file); return true; } catch { try { fs.unlinkSync(file); return true; } catch { return false; } } });

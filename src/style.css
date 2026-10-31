@@ -611,14 +611,25 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .mem-bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .mem-v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-/* Ekran görüntüleri: alt çubuktaki 📷 ve üstünde açılan panel */
-.ab-shot.on .ab-ic { box-shadow: 0 0 0 2px var(--accent); }
-.ab-shot.flash .ab-ic { animation: abFlash .9s ease-out 2; }
+/* Ekran görüntüleri: alt çubuğun sağ köşesinde küçük şerit, panel onun üstünde açılır */
+#appbar .ab-side { flex: 1 1 0; min-width: 0; display: flex; align-items: center; }
+#appbar .ab-side.right { justify-content: flex-end; padding-right: 12px; min-width: max-content; }
+.sh-dock { display: flex; align-items: center; gap: 2px; height: 36px; padding: 0 4px 0 4px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.sh-dock .sh-count { color: var(--muted); font-weight: 400; }
+.sh-dock-t { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 7px; background: none; color: var(--text); font-size: 12.5px; white-space: nowrap; }
+.sh-dock-t:hover { background: var(--head); }
+.sh-dock .sh-b { flex: none; }
+.sh-chev i { display: block; width: 7px; height: 7px; margin: 3px auto 0; border-left: 1.8px solid currentColor; border-top: 1.8px solid currentColor; transform: rotate(45deg); transition: transform .15s, margin .15s; }
+.sh-dock.on .sh-chev i { transform: rotate(225deg); margin-top: -3px; }
+.sh-dock.on { box-shadow: 0 0 0 1px var(--accent); }
+.sh-dock.flash { animation: abFlash .9s ease-out 2; }
 @keyframes abFlash { 0% { box-shadow: 0 0 0 0 var(--accent); } 60% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 #shots { position: fixed; right: 14px; bottom: 88px; width: 300px; max-height: min(560px, calc(100vh - 200px)); z-index: 900;
   display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
   box-shadow: 0 10px 32px rgba(0,0,0,.45); overflow: hidden; }
 #shots[hidden] { display: none; }
+#shots .sh-head { display: none; } /* başlık alt çubuktaki şeritte */
 .sh-head { display: flex; align-items: center; gap: 2px; padding: 6px 6px 6px 12px; border-bottom: 1px solid var(--line); flex: none; }
 .sh-title { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 13px; min-width: 0; }
 .sh-title b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

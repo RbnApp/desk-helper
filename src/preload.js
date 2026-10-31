@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('desk', {
   saveStateNow: (s) => ipcRenderer.sendSync('state:save-sync', s),
   ytTitle: (id) => ipcRenderer.invoke('yt:title', id),
   shots: {
+    count: () => ipcRenderer.invoke('shot:count'),
     capture: () => ipcRenderer.invoke('shot:capture'),
     list: () => ipcRenderer.invoke('shot:list'),
     info: () => ipcRenderer.invoke('shot:info'),

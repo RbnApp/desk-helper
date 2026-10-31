@@ -2990,13 +2990,35 @@ function shotsPanel() {
   window.addEventListener('resize', () => shotsOpen && placeShots());
   return el;
 }
-// Paneli alt çubuktaki 📷 düğmesinin hemen üstüne, sağ kenarı düğmeyle hizalı yerleştir.
+// Alt çubuğun sağ köşesindeki küçük şerit (0.4.0'daki panel başlığı gibi): 📷 Ekran görüntüleri · sayı · ＋ · 📂 · ⌃.
+// Ok düğmesi hep aynı yerde durur, yalnızca yönü döner (açıkken aşağı).
+function shotsDock() {
+  let d = $('#abShots');
+  if (d) return d;
+  const chev = h('button', { class: 'sh-b sh-chev', title: t('Göster / gizle') }, h('i'));
+  d = h('div', { id: 'abShots', class: 'sh-dock' },
+    h('button', { class: 'sh-dock-t', title: t('Ekran görüntüleri (Shift+PrintScreen)'), onclick: () => toggleShots() },
+      h('span', { textContent: '📷' }), h('b', { textContent: t('Ekran görüntüleri') }), h('span', { class: 'sh-count' })),
+    h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (Shift+PrintScreen)', onclick: () => takeShot() }),
+    h('button', { class: 'sh-b', textContent: '📂', title: t('Klasörü aç'), onclick: () => window.desk.shots.reveal() }),
+    chev,
+    h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => toggleShots(false) }));
+  chev.onclick = () => toggleShots();
+  $('#appbar .ab-side.right').append(d);
+  return d;
+}
+function paintShotsDock() {
+  const d = shotsDock();
+  d.classList.toggle('on', shotsOpen);
+  d.querySelector('.sh-count').textContent = shotItems.length ? `(${shotItems.length})` : '';
+}
 function placeShots() {
   const el = $('#shots'), b = $('#abShots');
   if (!el || !b) return;
   const r = b.getBoundingClientRect(), ab = $('#appbar').getBoundingClientRect();
-  el.style.bottom = (window.innerHeight - ab.top + 8) + 'px';
+  el.style.bottom = (window.innerHeight - r.top + 6) + 'px';
   el.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  el.style.width = Math.max(300, r.width) + 'px';
 }
 function toggleShots(on = !shotsOpen) {
   shotsOpen = on;
@@ -3012,7 +3034,7 @@ function renderShots() {
   const el = shotsPanel();
   const open = shotsOpen;
   el.hidden = !open;
-  $('#abShots')?.classList.toggle('on', open);
+  paintShotsDock();
   $('#shotTop')?.classList.toggle('on', open);
   if (!open) return;
   placeShots();
@@ -3471,12 +3493,7 @@ function renderAppbar() {
   });
   const add = h('button', { class: 'ab-item ab-add', title: t('Alt çubuğa ekle') }, h('span', { class: 'ab-ic' }, h('span', { class: 'ab-emo', textContent: '＋' })), h('span', { class: 'ab-label', textContent: t('Ekle') }));
   add.onclick = appbarPicker;
-  // Ekran görüntüleri: her zaman en sağda, "Ekle"nin yanında (kullanıcının eklediği öğelerden değil).
-  const shot = h('button', { id: 'abShots', class: 'ab-item ab-shot', title: t('Ekran görüntüleri (Shift+PrintScreen)') },
-    h('span', { class: 'ab-ic' }, h('span', { class: 'ab-emo', textContent: '📷' })), h('span', { class: 'ab-label', textContent: t('Ekran görüntüleri') }));
-  shot.onclick = () => toggleShots();
-  shot.classList.toggle('on', shotsOpen);
-  track.replaceChildren(...items, add, shot);
+  track.replaceChildren(...items, add);
   $('#appbar').classList.toggle('empty', !items.length);
   updateAppbarArrows();
 }
@@ -3914,6 +3931,7 @@ async function start(saved) {
   $('#bell').onclick = openBell;
   $('#shotTop').onclick = () => toggleShots();
   window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
+  window.desk.shots.count?.().then((n) => { if (!shotItems.length) { const c = shotsDock().querySelector('.sh-count'); c.textContent = n ? `(${n})` : ''; } });
   delete state.settings.shotsOpen; delete state.settings.shotsMin; // 0.4.0'daki yüzen panelin ayarları
   applyDnd();
   $('#favBtn').onclick = openFavorites;
