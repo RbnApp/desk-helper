@@ -15,6 +15,19 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Hazır servis simgeleri sabit (kullanıcı: "Düzenle başka simge, Simgeyi değiştir başka simge; WhatsApp, Telegram,
+  Instagram, X, YouTube, Tarayıcı simgeleri değişememeli"). ICON_LOCKED (id → varsayılan emo): sağ tık ve alt çubuk
+  menüsünde Simgeyi değiştir yok, iconDialog reddeder, editShortcut'ta emo alanı yok; ensurePinned customIcon/icon siler,
+  emo varsayılana. Diğerlerinde Düzenle emo alanı customIcon emojisini gösterir, yalnızca değişirse customIcon silinir.
+  Test: wa'daki 🤡 özel simge açılışta temizlendi; menüler ve Düzenle alanları doğru; Not Defteri 🍕 iki yerde aynı.
+- Performans önerileri 1-2-3 (kullanıcı seçti). (1) deferred Set: açılışta ve switchSpace'te deferHidden() etkin olmayan
+  sekmelerin web/browser yapraklarını (counted servisler hariç) panelsiz bırakır; layoutWs sekme etkin olunca kurar
+  (asleep gibi ama 💤 yok); openShortcut tekil kısayol aramasında deferred da sayılır. (2) shots.js info(): nativeImage
+  resize ≤560×256 JPEG 85 data URL (thumb), dosya mtime/size ile önbellek; app.js img src = it.thumb. (3) save():
+  JSON.stringify tek kez, son kayıtla aynıysa gönderilmez; main writeState metni sıkı yazar, aynıysa yazmaz. Test (xvfb):
+  arka sekmedeki web+tarayıcı panelleri açılışta yok, geçince ?sayfa=2 / ?br=1 adresleriyle açıldı; WhatsApp/Telegram
+  arka sekmedeyken de yüklü; değişiklik yokken dosya yeniden yazılmadı, değişince yazıldı; önizleme 7 KB JPEG.
+
 - Kısayol sağ tık > "Üst çubuktan kaldır" (kullanıcı: "Düzenle'ye basıp silmek zorunda kalıyoruz; WhatsApp, Telegram,
   Tarayıcı ve YouTube silinememeli, sabit"). PINNED_SC = wa, tg, yt, deskbrowser: menüde kaldır yok, editShortcut'ta
   danger yok, removeShortcut reddeder; ensurePinned(state) her açılışta eksikleri yerine ekler (wa başa, tg wa'nın, yt

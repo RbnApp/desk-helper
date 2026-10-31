@@ -117,7 +117,12 @@ const ACCENTS = ['#4f8cff', '#7c5cff', '#e0559a', '#e5534b', '#f08c2e', '#d4a72c
 // Eski düzende eksiklerse her açılışta yerlerine geri eklenir.
 const PINNED_SC = ['wa', 'tg', 'yt', 'deskbrowser'];
 const isPinned = (sc) => PINNED_SC.includes(sc?.id);
+// Hazır servislerin simgesi sabit: her zaman kendi resmi ikonları (Tarayıcı'da 🧭). "Simgeyi değiştir" ve Düzenle'deki
+// simge alanı bunlarda yok; eski düzende verilmiş özel simge açılışta temizlenir.
+const ICON_LOCKED = { wa: '💬', tg: '✈️', ig: '📷', x: '𝕏', yt: '▶️', deskbrowser: '🧭' };
+const iconLocked = (sc) => !!sc && Object.hasOwn(ICON_LOCKED, sc.id);
 function ensurePinned(s) {
+  for (const sc of s.shortcuts) if (iconLocked(sc)) { delete sc.customIcon; delete sc.icon; sc.emo = ICON_LOCKED[sc.id]; }
   const def = { wa: () => webShortcuts()[0], tg: () => webShortcuts()[1], yt: youtubeShortcut, deskbrowser: deskBrowserShortcut };
   const at = (id) => s.shortcuts.findIndex((x) => x.id === id);
   for (const id of PINNED_SC) {
@@ -3233,7 +3238,7 @@ function renderShortcuts() {
             action: () => { sc.multiOpen = !allowsMulti(sc); save(); } },
           inAppbar('sc', sc.id) ? { label: t('Alt çubuktan kaldır'), action: () => appbarRemove('sc', sc.id) } : { label: t('Alt çubuğa ekle'), action: () => appbarAdd('sc', sc.id) },
           '-',
-          { icon: '🎨', label: t('Simgeyi değiştir…'), action: () => iconDialog(sc, 'sc') },
+          iconLocked(sc) ? null : { icon: '🎨', label: t('Simgeyi değiştir…'), action: () => iconDialog(sc, 'sc') },
           { label: t('Düzenle…'), action: () => editShortcut(sc) },
           isPinned(sc) ? null : '-',
           isPinned(sc) ? null : { icon: '🗑', label: t('Üst çubuktan kaldır'), danger: true, action: () => removeShortcut(sc) },
@@ -3295,7 +3300,11 @@ function removeShortcut(sc) {
   toast(t('"{name}" üst çubuktan kaldırıldı', { name: sc.name }));
 }
 async function editShortcut(sc) {
-  const fields = [{ name: 'name', label: t('Ad'), value: sc.name }, { name: 'emo', label: t('Simge (emoji)'), value: sc.emo || '🌐' }];
+  // Simge alanı yalnızca "Simgeyi değiştir"de olmayan emojiyi ayarlar; hazır servislerde simge sabit olduğu için yok.
+  const fields = [{ name: 'name', label: t('Ad'), value: sc.name }];
+  // Gösterilen emoji "Simgeyi değiştir"de seçilenle aynı olsun (önceden ikisi farklı simge gösterebiliyordu).
+  const shownEmo = sc.customIcon?.type === 'emoji' ? sc.customIcon.v : sc.emo || '🌐';
+  if (!iconLocked(sc)) fields.push({ name: 'emo', label: t('Simge (emoji)'), value: shownEmo });
   if (sc.kind === 'web') fields.splice(1, 0, { name: 'url', label: t('Adres (web sitesi)'), value: sc.url });
   if (sc.native?.type === 'browser' && sc.native.browser !== 'ask') fields.splice(1, 0, { name: 'url', label: t('Açılış adresi (boş bırakılabilir)'), value: sc.native.url || '' });
   if (sc.native?.type === 'app') fields.splice(1, 0, { name: 'open', label: t('Nasıl açılsın?'), value: sc.open || 'desktop',
@@ -3305,7 +3314,8 @@ async function editShortcut(sc) {
   if (!r) return;
   if (r === 'danger') { if (!isPinned(sc)) { state.shortcuts = state.shortcuts.filter((s) => s !== sc); appbarRemove('sc', sc.id); } }
   else {
-    sc.name = r.name || sc.name; sc.emo = r.emo;
+    sc.name = r.name || sc.name;
+    if ('emo' in r && !iconLocked(sc) && r.emo !== shownEmo) { sc.emo = r.emo; delete sc.customIcon; } // değiştirildiyse emoji geçerli olur
     if (sc.kind === 'web') sc.url = r.url;
     else if (sc.native?.type === 'app') sc.open = r.open;
     if (sc.kind === 'browser' && r.burl?.trim()) sc.url = normalizeUrl(r.burl);
@@ -3379,6 +3389,7 @@ const appbarIcon = iconEl;
 // Sağ tık > "Simgeyi değiştir…": kendi resmi, emoji ya da harf + renk; "Varsayılana dön" otomatik simgeye döner.
 // İsteğe bağlı: değiştirilmeyen öğeler otomatik simgeyi kullanmaya devam eder.
 function iconDialog(src, from, onDone) {
+  if (from === 'sc' && iconLocked(src)) return;
   const cur = src.customIcon || {};
   let pending = cur.type === 'img' ? { ...cur } : null;
   Modal.open({ title: t('Simgeyi değiştir · {name}', { name: src.name }), icon: '🎨', size: 'md', onClose: () => onDone?.(), body: (api) => {
@@ -3438,7 +3449,7 @@ function renderAppbar() {
       e.preventDefault();
       contextMenu(e, document.body, [
         { label: t('Aç'), bold: true, action: () => b.click() },
-        { icon: '🎨', label: t('Simgeyi değiştir…'), action: () => iconDialog(src, x.from) },
+        x.from === 'sc' && iconLocked(src) ? null : { icon: '🎨', label: t('Simgeyi değiştir…'), action: () => iconDialog(src, x.from) },
         '-',
         { label: t('Alt çubuktan kaldır'), action: () => appbarRemove(x.from, x.ref) },
       ]);

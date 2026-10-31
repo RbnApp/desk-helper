@@ -12,6 +12,17 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   🔇 / 🔊 sesi açar-kapatır, seçim hatırlanır. Hareketli olmayan fotoğraflarda düğme görünmez.
 
 **Değişiklikler**
+- Daha hızlı açılış, daha az bellek: uygulama açılınca yalnızca açık olan sekmedeki web sayfaları yüklenir; diğer
+  sekmelerdekiler o sekmeye ilk geçtiğinde, kaldıkları adresle açılır. WhatsApp, Telegram, Instagram ve X bildirimleri
+  kaçırmamak için her zaman hemen yüklenir. Kullanım sırasında hiçbir sayfa kapatılmaz ya da yenilenmez.
+- Ekran görüntüleri paneli görüntüleri küçük önizlemeyle gösterir (önceden her biri tam boyutta açılıyordu, panel açıkken
+  bellek harcıyordu). Sürükleyip bırakınca, kopyalayınca ve açınca yine tam boy dosya gider.
+- Düzen kaydı hafifledi: kaydedilecek bir şey değişmediyse diske hiç yazılmaz (önceden tarayıcıda her sayfa başlığı
+  değiştiğinde bütün düzen yeniden yazılıyordu), dosya da daha küçük.
+- WhatsApp, Telegram, Instagram, X, YouTube ve Tarayıcı kısayollarının simgesi sabit, her zaman kendi simgeleri:
+  sağ tıkta "Simgeyi değiştir" yok, Düzenle'de simge alanı yok; önceden değiştirilmişse kendi simgesine döner. Diğer
+  kısayollarda Düzenle'deki emoji artık "Simgeyi değiştir"de seçilenle aynı görünür (önceden ikisi farklı simge
+  gösterebiliyordu).
 - Kısayol çubuğunda sağ tık > "Üst çubuktan kaldır": kısayolu kaldırmak için artık Düzenle'ye girmek gerekmiyor.
   WhatsApp, Telegram, YouTube ve Tarayıcı sabit: sağ tıkta kaldır seçeneği, Düzenle'de "Sil" yok. Önceden silinmişlerse
   bir sonraki açılışta yerlerine geri gelirler.
