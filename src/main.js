@@ -293,11 +293,16 @@ ipcMain.handle('state:backup', (_e, tag) => {
   fs.copyFileSync(statePath(), path.join(dataDir(), `state.backup-${String(tag).replace(/\W/g, '')}-${Date.now()}.json`));
   return true;
 });
+// state: app.js'ten hazır JSON metni (sıkı) ya da nesne. Aynı içerik ikinci kez diske yazılmaz.
+let lastWritten = '';
 function writeState(state) {
+  const text = typeof state === 'string' ? state : JSON.stringify(state);
+  if (text === lastWritten) return true;
   fs.mkdirSync(dataDir(), { recursive: true });
   const tmp = statePath() + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(state, null, 2));
+  fs.writeFileSync(tmp, text);
   fs.renameSync(tmp, statePath());
+  lastWritten = text;
   return true;
 }
 ipcMain.handle('state:save', (_e, state) => writeState(state));

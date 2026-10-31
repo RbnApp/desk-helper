@@ -26,12 +26,23 @@ function fileName() {
   return name;
 }
 
+// Panel için küçük önizleme (JPEG, en çok 560×256: panelde 2x keskin). Tam boy PNG'leri panelde açmak görüntü başına
+// onlarca MB bellek tutuyordu. Dosya değişmedikçe önbellekten verilir.
+const thumbs = new Map();
 function info(file) {
   try {
     const st = fs.statSync(file);
-    const img = nativeImage.createFromPath(file);
-    const { width, height } = img.getSize();
-    return { path: file, name: path.basename(file), size: st.size, time: st.mtimeMs, width, height };
+    const key = file + '|' + st.mtimeMs + '|' + st.size;
+    let it = thumbs.get(file);
+    if (it?.key !== key) {
+      const img = nativeImage.createFromPath(file);
+      const { width, height } = img.getSize();
+      const k = Math.min(1, 560 / width, 256 / height);
+      const th = k < 1 ? img.resize({ width: Math.max(1, Math.round(width * k)), height: Math.max(1, Math.round(height * k)), quality: 'good' }) : img;
+      it = { key, width, height, thumb: 'data:image/jpeg;base64,' + th.toJPEG(85).toString('base64') };
+      thumbs.set(file, it);
+    }
+    return { path: file, name: path.basename(file), size: st.size, time: st.mtimeMs, width: it.width, height: it.height, thumb: it.thumb };
   } catch { return null; }
 }
 
@@ -127,7 +138,7 @@ ipcMain.handle('shot:capture', () => capture());
 ipcMain.handle('shot:list', () => list());
 ipcMain.handle('shot:info', () => ({ dir: dir(), hotkey: HOTKEY, hotkeyOk }));
 // Silinen görüntü Geri Dönüşüm Kutusu'na gider (yanlışlıkla silineni geri almak mümkün).
-ipcMain.handle('shot:delete', async (_e, file) => { if (!inDir(file)) return false; try { await shell.trashItem(file); return true; } catch { try { fs.unlinkSync(file); return true; } catch { return false; } } });
+ipcMain.handle('shot:delete', async (_e, file) => { if (!inDir(file)) return false; thumbs.delete(file); try { await shell.trashItem(file); return true; } catch { try { fs.unlinkSync(file); return true; } catch { return false; } } });
 ipcMain.handle('shot:reveal', (_e, file) => {
   if (file && inDir(file) && fs.existsSync(file)) { shell.showItemInFolder(file); return true; }
   fs.mkdirSync(dir(), { recursive: true });

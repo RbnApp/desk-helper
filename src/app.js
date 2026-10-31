@@ -250,13 +250,22 @@ function save() {
   if (saveBlocked) return;
   const sp = curSpace(); if (sp) sp.activeWs = state.activeWs;
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { saveTimer = null; window.desk.saveState(JSON.parse(JSON.stringify(state))); }, 300);
+  saveTimer = setTimeout(() => { saveTimer = null; const j = stateJson(); if (j) window.desk.saveState(j); }, 300);
+}
+// Durum tek seferde metne çevrilip öyle gönderilir (kopya nesne yok); son yazılanla aynıysa hiç yazılmaz (ör. sayfa
+// başlığı değişti ama kaydedilen hiçbir şey değişmedi).
+let lastSaved = '';
+function stateJson() {
+  const j = JSON.stringify(state);
+  if (j === lastSaved) return null;
+  lastSaved = j;
+  return j;
 }
 // Pencere kapanırken bekleyen kayıt (son 300 ms'deki gezinti) kaybolmasın: eşzamanlı yaz.
 window.addEventListener('beforeunload', () => {
   if (!saveTimer || saveBlocked) return;
   clearTimeout(saveTimer); saveTimer = null;
-  try { window.desk.saveStateNow(JSON.parse(JSON.stringify(state))); } catch {}
+  try { const j = stateJson(); if (j) window.desk.saveStateNow(j); } catch {}
 });
 
 // ---------- Çalışma alanları ----------
@@ -278,6 +287,7 @@ function switchSpace(id) {
   for (const pid of [...panels.keys()]) destroyPanel(pid);
   state.activeSpace = id;
   linkSpace();
+  deferred.clear(); deferHidden();
   layout(); renderTabs(); renderSpaces(); save();
 }
 async function newSpace() {
@@ -399,7 +409,10 @@ function layoutWs(ws) {
 
   for (const leaf of leaves(ws.root)) {
     let p = panels.get(leaf.id);
-    if (!p && asleep.has(leaf.id)) { if (ws.id !== state.activeWs) continue; asleep.delete(leaf.id); } // sekmeye gelince uyanır
+    if (!p && (asleep.has(leaf.id) || deferred.has(leaf.id))) { // sekmeye gelince uyanır / ilk kez yüklenir
+      if (ws.id !== state.activeWs) continue;
+      asleep.delete(leaf.id); deferred.delete(leaf.id);
+    }
     if (!p) p = createPanel(ws, leaf);
     p.leaf = leaf;
     const r = rects.get(leaf.id);
@@ -462,6 +475,18 @@ function setActive(ws, id) {
 // geçince aynı adresle yeniden açılır. Bildirim sayacı olan servisler (WhatsApp, Telegram, Instagram, X), ses çalan
 // sayfalar ve gizli tarayıcı uyutulmaz. Uyku yalnızca bu oturumluk (asleep), duruma yazılmaz.
 const asleep = new Set();
+// Açılışta (ve çalışma alanı değişince) yalnızca açık sekmenin web panelleri yüklenir; diğer sekmelerinkiler ilk kez
+// açılınca, kaldıkları adresle yüklenir. Bildirim sayan servisler (WhatsApp, Telegram…) her zaman hemen yüklenir.
+// Uyutmadan farkı: kullanım sırasında hiçbir sayfa kapatılmaz; sekme ipucunda 💤 görünmez.
+const deferred = new Set();
+function deferHidden() {
+  for (const ws of state.workspaces) {
+    if (ws.id === state.activeWs) continue;
+    for (const l of leaves(ws.root)) {
+      if ((l.kind === 'web' || l.kind === 'browser') && !counted(serviceOf(l)) && !panels.has(l.id)) deferred.add(l.id);
+    }
+  }
+}
 function canSleep(p) {
   if (p.leaf.kind !== 'web' && p.leaf.kind !== 'browser') return false;
   if (counted(serviceOf(p.leaf)) || p.leaf.profile === '__private') return false;
@@ -2767,7 +2792,7 @@ function openShortcut(sc) {
   const open = sc.id && !allowsMulti(sc) ? openPanelOf(sc) : null;
   if (!open && sc.id && !allowsMulti(sc)) { // uyuyan panel: sekmesine geçince uyanır
     for (const ws of state.workspaces) {
-      const leaf = leaves(ws.root).find((l) => asleep.has(l.id) && l.sc === sc.id);
+      const leaf = leaves(ws.root).find((l) => (asleep.has(l.id) || deferred.has(l.id)) && l.sc === sc.id);
       if (leaf) { switchWs(ws.id); setActive(ws, leaf.id); return; }
     }
   }
@@ -2994,7 +3019,7 @@ function renderShots() {
     return;
   }
   list.replaceChildren(...shotItems.map((it) => {
-    const img = h('img', { src: fileUrl(it.path) + '?t=' + Math.round(it.time), alt: '', draggable: false, loading: 'lazy' });
+    const img = h('img', { src: it.thumb || fileUrl(it.path) + '?t=' + Math.round(it.time), alt: '', draggable: false, loading: 'lazy' });
     const card = h('div', { class: 'sh-card', draggable: true, title: it.name + '\n' + t('Başka bir uygulamaya sürükleyebilirsin') },
       h('div', { class: 'sh-img' }, img,
         h('div', { class: 'sh-acts' },
@@ -3865,6 +3890,7 @@ async function start(saved) {
   renderShortcuts();
   initAppbar();
   refreshIcons();
+  deferHidden();
   layout();
   renderTabs();
   renderSpaces();
