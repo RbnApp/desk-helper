@@ -1,9 +1,9 @@
 # Desk Helper · bekleyen istekler
 
 Kullanıcı istekleri burada toplanır; kullanıcı "derle" deyince hepsi tek sürümde çıkar.
-Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
+Sıradaki sürüm: **0.4.4** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
 
-## Sıradaki sürüm (0.4.3) için
+## Sıradaki sürüm (0.4.4) için
 
 - Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
   kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
@@ -19,7 +19,9 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
   Helper'a ekle" dedi): her kutu gerçek bir klasöre bağlı, içindeki kısayollar gerçek simgeleriyle, tıkla aç,
   sürükle-bırak ekle, klasör izlenir; kutu adı/emoji/renk/boyut/konum ayarlanır.
 
-## Kodda hazır (0.4.3'te çıkacak)
+## Kodda hazır (0.4.4'te çıkacak)
+
+## 0.4.3'te çıktı (2026-10-31)
 
 - Sistem paneli (masaüstü bileşeni, kullanıcı "Desk Helper içinde değil masaüstünde" dedi; varsayılan "yer ayırsın").
   src/widgets.js (pencere, konum, AppBar SHAppBarMessage koffi, HWND_BOTTOM, ABN_FULLSCREENAPP, userData/widgets.json),

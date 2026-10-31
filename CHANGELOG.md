@@ -3,7 +3,7 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
-## 0.4.3 · hazırlanıyor
+## 0.4.3 · 2026-10-31
 
 **Yeni**
 - Masaüstünde Sistem paneli (üst çubuktaki 📊 menüsünden açılıp kapanır): Desk Helper'ın dışında, masaüstünde ayrı duran
