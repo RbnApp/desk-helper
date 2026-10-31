@@ -56,6 +56,50 @@ try {
   }
 } catch {}
 
+// --- Instagram Reels: tekerlekle bir sonraki / önceki reel (YouTube Shorts gibi) ---
+// Instagram'ın masaüstü sayfasında Reels akışı normal sayfa gibi kayıyor; küçük bir tekerlek hareketi reelin bir kısmını
+// kaydırıyor. Reels sayfasında (/reels/…, /reel/…) tekerlek olayını biz karşılayıp akışı tam bir reel kaydırıyoruz.
+// Bir hareket (tekerlek çevirme ya da dokunmatik yüzeyde bir kaydırma ve onun ataleti) tek reel geçer. Yorumlar gibi
+// içteki küçük kaydırma alanlarına, Ctrl+tekerleğe (yakınlaştırma) ve yazı alanlarına dokunulmaz.
+if (/(^|\.)instagram\.com$/i.test(location.hostname)) {
+  let lockUntil = 0, lastWheel = 0, acc = 0;
+  const feedOf = (el) => {
+    for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+      if (n.scrollHeight <= n.clientHeight + 4) continue;
+      const oy = getComputedStyle(n).overflowY;
+      if (oy !== 'auto' && oy !== 'scroll') continue;
+      // Akış: pencere yüksekliğinin çoğunu kaplayan ve içinde video olan kaydırma alanı. Değilse (yorum listesi vb.) dokunma.
+      return n.clientHeight >= innerHeight * 0.6 && n.querySelector('video') ? n : null;
+    }
+    const se = document.scrollingElement;
+    return se && se.scrollHeight > se.clientHeight + 4 && document.querySelector('video') ? se : null;
+  };
+  window.addEventListener('wheel', (e) => {
+    if (!/^\/reels?\//.test(location.pathname) || e.ctrlKey || e.shiftKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+    if (e.target.closest?.('textarea, input, [contenteditable="true"], [role="dialog"] ul')) return;
+    const feed = feedOf(e.target);
+    if (!feed) return;
+    e.preventDefault();
+    const now = Date.now(), gap = now - lastWheel;
+    lastWheel = now;
+    if (now < lockUntil || (gap < 160 && acc === null)) return; // aynı hareketin devamı
+    if (gap > 300) acc = 0;
+    acc = (acc || 0) + (e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY);
+    if (Math.abs(acc) < 12) return;
+    const dir = Math.sign(acc);
+    acc = null; lockUntil = now + 450;
+    // Bir sonraki reelin tepesine: akıştaki videolardan tepesi şu anki konumun bir reel altında/üstünde olana en yakın.
+    const view = feed === document.scrollingElement ? 0 : feed.getBoundingClientRect().top;
+    const h = feed.clientHeight;
+    const tops = [...feed.querySelectorAll('video')].map((v) => v.getBoundingClientRect()).filter((r) => r.height > h * 0.4).map((r) => r.top - view);
+    const cur = tops.reduce((a, t) => (Math.abs(t) < Math.abs(a) ? t : a), Infinity);
+    const next = tops.filter((t) => (dir > 0 ? t > cur + h * 0.3 : t < cur - h * 0.3)).sort((a, b) => (dir > 0 ? a - b : b - a))[0];
+    const base = Number.isFinite(cur) ? cur : 0;
+    const by = next !== undefined && Math.abs(next - base) < h * 1.6 ? next - base : dir * h;
+    feed.scrollBy({ top: by, behavior: 'smooth' });
+  }, { capture: true, passive: false });
+}
+
 window.addEventListener('message', (e) => {
   if (e.source === window && e.data && e.data.__deskNotifClick) ipcRenderer.sendToHost('desk-notif-click');
 });

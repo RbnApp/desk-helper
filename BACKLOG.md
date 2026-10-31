@@ -15,6 +15,12 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- Instagram Reels tekerlekle reel reel (kullanıcı: "YT Shorts gibi kaymalı"). webview-preload: instagram.com'da
+  /reels?/ yolunda wheel (capture, passive:false) → içinde video olan, pencerenin %60'ından yüksek kaydırma alanını bul,
+  bir sonraki videonun tepesine smooth scroll; 450 ms kilit + 160 ms'den sık gelen olaylar aynı hareket sayılır.
+  Test: sahte https://www.instagram.com/reels/ sayfası (host-resolver-rules + self-signed): 1 tık = 1 reel, yukarı da
+  çalışıyor, 8 olaylık tek hareket = 1 reel, yorum kutusu normal kaydı. Gerçek Instagram'da Windows'ta doğrulanmalı.
+
 - Sekme simge kalabalığı (kullanıcı: "Masam"da 📁📄+Instagram, bir sekmede 3 YouTube simgesi). renderTabs artık tek
   simge: öncelik wa > tg > ig (shortcutForLeaf), yoksa ilk panel. Tooltip tüm panelleri listeliyor.
 - Ekran görüntüsü alınınca liste kendiliğinden açılmıyordu (0.4.1'de bilerek kapatılmıştı, kullanıcı geri istedi):
