@@ -51,6 +51,10 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   açılır. Bağlantı dışında sağ tıkta "Sayfayı dış tarayıcıda aç" da var.
 
 **Düzeltmeler**
+- WhatsApp bildirimine tıklayınca hiçbir şey olmuyordu: WhatsApp Web bildirimlerini artık sayfadan değil arka plan
+  betiğinden (service worker) gösteriyor, bu bildirimlerin tıklaması Desk Helper'a ulaşmıyordu. Bu tür bildirimler artık
+  sayfanın kendi bildirimi olarak gösteriliyor: tıklayınca Desk Helper öne gelir (küçültülmüşse geri gelir), WhatsApp'ın
+  sekmesine geçer ve paneli seçer. Aynı düzeltme bildirim gösteren diğer siteler için de geçerli.
 - YouTube videolarının hiç açılmayıp sürekli donması düzeldi. 0.4.0'daki güçlendirilmiş reklam engelleyici, reklamı
   videonun kendisine gömülü gelen videolarda oynatıcının reklam bilgisini siliyor ve reklamın sonuna atlıyordu; oynatıcı
   bu yüzden takılıyordu. Artık video bilgisine dokunulmuyor; reklam yine kesiliyor, kesilemeyen reklam sessize alınıp

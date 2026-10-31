@@ -15,6 +15,16 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- WhatsApp bildirimine tıklama (kullanıcı: "sağdan bildirim çıkıyor, üstüne basınca hiçbir şey olmuyor"). Neden (çıkarım,
+  gerçek WhatsApp'a erişim yok): webview-preload'daki Notification sarmalayıcısı yalnızca sayfanın new Notification'ını
+  yakalıyor; service worker bildirimi (registration.showNotification) tıklaması SW'ye gidiyor, Desk Helper'a değil.
+  Düzeltme: sw-preload.js (main: her oturuma registerPreloadScript type service-worker) SW'de showNotification'ı açık
+  pencere istemcisine postMessage({__deskSwNotif}) olarak iletir; webview-preload sayfa dünyasında hem
+  ServiceWorkerRegistration.prototype.showNotification'ı hem bu iletiyi DeskNotification (sayfa bildirimi) olarak
+  gösterir → tıklama mevcut desk-notif-click yolundan. Test (xvfb, 127.0.0.1 SW sayfası): sayfadan ve SW'den çağrılan
+  iki bildirim de sayfa bildirimi oldu, tıklama başka sekmedeyken panele geçirdi. Windows'ta denenmedi; WhatsApp'ın
+  kendi "sohbeti aç" davranışı SW tıklamasına bağlıysa sohbet seçilmeyebilir (panel açılır).
+
 - Resim işaretleme (kullanıcı öneri 5'i seçti: "bazı resimlerin bazı yerlerini işaretlemek gerekebiliyor"). src/annotate.js
   (window.Annotate.open(file, {onSaved})): #annot tam pencere katmanı (z 90, suspendNative), tuval resmin kendi
   çözünürlüğünde, şekil listesi + redo yığını, her değişiklikte baştan çizim. Araçlar pen/mark/arrow/rect/ellipse/text/

@@ -3,7 +3,9 @@ const path = require('path');
 const native = require('./native');
 const adblock = require('./adblock');
 const shots = require('./shots');
-const motion = require('./motion'); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
+const motion = require('./motion');
+// Web panellerindeki service worker bildirimleri sayfaya yönlendirilir (tıklama Desk Helper'a ulaşsın; sw-preload.js).
+app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
 const os = require('os');
 

@@ -56,6 +56,27 @@ webFrame.executeJavaScript(`(() => {
   }
   DeskNotification.__desk = true;
   window.Notification = DeskNotification;
+  // Service worker bildirimleri (WhatsApp Web vb.): sayfanın kendi bildirimi olarak gösterilir ki tıklanınca Desk Helper
+  // haberdar olsun (service worker'daki bildirime tıklama Desk Helper'a ulaşmıyordu). Sayfadan registration.showNotification
+  // çağrısı da, service worker'dan gelen (sw-preload.js) ileti de buraya düşer.
+  const KEYS = ['body', 'icon', 'tag', 'silent', 'data', 'badge', 'image', 'requireInteraction', 'lang', 'dir', 'renotify', 'timestamp'];
+  const showPage = (title, opts) => {
+    const o = {};
+    for (const k of KEYS) if (opts && opts[k] !== undefined) o[k] = opts[k];
+    try { new DeskNotification(title, o); } catch {}
+  };
+  const R = window.ServiceWorkerRegistration;
+  if (R && R.prototype.showNotification && !R.prototype.showNotification.__desk) {
+    const show = function (title, opts) { showPage(String(title), opts); return Promise.resolve(); };
+    show.__desk = true;
+    R.prototype.showNotification = show;
+  }
+  navigator.serviceWorker?.addEventListener('message', (e) => {
+    const m = e.data && e.data.__deskSwNotif;
+    if (!m) return;
+    e.stopImmediatePropagation();
+    showPage(m.title, m.opts);
+  });
 })();`).catch(() => {});
 
 // --- Şifre yöneticisi (yalnızca Desk Helper'ın tarayıcı panelinde; panel 'pw-enable' gönderince açılır) ---
