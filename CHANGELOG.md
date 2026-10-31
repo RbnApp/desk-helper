@@ -12,6 +12,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   🔇 / 🔊 sesi açar-kapatır, seçim hatırlanır. Hareketli olmayan fotoğraflarda düğme görünmez.
 
 **Değişiklikler**
+- Medya oynatıcıda sağdaki liste "Dosyalar" ve "TV" sekmelerinde artık aynı genişlikte: sekme değiştirince oynatıcı ve
+  liste sağa sola kaymaz. Dosyalar listesi TV'deki kadar genişledi, alttaki "＋ Medya ekle" ve "Listeyi temizle" de rahat sığar.
 - Desk Helper açıkken yeniden çalıştırılınca (masaüstü simgesi, Başlat menüsü…) ikinci kopya açılmaz; zaten açık olan
   pencere küçültülmüşse ya da arkadaysa öne gelir ve "Desk Helper zaten açık" notu çıkar. Önceden de ikinci kopya
   açılmıyordu ama pencere sessizce öne geliyordu.

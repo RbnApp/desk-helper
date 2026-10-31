@@ -15,6 +15,9 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Medya oynatıcı yan liste (kullanıcı: "dosyalar ve iptv yan liste alanları eşit değil, geçişte sağa sola kayıyor, iptv
+  ile aynı olsun"): .md-list 260 px, .md-list.tv 300 px idi; ikisi de 300 px. Test: 4 geçişte liste x=1093 w=300 sabit.
+
 - İkinci kez çalıştırma (kullanıcı: "birden fazla açılamamalı, zaten çalışıyor mesajı çıkmıyor"). Tek örnek kilidi
   0.1'den beri vardı (main.js requestSingleInstanceLock + second-instance'ta pencereyi öne getir). Eklendi: second-instance
   → 'app:already-running' → app.js toast "Desk Helper zaten açık". motion.js önbellek temizliği kilit alındıktan sonraya
