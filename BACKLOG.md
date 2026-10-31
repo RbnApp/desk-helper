@@ -21,6 +21,7 @@ Sıradaki sürüm: **0.4.4** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.4'te çıkacak)
 
+- YouTube: uBlock betikleri (scriptlet) varsayılan kapalı (ana sayfayı bozuyordu; ayarlar dosyasında adblockYTScripts: true ile denenebilir). Sayfa bekçisi: 12 sn içerik yoksa engelleyici o panelde kapanır. Windows'ta gerçek YouTube'da doğrulanmalı; video reklamları yeniden görünebilir.
 - Klasör kutularında gerçek uygulama simgeleri (Windows'ta PowerShell ile .lnk IconLocation / .url IconFile / hedef exe simgesi; Electron getFileIcon .lnk'leri uzantıya göre önbellekliyordu). Windows'ta doğrulanmalı.
 
 ## 0.4.3'te çıktı (2026-10-31)

@@ -10,6 +10,9 @@ const fs = require('fs');
 
 let blocker = null;
 let enabled = true;
+// Sayfa başında çalışan YouTube betikleri (uBlock scriptlet'leri). 0.4.3'te YouTube ana sayfasını açılmaz yaptı; Windows'ta
+// gerçek YouTube'da doğrulanana kadar kapalı. Açıkken yalnızca ağ engeli + gizleme kuralları (CSS) çalışır.
+let scripts = false;
 let loading = null;
 const hooked = new WeakSet();
 const DAY = 24 * 3600 * 1000;
@@ -90,7 +93,7 @@ ipcMain.on('adblock:yt-page', (e, url) => { e.returnValue = !!(enabled && !off(e
 ipcMain.on('adblock:yt-scriptlets', (e, url) => {
   // returnValue yalnızca bir kez atanmalı: ilk atama yanıtı hemen gönderir.
   let out = [];
-  if (enabled && blocker && !off(e.sender.id) && isYT(url) && !String(url).startsWith('dhyt:')) {
+  if (scripts && enabled && blocker && !off(e.sender.id) && isYT(url) && !String(url).startsWith('dhyt:')) {
     try {
       const { parse } = require('tldts-experimental');
       const p = parse(url);
@@ -111,8 +114,9 @@ setInterval(() => {
   load().then((b) => { blocker = b; }).catch(() => {});
 }, DAY).unref?.();
 
-function setEnabled(on) {
+function setEnabled(on, opts = {}) {
   enabled = on !== false;
+  scripts = opts.scripts === true;
   if (enabled) ensure();
 }
 

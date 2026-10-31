@@ -309,7 +309,7 @@ window.I18N_EN = {
   'Bir YouTube videosunun ya da oynatma listesinin linkini yapıştır.': 'Paste the link of a YouTube video or playlist.',
   'Link': 'Link',
   'YouTube linki değil': 'Not a YouTube link',
-  'Video oynamadı; bu YouTube panelinde reklam engelleyici kapatıldı': 'The video did not play; the ad blocker was turned off for this YouTube panel',
+  'YouTube engelleyiciyle açılmadı; bu panelde reklam engelleyici kapatıldı': 'YouTube did not load with the ad blocker; it was turned off for this panel',
   'Bu bir YouTube video ya da oynatma listesi linki değil. Örnek: https://www.youtube.com/watch?v=… ya da https://youtu.be/…': 'This is not a YouTube video or playlist link. Example: https://www.youtube.com/watch?v=… or https://youtu.be/…',
   'YouTube oynatma listesi': 'YouTube playlist',
   'YouTube bu linki tanımadı (video kimliği hatalı olabilir).': 'YouTube did not recognise this link (the video ID may be wrong).',

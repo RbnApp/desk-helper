@@ -4,7 +4,8 @@ const { ipcRenderer, webFrame, contextBridge } = require('electron');
 
 // --- YouTube reklam engelleyici, sayfa tarafı (Ayarlar > "YouTube'da reklamları engelle"; main.js adblock.js karar verir) ---
 // uBlock Origin'in yöntemi: listedeki YouTube betikleri (video bilgisinden reklam kısmını çıkaran json-prune vb.) sayfanın
-// kendi kodundan ÖNCE, burada çalışır; böylece reklam oynatıcıya hiç ulaşmaz, ileri sarma / sessize alma gerekmez.
+// kendi kodundan ÖNCE, burada çalışır. 0.4.3'te bu betikler YouTube ana sayfasını açılmaz hale getirdi; bu yüzden
+// varsayılan olarak KAPALI (adblock.js, ayarlar dosyasında adblockYTScripts: true ile denemek için açılır).
 // Ağ tarafı (adblock.js, Ghostery) reklam isteklerini keser, kütüphanenin preload'u reklam alanlarını gizler.
 // Aşağıdaki dhYtAdblock: birkaç ek gizleme kuralı ve bekçi (video yine de oynamazsa engelleyiciyi o panelde kapatır).
 function dhYtAdblock(stalled) {
@@ -12,7 +13,17 @@ function dhYtAdblock(stalled) {
   window.__dhYtAb = true;
   // Bekçi: izleme sayfasında video oynatılmak istendiği halde 12 saniye ilerlemezse (sürekli yükleniyor, donmuş ya da
   // oynatıcı hata gösteriyor) engelleyici bu panelde kapatılıp sayfa yeniden yüklenir; video ne olursa olsun izlenebilsin.
-  let still = 0, lastT = -1, lastSrc = '';
+  let still = 0, lastT = -1, lastSrc = '', blank = 0;
+  // Sayfa bekçisi: YouTube sayfası (ana sayfa, arama, kanal…) 12 saniyede hiç içerik göstermezse de aynı şey yapılır;
+  // engelleyici yüzünden sayfa açılmıyorsa kullanıcı boş ekranla kalmasın. Bir kez içerik görüldükten sonra durur.
+  const OK = 'ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, ytd-reel-video-renderer,'
+    + ' ytd-feed-nudge-renderer, ytd-background-promo-renderer, ytd-item-section-renderer, ytd-playlist-video-renderer,'
+    + ' ytd-c4-tabbed-header-renderer, yt-page-header-renderer, ytd-message-renderer, #movie_player, ytm-app, ytmusic-app';
+  const pageCheck = setInterval(() => {
+    if (document.hidden) return;
+    if (/^(consent|studio|accounts|tv)\./.test(location.hostname) || document.querySelector(OK)) { clearInterval(pageCheck); return; }
+    if (++blank >= 12) { clearInterval(pageCheck); still = -1e9; stalled(); }
+  }, 1000);
   setInterval(() => {
     if (!/^\/(watch|shorts\/)/.test(location.pathname) || document.hidden) { still = 0; return; }
     const pl = document.querySelector('#movie_player.html5-video-player');

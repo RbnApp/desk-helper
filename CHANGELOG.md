@@ -6,6 +6,7 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 ## 0.4.4 · hazırlanıyor
 
 **Düzeltilen**
+- YouTube ana sayfası reklam engelleyici açıkken açılmıyordu. Sebep 0.4.3'te eklenen, sayfa başında çalışan YouTube betikleriydi; bunlar kapatıldı. Engelleyici artık reklam isteklerini kesiyor ve reklam alanlarını gizliyor. Ayrıca bir YouTube sayfası 12 saniyede hiç içerik göstermezse engelleyici o panelde kendiliğinden kapanıp sayfa yeniden yükleniyor.
 - Klasör kutuları artık programların gerçek simgelerini gösteriyor: kısayolda seçilmiş özel .ico, Steam/oyun .url simgeleri ve hedef programın kendi simgesi okunuyor (önceden aynı türdeki kısayollar hep aynı genel simgeyi alıyordu).
 
 ## 0.4.3 · 2026-10-31

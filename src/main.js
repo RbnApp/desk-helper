@@ -40,7 +40,7 @@ function dock(where) {
 
 function applySettings(s) {
   settings = s || {};
-  adblock.setEnabled(settings.adblockYT !== false);
+  adblock.setEnabled(settings.adblockYT !== false, { scripts: settings.adblockYTScripts === true });
   widgets.setLang(settings.lang);
   if (!win) return;
   win.setAlwaysOnTop(!!settings.alwaysOnTop);

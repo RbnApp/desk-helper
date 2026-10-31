@@ -3109,7 +3109,7 @@ window.desk.shots?.onNew((it) => {
 // Desk Helper açıkken yeniden başlatılınca ikinci kopya açılmaz (main: tek örnek kilidi); açık pencere öne gelir ve bu not çıkar.
 window.desk.onAlreadyRunning?.(() => toast(t('Desk Helper zaten açık')));
 // YouTube videosu reklam engelleyiciyle oynamadı: o panelde engelleyici kapatıldı ve sayfa yeniden yüklendi (adblock.js).
-window.desk.onYtStalled?.(() => toast(t('Video oynamadı; bu YouTube panelinde reklam engelleyici kapatıldı')));
+window.desk.onYtStalled?.(() => toast(t('YouTube engelleyiciyle açılmadı; bu panelde reklam engelleyici kapatıldı')));
 window.desk.shots?.onError((m) => toast(t('Ekran görüntüsü alınamadı: {err}', { err: m })));
 
 // Zil: toplam okunmamış rozeti; açılır listede servisler ve sayıları, Rahatsız etme.
