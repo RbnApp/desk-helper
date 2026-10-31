@@ -1,5 +1,5 @@
 // Masaüstü bileşenlerinin (widget-*.html) köprüsü. main: widgets.js, sysinfo.js.
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 contextBridge.exposeInMainWorld('wd', {
   get: () => ipcRenderer.invoke('widget:get'),
   set: (patch) => ipcRenderer.invoke('widget:set', patch),
@@ -10,4 +10,20 @@ contextBridge.exposeInMainWorld('wd', {
   onTick: (fn) => ipcRenderer.on('sys:tick', (_e, d) => fn(d)),
   sysStatic: () => ipcRenderer.invoke('sys:static'),
   weather: (city, lang) => ipcRenderer.invoke('sys:weather', city, lang),
+});
+// Klasör kutusu (widget-box.html; main: boxes.js)
+contextBridge.exposeInMainWorld('boxApi', {
+  get: () => ipcRenderer.invoke('box:get'),
+  set: (patch) => ipcRenderer.invoke('box:set', patch),
+  items: () => ipcRenderer.invoke('box:items'),
+  onItems: (fn) => ipcRenderer.on('box:items', (_e, r) => fn(r)),
+  pickFolder: () => ipcRenderer.invoke('box:folder'),
+  open: (file) => ipcRenderer.send('box:open', file),
+  reveal: (file) => ipcRenderer.send('box:reveal', file),
+  trash: (file) => ipcRenderer.invoke('box:trash', file),
+  rename: (file, name) => ipcRenderer.invoke('box:rename', file, name),
+  order: (list) => ipcRenderer.invoke('box:order', list),
+  drop: (files) => ipcRenderer.invoke('box:drop', [...files].map((f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } }).filter(Boolean)),
+  remove: () => ipcRenderer.invoke('box:remove'),
+  close: () => ipcRenderer.send('box:close'),
 });

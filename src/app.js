@@ -3973,10 +3973,28 @@ async function start(saved) {
   $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
   $('#shotTop').onclick = () => showShots();
-  // 📊: masaüstündeki Sistem paneli (main: widgets.js) aç/kapa; düğme açıkken vurgulu.
-  $('#sysTop').onclick = () => window.desk.widgetToggle?.('sys');
-  const paintSys = (st) => $('#sysTop').classList.toggle('on', !!st?.sys);
-  window.desk.widgetState?.().then(paintSys); window.desk.onWidgetState?.(paintSys);
+  // 📊 Masaüstü bileşenleri: Sistem paneli (main: widgets.js) ve klasör kutuları (main: boxes.js) aç/kapa, yeni kutu.
+  // Düğme bir bileşen açıkken vurgulu.
+  let sysOpen = false, boxList = [];
+  const paintSys = () => $('#sysTop').classList.toggle('on', sysOpen || boxList.some((b) => b.open));
+  window.desk.widgetState?.().then((st) => { sysOpen = !!st?.sys; paintSys(); });
+  window.desk.onWidgetState?.((st) => { sysOpen = !!st?.sys; paintSys(); });
+  window.desk.boxes?.list().then((l) => { boxList = l; paintSys(); });
+  window.desk.boxes?.onChanged((l) => { boxList = l; paintSys(); });
+  $('#sysTop').onclick = async () => {
+    boxList = (await window.desk.boxes?.list()) || [];
+    const anyClosed = boxList.some((b) => !b.open), anyOpen = boxList.some((b) => b.open);
+    contextMenu($('#sysTop'), document.body, [
+      { header: t('Masaüstü bileşenleri') },
+      { icon: '📊', label: t('Sistem paneli'), checked: sysOpen, action: () => window.desk.widgetToggle('sys') },
+      boxList.length ? '-' : null,
+      ...boxList.map((b) => ({ icon: b.emoji || '📁', label: b.title, checked: b.open, action: () => window.desk.boxes.toggle(b.id) })),
+      boxList.length > 1 && anyClosed ? { label: t('Bütün kutuları göster'), action: () => window.desk.boxes.all(true) } : null,
+      boxList.length > 1 && anyOpen ? { label: t('Bütün kutuları gizle'), action: () => window.desk.boxes.all(false) } : null,
+      '-',
+      { icon: '＋', label: t('Yeni klasör kutusu…'), title: t('Masaüstünde bir klasörün içindekileri simgeleriyle gösteren kutu'), action: () => window.desk.boxes.add() },
+    ]);
+  };
   window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
   window.desk.shots.count?.().then((n) => { if (!shotItems.length) { const c = shotsDock().querySelector('.sh-count'); c.textContent = n ? `(${n})` : ''; } });
   delete state.settings.shotsOpen; delete state.settings.shotsMin; // 0.4.0'daki yüzen panelin ayarları

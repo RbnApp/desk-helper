@@ -27,6 +27,11 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
   bir kez, Open-Meteo 15 dk önbellek; DH_WEATHER_TEST test sunucusu), widget-sys.html/js, widget.css (PopMenu ⚙).
   📊 #sysTop üst çubukta 📷 ile 🔔 arasında. Linux xvfb'de test edildi (sağ/alt kenar, serbest, hatırlama, menü);
   Windows'a özgü kısımlar (AppBar, WMI sayaçları, nvidia-smi) Windows'ta doğrulanmalı. Müzik bölümü sonraya.
+- Klasör kutuları: src/boxes.js (userData/widgets.json > boxes; widgets.js ile aynı dosya, ikisi de diskteki son hali
+  okuyup yalnızca kendi alanını yazar), widget-box.html/js (window.boxApi; 'box' adı let box ile çakışıyordu).
+  Simge: .lnk → readShortcutLink icon/target → app.getFileIcon; resim → createThumbnailFromPath. fs.watch + 250 ms.
+  Bırakma: .lnk/.url kopyala, diğerleri writeShortcutLink. Varsayılan katman arkada (HWND_BOTTOM, blur'da yine).
+  📊 artık menü: Sistem paneli, kutular (✓), hepsini göster/gizle, yeni kutu. Linux xvfb'de test edildi.
 
 - Tarayıcı yakınlaştırma (kullanıcı: "Ctrl+tekerlek, adres çubuğunda yüzdeyi gösteren simge, Chrome'daki gibi").
   main: webview before-input-event Ctrl =/+/−/0 ve 'zoom-changed' (Ctrl+tekerlek; bir olay için 2 kez geliyor, 40 ms

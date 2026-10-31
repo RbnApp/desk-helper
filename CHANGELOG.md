@@ -6,7 +6,7 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 ## 0.4.3 · hazırlanıyor
 
 **Yeni**
-- Masaüstünde Sistem paneli (üst çubuktaki 📊 ile açılıp kapanır): Desk Helper'ın dışında, masaüstünde ayrı duran
+- Masaüstünde Sistem paneli (üst çubuktaki 📊 menüsünden açılıp kapanır): Desk Helper'ın dışında, masaüstünde ayrı duran
   çerçevesiz panel. Saat ve tarih, bilgisayarın açık kalma süresi, hava durumu (şehir seçilir; Open-Meteo, hesap
   gerekmez), telemetri (işlemci, RAM, ekran kartı ve video belleği, NVIDIA kartlarda sıcaklık / güç / fan, ağ, disk
   okuma-yazma, diskler), en yoğun işlemler (RAM'e ya da işlemciye göre), sistem ve donanım bilgisi (kasa, fan gibi
@@ -16,6 +16,13 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
   çubuğu gibi; büyütülen pencereler panelin kenarında durur, tam ekran oyun/video açılınca üstte kalmaz), her zaman
   üstte ya da pencerelerin arkasında. Desk Helper simge durumundayken de görünür; açık bırakılırsa Desk Helper
   yeniden açılınca yine açılır. Panel kapalıyken hiçbir ölçüm yapılmaz.
+- Masaüstü klasör kutuları (📊 > "Yeni klasör kutusu…"): masaüstünde, bir klasörün içindekileri (kısayollar, dosyalar,
+  resimler) kendi simgeleriyle gösteren kutu; tıklayınca açar. Kutu gerçek klasöre bağlı: Gezgin'de eklenen ya da
+  silinen dosya kutuda hemen görünür; kutuya sürükleyip bırakılan program ya da dosya için klasöre kısayol eklenir.
+  Öğeler sürüklenerek sıralanır; sağ tıkla aç, klasörde göster, yeniden adlandır, sil. Kutunun adı (çift tık), simgesi,
+  rengi ve bağlı klasörü ⚙'dan değişir; başlığından sürüklenir, kenarından boyutlanır, ^ ile başlığa kadar katlanır
+  (ok yerinde kalır). Kutular varsayılan olarak pencerelerin arkasında durur, istenirse her zaman üstte.
+  📊 menüsünden Sistem paneli ve her kutu ayrı ayrı açılıp kapanır.
 - Tarayıcıda yakınlaştırma, Chrome'daki gibi: Ctrl + fare tekerleği, Ctrl +, Ctrl − ve Ctrl 0 (sıfırla). Oran %100
   değilken adres çubuğunda 🔍 ve yüzde görünür; tıklayınca yakınlaştır / uzaklaştır / sıfırla. Oran site başına
   hatırlanır (aynı sitenin diğer sekmeleri de aynı oranla açılır).

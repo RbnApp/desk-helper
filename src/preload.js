@@ -70,6 +70,13 @@ contextBridge.exposeInMainWorld('desk', {
   widgetToggle: (kind) => ipcRenderer.send('widget:toggle', kind),
   widgetState: () => ipcRenderer.invoke('widget:state'),
   onWidgetState: (cb) => ipcRenderer.on('widget:state', (_e, s) => cb(s)),
+  boxes: {
+    list: () => ipcRenderer.invoke('boxes:list'),
+    add: () => ipcRenderer.invoke('boxes:new'),
+    toggle: (id) => ipcRenderer.send('boxes:toggle', id),
+    all: (on) => ipcRenderer.send('boxes:all', on),
+    onChanged: (cb) => ipcRenderer.on('boxes:changed', (_e, l) => cb(l)),
+  },
   onZoom: (cb) => ipcRenderer.on('web:zoom', (_e, id, dir) => cb(id, dir)),
   hist: {
     add: (pr, url, title) => ipcRenderer.invoke('hist:add', pr, url, title),

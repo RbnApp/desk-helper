@@ -20,12 +20,19 @@ function load() {
   cfg.sys = { ...DEFAULT_SYS, ...(cfg.sys || {}) };
   return cfg;
 }
-let saveT = null;
-function save() {
-  clearTimeout(saveT);
-  saveT = setTimeout(() => { try { fs.mkdirSync(path.dirname(cfgPath()), { recursive: true }); fs.writeFileSync(cfgPath(), JSON.stringify(cfg, null, 1)); } catch {} }, 300);
+// boxes.js de aynı dosyaya yazıyor: yazmadan önce diskteki son hali okunup yalnızca sys alanı değiştirilir.
+function write() {
+  try {
+    let disk = {};
+    try { disk = JSON.parse(fs.readFileSync(cfgPath(), 'utf8')); } catch {}
+    disk.sys = load().sys;
+    fs.mkdirSync(path.dirname(cfgPath()), { recursive: true });
+    fs.writeFileSync(cfgPath(), JSON.stringify(disk, null, 1));
+  } catch {}
 }
-function saveNow() { clearTimeout(saveT); try { fs.mkdirSync(path.dirname(cfgPath()), { recursive: true }); fs.writeFileSync(cfgPath(), JSON.stringify(cfg, null, 1)); } catch {} }
+let saveT = null;
+function save() { clearTimeout(saveT); saveT = setTimeout(write, 300); }
+function saveNow() { clearTimeout(saveT); write(); }
 
 // --- Windows yerel çağrıları (koffi; native.js ile aynı kütüphane) ---
 let W32 = null;

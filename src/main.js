@@ -5,6 +5,7 @@ const adblock = require('./adblock');
 const shots = require('./shots');
 const motion = require('./motion');
 const widgets = require('./widgets');
+const boxes = require('./boxes');
 // Web panellerindeki service worker bildirimleri sayfaya yönlendirilir (tıklama Desk Helper'a ulaşsın; sw-preload.js).
 app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
@@ -97,8 +98,10 @@ function createWindow() {
     try { fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(boundsPath(), JSON.stringify(win.getBounds())); } catch {}
   });
   // Masaüstü bileşenleri Desk Helper'la birlikte kapanır (açık oldukları hatırlanır, yeniden açılınca gelirler).
-  win.on('closed', () => widgets.closeAll());
+  win.on('closed', () => { widgets.closeAll(); boxes.closeAll(); });
   widgets.init(() => (win && !win.isDestroyed() ? win : null));
+  boxes.setLangGetter(() => settings.lang);
+  boxes.init(() => (win && !win.isDestroyed() ? win : null));
   win.webContents.on('before-input-event', (e, input) => {
     if (input.type === 'keyDown' && input.key === 'F12') win.webContents.toggleDevTools();
   });
