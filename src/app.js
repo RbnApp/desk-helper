@@ -738,6 +738,8 @@ function viewSource(wcId) {
   else openInDeskBrowser('view-source:' + url, src?.ws);
 }
 window.desk.onViewSource?.(viewSource);
+// Tarayıcı panelinde yakınlaştırma (Ctrl+tekerlek, Ctrl +/−/0): Chrome'daki adımlar. Diğer web panellerinde yok sayılır.
+window.desk.onZoom?.((wcId, dir) => [...panels.values()].find((p) => p.ownsWc?.(wcId) && p.leaf.kind === 'browser')?.zoom?.(wcId, dir));
 
 function routeWebLink(wcId, url, mode) {
   const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
@@ -816,6 +818,8 @@ function buildBrowser(p) {
   const prof = h('button', { class: 'br-prof', title: t('Profil') });
   const star = h('button', { class: 'br-in br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
   const keyBtn = h('button', { class: 'br-in br-key', textContent: '🔑', title: t('Bu sitenin şifreleri') });
+  // Yakınlaştırma göstergesi (Chrome'daki gibi): yalnızca %100 dışındayken görünür, tıklayınca − / + / Sıfırla.
+  const zoomBtn = h('button', { class: 'br-in br-zoom', hidden: true });
   const menuBtn = h('button', { class: 'br-tool br-menu', textContent: '⋮', title: t('Tarayıcı menüsü') });
   for (const b of [back, fwd, reload]) b.classList.add('br-tool');
   // Görünüm: Masaüstü / Tablet / Mobil. Tablet ve mobilde sayfa o genişlikte ortada açılır, site de tablet/telefon
@@ -829,7 +833,7 @@ function buildBrowser(p) {
     return b;
   });
   const devGroup = h('div', { class: 'br-dev', title: t('Görünüm') }, ...devBtns);
-  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, keyBtn, star), prof, devGroup, menuBtn);
+  const bar = h('div', { class: 'br-bar' }, back, fwd, reload, h('div', { class: 'br-addrw' }, addr, zoomBtn, keyBtn, star), prof, devGroup, menuBtn);
   const bmBar = h('div', { class: 'br-bm' });
   const pwBar = h('div', { class: 'br-pwbar', hidden: true });
   const views = h('div', { class: 'br-views' });
@@ -858,7 +862,7 @@ function buildBrowser(p) {
       if (tab.vs && (u.startsWith('data:') || u === 'about:blank')) tab.url = 'view-source:' + tab.vs; // kaynak görünümü
       else { delete tab.vs; tab.url = u; }
       save();
-      if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); updateStar(); }
+      if (tab.id === L.activeTab) { if (document.activeElement !== addr) addr.value = tab.url === 'about:blank' ? '' : tab.url; updateNav(); updateStar(); setTimeout(paintZoom, 50); }
     };
     // Geçmiş: gizli pencere dışında her ziyaret profilin geçmişine yazılır (aynı adres 30 sn içinde tek kayıt).
     const record = () => { if (L.profile !== '__private') window.desk.hist.add(L.profile, wv.getURL(), wv.getTitle?.() || ''); };
@@ -887,6 +891,32 @@ function buildBrowser(p) {
     const wv = cur();
     try { back.disabled = !wv.canGoBack(); fwd.disabled = !wv.canGoForward(); } catch { back.disabled = fwd.disabled = true; }
   }
+  // Yakınlaştırma: Chromium'da site başına (aynı sitedeki sekmeler ve sonraki ziyaretler aynı oranla açılır).
+  const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5];
+  const zoomOf = (wv) => { try { return wv.getZoomFactor(); } catch { return 1; } };
+  function paintZoom() {
+    const z = zoomOf(cur()), pct = Math.round(z * 100);
+    zoomBtn.hidden = Math.abs(z - 1) < 0.005;
+    zoomBtn.textContent = '🔍 ' + pct + '%';
+    zoomBtn.title = t('Yakınlaştırma: %{n}', { n: pct });
+  }
+  function setZoom(wv, dir) {
+    if (!wv) return;
+    const z = zoomOf(wv);
+    let nz = 1;
+    if (dir === 'in') nz = ZOOM_STEPS.find((s) => s > z + 0.001) ?? 5;
+    else if (dir === 'out') nz = [...ZOOM_STEPS].reverse().find((s) => s < z - 0.001) ?? 0.25;
+    try { wv.setZoomFactor(nz); } catch {}
+    // Aynı sitedeki diğer sekmeler de değişir; gösterge etkin sekmeye göre.
+    setTimeout(paintZoom, 30);
+  }
+  p.zoom = (wcId, dir) => setZoom([...wvs.values()].find((w) => { try { return w.getWebContentsId() === wcId; } catch { return false; } }), dir);
+  zoomBtn.onclick = () => contextMenu(zoomBtn, p.body, [
+    { header: t('Yakınlaştırma: %{n}', { n: Math.round(zoomOf(cur()) * 100) }) },
+    { icon: '＋', label: t('Yakınlaştır'), key: 'Ctrl +', action: () => setZoom(cur(), 'in') },
+    { icon: '－', label: t('Uzaklaştır'), key: 'Ctrl −', action: () => setZoom(cur(), 'out') },
+    { icon: '↺', label: t('Sıfırla'), key: 'Ctrl 0', action: () => setZoom(cur(), 'reset') },
+  ]);
   function show(id) {
     L.activeTab = id;
     const tab = L.tabs.find((x) => x.id === id);
@@ -895,7 +925,7 @@ function buildBrowser(p) {
     paintDevice();
     addr.value = tab.url === 'about:blank' ? '' : tab.url || '';
     setTitle(p, L.title + (tab.title ? ' · ' + tab.title : ''));
-    renderStrip(); updateNav(); updateStar(); save(); renderTabs();
+    renderStrip(); updateNav(); updateStar(); paintZoom(); save(); renderTabs();
   }
   function closeTab(id) {
     const i = L.tabs.findIndex((x) => x.id === id);

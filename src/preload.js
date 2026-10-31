@@ -67,6 +67,7 @@ contextBridge.exposeInMainWorld('desk', {
   readText: () => ipcRenderer.invoke('clip:read'),
   pageSource: (partition, url) => ipcRenderer.invoke('br:source', partition, url),
   onViewSource: (cb) => ipcRenderer.on('web:viewsource', (_e, id) => cb(id)),
+  onZoom: (cb) => ipcRenderer.on('web:zoom', (_e, id, dir) => cb(id, dir)),
   hist: {
     add: (pr, url, title) => ipcRenderer.invoke('hist:add', pr, url, title),
     title: (pr, url, title) => ipcRenderer.invoke('hist:title', pr, url, title),

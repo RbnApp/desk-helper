@@ -119,6 +119,18 @@ app.on('web-contents-created', (_e, wc) => {
   // Ctrl+U: sayfa kaynağı (web sayfasının içindeyken tuşlar Desk Helper'a ulaşmaz, burada yakalanır)
   if (wc.getType() === 'webview') wc.on('before-input-event', (ev, i) => {
     if (i.type === 'keyDown' && (i.control || i.meta) && !i.shift && !i.alt && i.key.toLowerCase() === 'u') { ev.preventDefault(); win?.webContents.send('web:viewsource', wc.id); }
+    // Yakınlaştırma (Ctrl + / Ctrl - / Ctrl 0): yalnızca tarayıcı panelinde uygulanır (renderer karar verir).
+    const zk = { '=': 'in', '+': 'in', '-': 'out', '0': 'reset' }[i.key];
+    if (zk && i.type === 'keyDown' && (i.control || i.meta) && !i.alt) { ev.preventDefault(); win?.webContents.send('web:zoom', wc.id, zk); }
+  });
+  // Ctrl + fare tekerleği (Electron kendisi yakınlaştırmaz, yalnızca haber verir).
+  // Bir tekerlek olayı için Chromium bazen iki kez haber veriyor: 40 ms içindeki ikincisi sayılmaz.
+  let lastZoom = 0;
+  if (wc.getType() === 'webview') wc.on('zoom-changed', (_ev, dir) => {
+    const now = Date.now();
+    if (now - lastZoom < 40) return;
+    lastZoom = now;
+    win?.webContents.send('web:zoom', wc.id, dir);
   });
   // WhatsApp/Telegram/Instagram/YouTube panelleri (persist:desk) başka siteye gezinmez: o link tarayıcı paneline gider.
   // Aynı site ve giriş sayfaları (Google, Facebook...) serbest.

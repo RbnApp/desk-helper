@@ -15,6 +15,11 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- Tarayıcı yakınlaştırma (kullanıcı: "Ctrl+tekerlek, adres çubuğunda yüzdeyi gösteren simge, Chrome'daki gibi").
+  main: webview before-input-event Ctrl =/+/−/0 ve 'zoom-changed' (Ctrl+tekerlek; bir olay için 2 kez geliyor, 40 ms
+  süzgeç) → 'web:zoom' (wcId, in/out/reset). Renderer yalnızca tarayıcı panelinde uygular (p.zoom), Chrome adımları
+  25–500 %, setZoomFactor (Chromium'da site başına). .br-zoom adres çubuğunda 🔑'ün solunda, %100'de gizli, tık → menü.
+
 - YouTube reklam: uBlock yöntemi (kullanıcı ileri sarmayı beğenmedi, kartta "uBlock yöntemi"ni seçti). adblock.js
   'adblock:yt-scriptlets' (sendSync) listedeki scriptlet'leri döndürür (tldts-experimental ile domain); webview-preload
   bunları webFrame.executeJavaScript ile sayfa betiklerinden önce çalıştırır (CSP/Trusted Types'a takılmaz).

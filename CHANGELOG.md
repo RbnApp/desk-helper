@@ -5,6 +5,11 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.3 · hazırlanıyor
 
+**Yeni**
+- Tarayıcıda yakınlaştırma, Chrome'daki gibi: Ctrl + fare tekerleği, Ctrl +, Ctrl − ve Ctrl 0 (sıfırla). Oran %100
+  değilken adres çubuğunda 🔍 ve yüzde görünür; tıklayınca yakınlaştır / uzaklaştır / sıfırla. Oran site başına
+  hatırlanır (aynı sitenin diğer sekmeleri de aynı oranla açılır).
+
 **Değişen**
 - Üst çubuğun sağı: üstte yalnızca "＋ Sekme", altında solda 📷 (ekran görüntüleri), sağda 🔔 (bildirimler).
   "＋ Çalışma alanı" düğmesi kaldırıldı; yeni çalışma alanı, Favoriler'in altındaki çalışma alanı seçicinin menüsünden.

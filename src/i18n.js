@@ -26,6 +26,8 @@ window.I18N_EN = {
   'Dosya aç': 'Open file',
   'Uzaklaştır': 'Zoom out',
   'Yakınlaştır': 'Zoom in',
+  'Yakınlaştırma: %{n}': 'Zoom: {n}%',
+  'Sıfırla': 'Reset',
   'Sığdır': 'Fit',
   'Gerçek boyut': 'Actual size',
   'Sola döndür': 'Rotate left',
