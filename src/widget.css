@@ -134,3 +134,9 @@ body.box .bempty small { word-break: break-all; }
 body.box .bempty button { background: var(--bc); border: 0; color: #fff; border-radius: 7px; padding: 5px 10px; cursor: pointer; }
 body.box #drophint { display: none; position: absolute; inset: 6px; border-radius: 16px; border: 2px dashed var(--bc); background: rgba(20, 20, 40, .82); color: #fff; align-items: center; justify-content: center; font-size: 13px; pointer-events: none; }
 body.box.dropping #drophint { display: flex; }
+.wd .citylist { margin-top: 6px; max-height: 236px; overflow-y: auto; border-radius: 8px; background: rgba(0, 0, 0, .22); }
+.wd .citylist:empty { display: none; }
+.wd .cityopt { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 6px 9px; cursor: pointer; border-radius: 7px; }
+.wd .cityopt small { color: rgba(255, 255, 255, .45); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wd .cityopt.on { background: rgba(139, 92, 246, .35); }
+.wd .citynote { padding: 6px 9px; color: rgba(255, 255, 255, .5); font-size: 12px; }

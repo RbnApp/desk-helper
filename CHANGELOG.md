@@ -5,6 +5,9 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.4 · hazırlanıyor
 
+**İyileştirilen**
+- Sistem panelinde hava durumu şehri artık listeden seçiliyor. Türkiye'nin 81 ili uygulamada hazır; yazdıkça eşleşenler çıkıyor ("ant" yazınca Antalya; Türkçe harf, plaka ve bilinen adlar da olur: "igdir", "07", "Antakya"). Tıklayarak ya da ok tuşları ve Enter ile seçiliyor. Listede olmayan yurt dışı şehirler internetten aranıyor.
+
 **Düzeltilen**
 - YouTube ana sayfası reklam engelleyici açıkken açılmıyordu. Sebep 0.4.3'te eklenen, sayfa başında çalışan YouTube betikleriydi; bunlar kapatıldı. Engelleyici artık reklam isteklerini kesiyor ve reklam alanlarını gizliyor. Ayrıca bir YouTube sayfası 12 saniyede hiç içerik göstermezse engelleyici o panelde kendiliğinden kapanıp sayfa yeniden yükleniyor.
 - Klasör kutuları artık programların gerçek simgelerini gösteriyor: kısayolda seçilmiş özel .ico, Steam/oyun .url simgeleri ve hedef programın kendi simgesi okunuyor (önceden aynı türdeki kısayollar hep aynı genel simgeyi alıyordu).

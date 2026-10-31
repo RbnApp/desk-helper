@@ -89,21 +89,58 @@ function setupWeather() {
   clearInterval(weatherT);
   weatherT = setInterval(loadWeather, 15 * 60000);
 }
+// Şehir seçimi: yazdıkça Türkiye'nin 81 ili arasından eşleşenler listelenir (Türkçe harflerden bağımsız: "ant" → Antalya,
+// "igdir" → Iğdır, plaka "07" → Antalya). Listede yoksa yurt dışı şehirler Open-Meteo'dan aranır. Tık ya da ↑/↓ + Enter seçer,
+// Esc vazgeçer. Elle yazılan ad kaydedilmez; yalnızca listeden seçilen şehir (koordinatıyla) kaydedilir.
 function editCity() {
   const s = secEls.weather;
   if (!s) return;
   if (cfg.collapsed?.weather) { cfg.collapsed.weather = false; s.sec.classList.remove('shut'); window.wd.set({ collapsed: cfg.collapsed }); }
-  const inp = h('input', { class: 'cityin', value: cfg.city || '', placeholder: t('Şehir adı (ör. İstanbul)') });
-  const done = async (ok) => { if (ok && inp.value.trim()) { cfg.city = inp.value.trim(); await window.wd.set({ city: cfg.city }); setupWeather(); } else loadWeather(); };
-  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(true); if (e.key === 'Escape') done(false); });
-  inp.addEventListener('blur', () => done(true));
-  s.body.replaceChildren(inp); inp.focus(); inp.select();
+  const inp = h('input', { class: 'cityin', value: '', placeholder: t('Şehir ara (ör. ant → Antalya)'), spellcheck: 'false', autocomplete: 'off' });
+  const box = h('div', { class: 'citylist', role: 'listbox' });
+  let opts = [], sel = 0, closed = false, seq = 0, timer = null;
+  const finish = async (o) => {
+    if (closed) return; closed = true; clearTimeout(timer);
+    if (o) { cfg.city = o.name; cfg.cityGeo = { lat: o.lat, lon: o.lon }; await window.wd.set({ city: cfg.city, cityGeo: cfg.cityGeo }); setupWeather(); } else loadWeather();
+  };
+  const paintList = (note) => {
+    box.replaceChildren(...opts.map((o, i) => {
+      const row = h('div', { class: 'cityopt' + (i === sel ? ' on' : ''), role: 'option' }, h('span', { text: o.name }), o.sub ? h('small', { text: o.sub }) : null);
+      row.addEventListener('mousedown', (e) => { e.preventDefault(); finish(o); });
+      row.addEventListener('mousemove', () => { if (sel !== i) { sel = i; paintList(note); } });
+      return row;
+    }), ...(note ? [h('div', { class: 'citynote', text: note })] : []));
+  };
+  const update = () => {
+    const q = inp.value;
+    const tr = window.TR_CITIES.search(q, 8).map((c) => ({ name: c.name, sub: [c.alias, c.plate].filter(Boolean).join(' · '), lat: c.lat, lon: c.lon }));
+    opts = tr; sel = 0;
+    clearTimeout(timer);
+    const my = ++seq;
+    if (tr.length || window.TR_CITIES.fold(q).length < 3) { paintList(tr.length ? '' : t('Şehir bulunamadı')); return; }
+    paintList(t('Yurt dışında aranıyor…'));
+    timer = setTimeout(async () => {
+      const r = await window.wd.geoSearch(q, lang).catch(() => []);
+      if (my !== seq || closed) return;
+      opts = r; sel = 0; paintList(r.length ? '' : t('Şehir bulunamadı'));
+    }, 350);
+  };
+  inp.addEventListener('input', update);
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' && opts.length) { e.preventDefault(); sel = (sel + 1) % opts.length; paintList(); box.children[sel]?.scrollIntoView({ block: 'nearest' }); }
+    else if (e.key === 'ArrowUp' && opts.length) { e.preventDefault(); sel = (sel - 1 + opts.length) % opts.length; paintList(); box.children[sel]?.scrollIntoView({ block: 'nearest' }); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (opts[sel]) finish(opts[sel]); }
+    else if (e.key === 'Escape') finish(null);
+  });
+  inp.addEventListener('blur', () => finish(null));
+  s.body.replaceChildren(inp, box); inp.focus();
+  update();
 }
 async function loadWeather() {
   const s = secEls.weather;
   if (!s) return;
   if (!cfg.city) { s.body.replaceChildren(h('div', { class: 'muted pad', text: t('Şehir seçmek için sağ üstteki adı tıkla.') })); return; }
-  const w = await window.wd.weather(cfg.city, lang);
+  const w = await window.wd.weather(cfg.city, lang, cfg.cityGeo);
   if (!secEls.weather) return;
   if (w.error) {
     s.body.replaceChildren(h('div', { class: 'muted pad', text: w.error === 'notfound' ? t('"{c}" bulunamadı. Şehri değiştir.', { c: cfg.city }) : t('Hava durumu alınamadı (internet bağlantısı?).') }));

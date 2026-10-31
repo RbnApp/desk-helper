@@ -9,7 +9,8 @@ contextBridge.exposeInMainWorld('wd', {
   sysStop: () => ipcRenderer.send('sys:stop'),
   onTick: (fn) => ipcRenderer.on('sys:tick', (_e, d) => fn(d)),
   sysStatic: () => ipcRenderer.invoke('sys:static'),
-  weather: (city, lang) => ipcRenderer.invoke('sys:weather', city, lang),
+  weather: (city, lang, geo) => ipcRenderer.invoke('sys:weather', city, lang, geo),
+  geoSearch: (q, lang) => ipcRenderer.invoke('sys:geo', q, lang),
 });
 // Klasör kutusu (widget-box.html; main: boxes.js)
 contextBridge.exposeInMainWorld('boxApi', {

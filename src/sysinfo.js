@@ -165,13 +165,27 @@ function readStatic() {
 const GEO = process.env.DH_WEATHER_TEST ? process.env.DH_WEATHER_TEST + '/geo' : 'https://geocoding-api.open-meteo.com/v1/search';
 const FC = process.env.DH_WEATHER_TEST ? process.env.DH_WEATHER_TEST + '/fc' : 'https://api.open-meteo.com/v1/forecast';
 const wCache = new Map();
-async function weather(city, lang) {
-  const key = String(city || '').trim().toLocaleLowerCase('tr');
-  if (!key) return { error: 'city' };
+const TR = require('./tr-cities');
+// Yurt dışı şehir araması (Türkiye'nin 81 ili uygulamada hazır; listede yoksa Open-Meteo'ya sorulur).
+async function geoSearch(q, lang) {
+  if (String(q || '').trim().length < 2) return [];
+  const g = await (await net.fetch(`${GEO}?name=${encodeURIComponent(q)}&count=6&language=${lang === 'en' ? 'en' : 'tr'}&format=json`)).json();
+  return (g.results || []).map((r) => ({ name: r.name, sub: [r.admin1, r.country].filter(Boolean).join(', '), lat: r.latitude, lon: r.longitude }));
+}
+// geo: seçilen şehrin koordinatı {lat, lon}. Yoksa 81 il listesine, o da yoksa Open-Meteo'nun aramasına bakılır.
+async function weather(city, lang, geo) {
+  const key = String(city || '').trim().toLocaleLowerCase('tr') + (geo ? `@${geo.lat},${geo.lon}` : '');
+  if (!String(city || '').trim()) return { error: 'city' };
   const c = wCache.get(key);
   if (c && Date.now() - c.t < 15 * 60000) return c.v;
-  const g = await (await net.fetch(`${GEO}?name=${encodeURIComponent(city)}&count=1&language=${lang === 'en' ? 'en' : 'tr'}&format=json`)).json();
-  const pl = g.results?.[0];
+  let pl = null;
+  const tr = TR.find(city);
+  if (geo && Number.isFinite(+geo.lat) && Number.isFinite(+geo.lon)) pl = { name: city, latitude: +geo.lat, longitude: +geo.lon };
+  else if (tr) pl = { name: tr.name, latitude: tr.lat, longitude: tr.lon };
+  else {
+    const g = await (await net.fetch(`${GEO}?name=${encodeURIComponent(city)}&count=1&language=${lang === 'en' ? 'en' : 'tr'}&format=json`)).json();
+    pl = g.results?.[0];
+  }
   if (!pl) return { error: 'notfound' };
   const q = `latitude=${pl.latitude}&longitude=${pl.longitude}&timezone=auto&forecast_days=3`
     + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,is_day'
@@ -185,6 +199,7 @@ async function weather(city, lang) {
 ipcMain.on('sys:start', (e) => start(e.sender));
 ipcMain.on('sys:stop', () => stop());
 ipcMain.handle('sys:static', async () => (staticInfo ||= await readStatic()));
-ipcMain.handle('sys:weather', async (_e, city, lang) => { try { return await weather(city, lang); } catch (err) { return { error: 'net', message: err?.message }; } });
+ipcMain.handle('sys:geo', async (_e, q, lang) => { try { return await geoSearch(q, lang); } catch { return []; } });
+ipcMain.handle('sys:weather', async (_e, city, lang, geo) => { try { return await weather(city, lang, geo); } catch (err) { return { error: 'net', message: err?.message }; } });
 
 module.exports = { stop };
