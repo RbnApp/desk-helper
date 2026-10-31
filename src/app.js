@@ -2922,6 +2922,8 @@ window.desk.shots?.onNew((it) => {
   const b = $('#abShots');
   if (b) { b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
 });
+// Desk Helper açıkken yeniden başlatılınca ikinci kopya açılmaz (main: tek örnek kilidi); açık pencere öne gelir ve bu not çıkar.
+window.desk.onAlreadyRunning?.(() => toast(t('Desk Helper zaten açık')));
 window.desk.shots?.onError((m) => toast(t('Ekran görüntüsü alınamadı: {err}', { err: m })));
 
 // Zil: toplam okunmamış rozeti; açılır listede servisler ve sayıları, Rahatsız etme.

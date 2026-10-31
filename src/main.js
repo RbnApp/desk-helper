@@ -3,7 +3,7 @@ const path = require('path');
 const native = require('./native');
 const adblock = require('./adblock');
 const shots = require('./shots');
-require('./motion'); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
+const motion = require('./motion'); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
 const os = require('os');
 
@@ -757,8 +757,9 @@ else {
     const top = win.isAlwaysOnTop();
     win.setAlwaysOnTop(true); win.focus(); win.moveTop();
     if (!top) setTimeout(() => !win.isDestroyed() && win.setAlwaysOnTop(false), 300);
+    win.webContents.send('app:already-running');
     console.log('[desk] second-instance: mevcut pencere öne getirildi');
   });
-  app.whenReady().then(createWindow);
+  app.whenReady().then(() => { motion.cleanup(); createWindow(); });
 }
 app.on('window-all-closed', () => app.quit());

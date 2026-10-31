@@ -15,6 +15,12 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- İkinci kez çalıştırma (kullanıcı: "birden fazla açılamamalı, zaten çalışıyor mesajı çıkmıyor"). Tek örnek kilidi
+  0.1'den beri vardı (main.js requestSingleInstanceLock + second-instance'ta pencereyi öne getir). Eklendi: second-instance
+  → 'app:already-running' → app.js toast "Desk Helper zaten açık". motion.js önbellek temizliği kilit alındıktan sonraya
+  taşındı (ikinci kopya çalışanın videolarını silmesin). Test (xvfb): ikinci kopya 1,2 sn'de çıktı (pencere açmadan),
+  küçültülmüş pencere geri geldi, not göründü.
+
 - Hareketli fotoğraf (kullanıcı: "telefonla çekilen fotoğraflarda Windows gösterici sol üstte hareket düğmesi çıkarıyor,
   bizde de olmalı"; örnek 20250830_171228.jpg, Samsung, HEVC 1440×1080 3,2 sn + AAC). src/motion.js: photo:motion IPC;
   XMP GCamera:MotionPhoto + Container:Item video/mp4 Item:Length (sondan), eski GCamera:MicroVideoOffset, eski Samsung

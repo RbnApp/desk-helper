@@ -128,6 +128,7 @@ window.I18N_EN = {
   'Medya ekle': 'Add media',
   'Ekran görüntüleri': 'Screenshots',
   'Ekran görüntüleri (Shift+PrintScreen)': 'Screenshots (Shift+PrintScreen)',
+  'Desk Helper zaten açık': 'Desk Helper is already running',
   'Hareketli fotoğrafı oynat': 'Play motion photo',
   'HAREKET': 'MOTION',
   'Sesi kapat': 'Mute',

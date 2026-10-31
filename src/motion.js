@@ -97,7 +97,8 @@ async function extract(file) {
 ipcMain.handle('photo:motion', async (_e, file) => {
   try { return /\.(jpe?g)$/i.test(String(file)) ? await extract(String(file)) : null; } catch { return null; }
 });
-// Önceki oturumlardan kalan çıkarılmış videolar.
-app.whenReady().then(() => { try { fs.rmSync(cacheDir(), { recursive: true, force: true }); } catch {} });
+// Önceki oturumlardan kalan çıkarılmış videolar. main.js tek örnek kilidini aldıktan sonra çağırır (ikinci kez açılan
+// kopya, çalışan uygulamanın videolarını silmesin).
+function cleanup() { try { fs.rmSync(cacheDir(), { recursive: true, force: true }); } catch {} }
 
-module.exports = { locate, extract };
+module.exports = { locate, extract, cleanup };
