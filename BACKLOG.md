@@ -15,6 +15,10 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- Üst çubuk sağ düzeni (kullanıcı: "üstte sadece sekme ekle, alt satırda solda ss, sağda bildirim; çalışma alanı
+  butonunu sil"). #barRight 2 sütunlu grid: #addTab iki sütunu kaplar; #shotTop | #bell. #addSpace silindi
+  (newSpace #spaceBtn menüsünde "Yeni çalışma alanı…").
+
 - Instagram Reels tekerlekle reel reel (kullanıcı: "YT Shorts gibi kaymalı"). webview-preload: instagram.com'da
   /reels?/ yolunda wheel (capture, passive:false) → içinde video olan, pencerenin %60'ından yüksek kaydırma alanını bul,
   bir sonraki videonun tepesine smooth scroll; 450 ms kilit + 160 ms'den sık gelen olaylar aynı hareket sayılır.

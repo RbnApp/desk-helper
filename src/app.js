@@ -3933,7 +3933,6 @@ async function start(saved) {
   renderSpaces();
   new ResizeObserver(() => layout()).observe($('#stage'));
   $('#addTab').onclick = newWs;
-  $('#addSpace').onclick = newSpace;
   $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
   $('#shotTop').onclick = () => toggleShots();

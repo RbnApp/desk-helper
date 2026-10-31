@@ -358,12 +358,14 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 #bell .badge { position: absolute; top: -4px; right: -4px; background: #e5534b; color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 16px; min-width: 16px; text-align: center; }
 #bell.dnd { color: var(--muted); }
 /* Kısayol çubuğunun iki ucunda alt alta ikişer küçük düğme (kısayollara yer kalsın): solda Favoriler / çalışma alanı
-   seçici, sağda ＋ Sekme / ＋ Çalışma alanı ve 📷 / 🔔 */
+   seçici; sağda üstte ＋ Sekme, altta solda 📷, sağda 🔔. Yeni çalışma alanı, çalışma alanı seçicinin menüsünde. */
 #bar .bar-col { display: flex; flex-direction: column; gap: 2px; flex: none; align-self: center; }
 #bar .bar-col > .sc { padding: 1px 8px; height: 21px; box-sizing: border-box; font-size: 12px; gap: 5px; }
 #bar .bar-col > .sc .emo { font-size: 12.5px; }
-#barRight { display: flex; gap: 4px; align-items: center; flex: none; margin-left: 8px; }
-#bar #bell, #bar #shotTop { align-self: stretch; justify-content: center; margin: 0; padding: 1px 8px; }
+#barRight { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 4px; align-items: center; flex: none; margin-left: 8px; align-self: center; }
+#barRight > .sc { padding: 1px 8px; height: 21px; box-sizing: border-box; font-size: 12px; gap: 5px; margin: 0; justify-content: center; }
+#barRight > #addTab { grid-column: 1 / -1; }
+#bar #bell, #bar #shotTop { justify-content: center; margin: 0; padding: 1px 8px; }
 #bar #bell .bell-ic { font-size: 12.5px; }
 #shotTop.on { background: var(--accent-soft); }
 #barRight .sc.add { white-space: nowrap; }

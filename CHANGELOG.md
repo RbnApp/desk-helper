@@ -6,6 +6,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 ## 0.4.3 · hazırlanıyor
 
 **Değişen**
+- Üst çubuğun sağı: üstte yalnızca "＋ Sekme", altında solda 📷 (ekran görüntüleri), sağda 🔔 (bildirimler).
+  "＋ Çalışma alanı" düğmesi kaldırıldı; yeni çalışma alanı, Favoriler'in altındaki çalışma alanı seçicinin menüsünden.
 - Instagram Reels'te fare tekerleğiyle küçük bir hareket bir sonraki (ya da önceki) reele geçer, YouTube Shorts'taki
   gibi. Bir tekerlek hareketi tek reel geçer. Yorumlar gibi içteki küçük alanlar normal kayar.
 - Sekmelerde tek simge: bir sekmede kaç panel açık olursa olsun yalnızca bir simge görünür, aynı simge tekrar etmez
