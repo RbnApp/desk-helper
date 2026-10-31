@@ -1,9 +1,9 @@
 # Desk Helper · bekleyen istekler
 
 Kullanıcı istekleri burada toplanır; kullanıcı "derle" deyince hepsi tek sürümde çıkar.
-Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
+Sıradaki sürüm: **0.4.2** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VERSIONING.md). Çıkan sürümlerin notları: CHANGELOG.md.
 
-## Sıradaki sürüm (0.4.1) için
+## Sıradaki sürüm (0.4.2) için
 
 - Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
   kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
@@ -13,7 +13,9 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 - 0.3.5'te kullanıcıdan geri bildirim beklenenler: panele yerleştirilen Windows programları Electron 44'te sorunsuz mu;
   Chrome Uzak Masaüstü simgesi düzeldi mi.
 
-## Kodda hazır (0.4.1'de çıkacak)
+## Kodda hazır (0.4.2'de çıkacak)
+
+## 0.4.1'de çıktı (2026-10-31)
 
 - WhatsApp bildirimine tıklama (kullanıcı: "sağdan bildirim çıkıyor, üstüne basınca hiçbir şey olmuyor"). Neden (çıkarım,
   gerçek WhatsApp'a erişim yok): webview-preload'daki Notification sarmalayıcısı yalnızca sayfanın new Notification'ını

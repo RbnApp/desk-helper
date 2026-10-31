@@ -1,6 +1,6 @@
 {
   "name": "desk-helper",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "WhatsApp, Telegram, not defteri, dosya gezgini ve favori programları tek pencerede toplayan masaüstü uygulaması",
   "license": "MIT",
   "main": "src/main.js",
