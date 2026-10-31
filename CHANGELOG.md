@@ -18,10 +18,12 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 - Ekran görüntüsü alınınca liste yine 0.4.0'daki gibi sağ altta kendiliğinden açılıyor (0.4.1'de elle açmak
   gerekiyordu). Ekran görüntüleri şeridi artık hep görünmüyor: görüntü alınınca ya da üstteki 📷 ile alt çubuğun sağ
   köşesinde çıkar, ✕ ile tamamen kapanır. Ok yalnızca listeyi açıp kapatır, şerit yerinde kalır.
-- YouTube videolarının açılmayıp donması (0.4.1'de de sürüyordu). Reklam engelleyicinin kural listesi YouTube için 30
-  kadar küçük betik getiriyor (video bilgisinden reklam alanlarını silen, YouTube'un yanıtlarını değiştiren betikler).
-  Bunlar sayfa açıldıktan sonra geç ekleniyordu ve oynatıcı yarı değiştirilmiş bilgiyle kalıp donuyordu. Artık bu
-  betikler çalıştırılmıyor; reklam istekleri yine kesiliyor, reklam alanları yine gizleniyor.
+- YouTube reklam engelleme baştan düzenlendi (tarayıcılardaki uBlock Origin'in yöntemi). Reklamlar artık ileri
+  sarılmıyor ya da sessize alınmıyor: reklam engelleyicinin listesindeki YouTube betikleri, sayfanın kendi kodu
+  çalışmadan önce video bilgisinden reklam kısmını çıkarıyor, reklam oynatıcıya hiç ulaşmıyor. Reklam istekleri yine
+  kesiliyor, reklam alanları yine gizleniyor. Kural listesi artık haftada bir değil her gün güncelleniyor.
+- YouTube videolarının açılmayıp donması (0.4.1'de de sürüyordu). Bu betikler önceden sayfa açıldıktan sonra geç
+  ekleniyordu ve oynatıcı yarı değiştirilmiş bilgiyle kalıp donuyordu.
 - Güvence: bir YouTube videosu yine de 12 saniye boyunca oynamazsa (sürekli yükleniyor ya da hata veriyor), o panelde
   reklam engelleyici kapatılıp sayfa kendiliğinden yeniden yüklenir ve "Video oynamadı; bu YouTube panelinde reklam
   engelleyici kapatıldı" notu çıkar. Uygulama yeniden açılınca engelleyici o panelde yine açık olur.

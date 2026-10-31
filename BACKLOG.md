@@ -15,6 +15,14 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- YouTube reklam: uBlock yöntemi (kullanıcı ileri sarmayı beğenmedi, kartta "uBlock yöntemi"ni seçti). adblock.js
+  'adblock:yt-scriptlets' (sendSync) listedeki scriptlet'leri döndürür (tldts-experimental ile domain); webview-preload
+  bunları webFrame.executeJavaScript ile sayfa betiklerinden önce çalıştırır (CSP/Trusted Types'a takılmaz).
+  Kütüphanenin geç executeJavaScript'i kapalı (yalnız CSS). dhYtAdblock'taki sessize al / 16x / Atla kodu silindi;
+  ek CSS ve 12 sn bekçi kaldı. Liste günlük (DAY + 24 saatte bir arka planda yenileme). Dikkat: e.returnValue iki kez
+  atanırsa ilk değer gider (önce [] atayınca hep boş dönüyordu). Test: inline sayfa betiği set-constant değerini (42)
+  görüyor, JSON.parse'tan adPlacements/playerAds siliniyor, video oynuyor; donan sayfada bekçi çalışıyor.
+
 - Şerit sabit duruyordu, ✕ kapatmıyordu (kullanıcı: "sabit olsun demedim, burda çıksın dedim, yerini değiştirmeden").
   shotsShown: şerit yalnızca yeni görüntüde (showShots(true)) ya da #shotTop ile görünür; ✕ = showShots(false) (şerit +
   liste gizli). Ok = toggleShots (liste), dışarı tıklama yalnızca listeyi kapatır. Test: başlangıçta gizli, görüntü

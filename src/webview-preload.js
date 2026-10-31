@@ -3,10 +3,10 @@
 const { ipcRenderer, webFrame, contextBridge } = require('electron');
 
 // --- YouTube reklam engelleyici, sayfa tarafı (Ayarlar > "YouTube'da reklamları engelle"; main.js adblock.js karar verir) ---
-// Ağ tarafı (adblock.js, Ghostery) reklam isteklerini keser. YouTube bazı reklamları videonun kendi akışına gömüyor
-// (sunucu tarafı reklam); bunlar için: reklam oynarken sessize al, 16 kat hızlandır, "Atla" çıkınca bas. Reklamın sonuna
-// atlamıyoruz ve video bilgisindeki reklam alanlarını (adPlacements…) silmiyoruz: 0.4.0'da ikisi de yapılıyordu ve gömülü
-// reklamlı videolarda oynatıcı reklamın yerini bulamayıp sürekli donuyordu (video hiç izlenemiyordu).
+// uBlock Origin'in yöntemi: listedeki YouTube betikleri (video bilgisinden reklam kısmını çıkaran json-prune vb.) sayfanın
+// kendi kodundan ÖNCE, burada çalışır; böylece reklam oynatıcıya hiç ulaşmaz, ileri sarma / sessize alma gerekmez.
+// Ağ tarafı (adblock.js, Ghostery) reklam isteklerini keser, kütüphanenin preload'u reklam alanlarını gizler.
+// Aşağıdaki dhYtAdblock: birkaç ek gizleme kuralı ve bekçi (video yine de oynamazsa engelleyiciyi o panelde kapatır).
 function dhYtAdblock(stalled) {
   if (window.__dhYtAb) return;
   window.__dhYtAb = true;
@@ -25,22 +25,6 @@ function dhYtAdblock(stalled) {
     if (v) lastT = v.currentTime;
     if (still >= 12) { still = -1e9; stalled(); }
   }, 1000);
-  let saved = null; // reklamdan önceki { muted, rate }
-  setInterval(() => {
-    const pl = document.querySelector('.html5-video-player.ad-showing, .html5-video-player.ad-interrupting');
-    const v = pl && pl.querySelector('video');
-    if (v) {
-      if (!saved) saved = { v, muted: v.muted, rate: v.playbackRate || 1 };
-      if (!v.muted) v.muted = true;
-      if (v.playbackRate !== 16) try { v.playbackRate = 16; } catch {}
-      const skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button');
-      if (skip) skip.click();
-    } else if (saved) {
-      const main = document.querySelector('.html5-video-player video') || saved.v;
-      try { main.playbackRate = saved.rate; main.muted = saved.muted; } catch {}
-      saved = null;
-    }
-  }, 300);
   const css = 'ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, ytd-promoted-sparkles-web-renderer, ytd-promoted-video-renderer,'
     + ' ytd-display-ad-renderer, ytd-banner-promo-renderer, ytd-statement-banner-renderer, ytd-player-legacy-desktop-watch-ads-renderer,'
     + ' #masthead-ad, #player-ads, .ytp-ad-overlay-container, .ytp-featured-product, ytd-merch-shelf-renderer,'
@@ -52,6 +36,10 @@ function dhYtAdblock(stalled) {
 }
 try {
   if (ipcRenderer.sendSync('adblock:yt-page', location.href)) {
+    // webFrame.executeJavaScript ana dünyada hemen çalışır ve sayfanın CSP / Trusted Types kısıtlarına takılmaz.
+    for (const code of ipcRenderer.sendSync('adblock:yt-scriptlets', location.href) || []) {
+      try { webFrame.executeJavaScript(code).catch(() => {}); } catch {}
+    }
     contextBridge.executeInMainWorld({ func: dhYtAdblock, args: [() => ipcRenderer.send('adblock:yt-stalled')] });
   }
 } catch {}

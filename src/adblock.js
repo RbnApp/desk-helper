@@ -2,7 +2,7 @@
 // Yalnızca adresi youtube.com olan sayfalarda çalışır: WhatsApp, Telegram vb. aynı oturumu paylaştığı için kütüphanenin
 // kendi enableBlockingInSession'ı yerine istekleri sayfanın adresine bakarak süzüyoruz. Ağ: reklam/izleme istekleri kesilir;
 // görünüm: sayfaya reklam alanlarını gizleyen kurallar ve YouTube'a özel küçük betikler eklenir (kütüphanenin preload'u).
-// Kural listesi Ghostery'nin sunucusundan hazır gelir, userData/adblock-engine.bin'de saklanır ve haftada bir yenilenir;
+// Kural listesi Ghostery'nin sunucusundan hazır gelir, userData/adblock-engine.bin'de saklanır ve her gün yenilenir;
 // ağ yoksa eldeki kullanılır.
 const { app, session, ipcMain, webContents, net } = require('electron');
 const path = require('path');
@@ -12,7 +12,7 @@ let blocker = null;
 let enabled = true;
 let loading = null;
 const hooked = new WeakSet();
-const WEEK = 7 * 24 * 3600 * 1000;
+const DAY = 24 * 3600 * 1000;
 const cachePath = () => path.join(app.getPath('userData'), 'adblock-engine.bin');
 // DH_ADBLOCK_TEST_HOST: yalnızca otomatik testte YouTube yerine yerel bir sunucuyu saymak için.
 const YT = new RegExp('(^|\\.)(youtube\\.com' + (process.env.DH_ADBLOCK_TEST_HOST ? '|' + process.env.DH_ADBLOCK_TEST_HOST.replace(/\./g, '\\.') : '') + ')$', 'i');
@@ -29,7 +29,7 @@ async function load() {
   const file = cachePath();
   let cached = null, age = Infinity;
   try { cached = fs.readFileSync(file); age = Date.now() - fs.statSync(file).mtimeMs; } catch {}
-  if (cached && age < WEEK) {
+  if (cached && age < DAY) {
     try { return ElectronBlocker.deserialize(new Uint8Array(cached)); } catch {}
   }
   try {
@@ -65,9 +65,10 @@ function hook(ses) {
   });
 }
 
-// Yalnızca gizleme kuralları (CSS) uygulanır; kural listesindeki YouTube betikleri (json-prune, fetch/xhr yanıtını
-// değiştirme, set-constant… 30 kadar) çalıştırılmaz. Kütüphane bunları sayfa yüklendikten sonra executeJavaScript ile
-// geç ekliyor; oynatıcı yarı değiştirilmiş video bilgisiyle kalıp donuyordu (0.4.0'daki kendi budamamızla aynı sorun).
+// Kütüphanenin preload'u buradan yalnızca gizleme kurallarını (CSS) alır. Listedeki YouTube betikleri (uBlock Origin'in
+// scriptlet'leri: video bilgisinden reklam kısmını çıkaran json-prune, fetch/xhr yanıtını düzelten betikler…) kütüphane
+// tarafından sayfa açıldıktan sonra executeJavaScript ile geç ekleniyordu; oynatıcı yarı değiştirilmiş bilgiyle kalıp
+// donuyordu. Onları 'adblock:yt-scriptlets' ile webview-preload.js sayfanın kendi kodundan önce çalıştırır (uBlock gibi).
 ipcMain.handle('@ghostery/adblocker/inject-cosmetic-filters', (event, url, msg) => {
   if (!enabled || !blocker || off(event.sender.id) || !isYT(url)) return;
   const sender = { insertCSS: (css, o) => event.sender.insertCSS(css, o), executeJavaScript: () => {} };
@@ -84,7 +85,31 @@ ipcMain.on('adblock:yt-stalled', (e) => {
 // webview-preload.js: bu sayfada YouTube reklam betiği çalışsın mı (açık mı, sayfa YouTube mu). Eşzamanlı; sayfa
 // betiklerinden önce sorulur.
 ipcMain.on('adblock:yt-page', (e, url) => { e.returnValue = !!(enabled && !off(e.sender.id) && isYT(url) && !String(url).startsWith('dhyt:')); });
+// uBlock yöntemi: sayfanın betikleri çalışmadan önce, eşzamanlı. webview-preload.js sorar ve ana dünyada çalıştırır.
+// Liste henüz yüklenmediyse (ilk açılışın ilk saniyeleri) boş döner; o sayfada yalnızca ağ engeli ve gizleme olur.
+ipcMain.on('adblock:yt-scriptlets', (e, url) => {
+  // returnValue yalnızca bir kez atanmalı: ilk atama yanıtı hemen gönderir.
+  let out = [];
+  if (enabled && blocker && !off(e.sender.id) && isYT(url) && !String(url).startsWith('dhyt:')) {
+    try {
+      const { parse } = require('tldts-experimental');
+      const p = parse(url);
+      const { active, scripts } = blocker.getCosmeticsFilters({
+        url, hostname: p.hostname || '', domain: p.domain || p.hostname || '',
+        getBaseRules: false, getInjectionRules: true, getExtendedRules: false, getRulesFromHostname: true, getRulesFromDOM: false,
+      });
+      if (active !== false) out = scripts;
+    } catch (err) { console.warn('adblock scriptlets', err?.message); }
+  }
+  e.returnValue = out;
+});
 ipcMain.handle('@ghostery/adblocker/is-mutation-observer-enabled', () => !!(enabled && blocker?.config.enableMutationObserver));
+
+// Uygulama günlerce açık kalabildiği için liste her gün arka planda yenilenir (YouTube değiştikçe liste de değişiyor).
+setInterval(() => {
+  if (!enabled || loading) return;
+  load().then((b) => { blocker = b; }).catch(() => {});
+}, DAY).unref?.();
 
 function setEnabled(on) {
   enabled = on !== false;

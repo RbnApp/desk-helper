@@ -3716,7 +3716,7 @@ async function openSettings(tab = 'settings') {
       h('label', { class: 'row' }, t('Her zaman üstte'), chk('alwaysOnTop')),
       h('label', { class: 'row' }, t('Dolu sekmeyi kapatırken sor'), chk('confirmTabClose')),
       h('label', { class: 'row' }, t('Açılışta yeni sürümü denetle'), chk('autoUpdate')),
-      h('label', { class: 'row', title: t('Hesap gerekmez. YouTube değişiklik yaptıkça arada reklam sızabilir; kural listesi haftada bir kendiliğinden güncellenir.') }, t('YouTube\'da reklamları engelle'), chk('adblockYT')),
+      h('label', { class: 'row', title: t('Hesap gerekmez. YouTube değişiklik yaptıkça arada reklam sızabilir; kural listesi her gün kendiliğinden güncellenir.') }, t('YouTube\'da reklamları engelle'), chk('adblockYT')),
       h('label', {}, t('Notların kaydedileceği klasör'), notesLbl,
         h('div', { class: 'fav-add' },
           h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; } } }),

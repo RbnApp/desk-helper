@@ -37,7 +37,7 @@ window.I18N_EN = {
   'Birlikte aç': 'Open with',
   'Sekme': 'Tab',
   "YouTube'da reklamları engelle": 'Block ads on YouTube',
-  'Hesap gerekmez. YouTube değişiklik yaptıkça arada reklam sızabilir; kural listesi haftada bir kendiliğinden güncellenir.': 'No account needed. As YouTube changes, an ad may slip through now and then; the rule list updates itself weekly.',
+  'Hesap gerekmez. YouTube değişiklik yaptıkça arada reklam sızabilir; kural listesi her gün kendiliğinden güncellenir.': 'No account needed. As YouTube changes, an ad may slip through now and then; the rule list updates itself daily.',
   "({n} sekme)": "({n} tabs)",
   "Desk Helper arayüzü (sekmeler, not defteri, dosyalar, medya)": "Desk Helper interface (tabs, notepad, files, media)",
   "Ana işlem": "Main process",
