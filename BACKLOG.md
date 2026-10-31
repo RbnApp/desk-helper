@@ -15,6 +15,11 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- Sekme simge kalabalığı (kullanıcı: "Masam"da 📁📄+Instagram, bir sekmede 3 YouTube simgesi). renderTabs artık tek
+  simge: öncelik wa > tg > ig (shortcutForLeaf), yoksa ilk panel. Tooltip tüm panelleri listeliyor.
+- Ekran görüntüsü alınınca liste kendiliğinden açılmıyordu (0.4.1'de bilerek kapatılmıştı, kullanıcı geri istedi):
+  onNew → toggleShots(true). Dışarı tıklayınca kapanma duruyor.
+
 - YouTube hâlâ açılmıyor (kullanıcı, 0.4.1). Bulunan: Ghostery'nin hazır listesi youtube.com için 30 scriptlet getiriyor
   (json-prune, replace-fetch-response, json-edit-xhr-request, set-constant…); kütüphane bunları executeJavaScript ile
   sayfa yüklendikten sonra ekliyor. 0.4.0'daki kendi budamamızla aynı tür değişiklik; çıkarım: donmanın nedeni bu

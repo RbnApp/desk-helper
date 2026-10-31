@@ -5,7 +5,14 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.3 · hazırlanıyor
 
+**Değişen**
+- Sekmelerde tek simge: bir sekmede kaç panel açık olursa olsun yalnızca bir simge görünür, aynı simge tekrar etmez
+  (3 YouTube açıkken 3 YouTube simgesi çıkmıyor). Sekmede WhatsApp, Telegram ya da Instagram varsa onun simgesi (bu
+  sırayla), yoksa ilk panelin simgesi. Açık panellerin hepsi sekmenin üstüne gelince listelenir.
+
 **Düzeltilen**
+- Ekran görüntüsü alınınca liste yine 0.4.0'daki gibi sağ altta kendiliğinden açılıyor (0.4.1'de elle açmak
+  gerekiyordu).
 - YouTube videolarının açılmayıp donması (0.4.1'de de sürüyordu). Reklam engelleyicinin kural listesi YouTube için 30
   kadar küçük betik getiriyor (video bilgisinden reklam alanlarını silen, YouTube'un yanıtlarını değiştiren betikler).
   Bunlar sayfa açıldıktan sonra geç ekleniyordu ve oynatıcı yarı değiştirilmiş bilgiyle kalıp donuyordu. Artık bu

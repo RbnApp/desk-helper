@@ -2960,7 +2960,7 @@ function leafIcon(l) {
 }
 
 // --- Ekran görüntüleri: alt çubuğun en sağındaki 📷 düğmesi, tıklayınca üstünde açılan panel (main: shots.js) ---
-// Panel kendiliğinden açılmaz ve açık kalmaz (dışarı tıklayınca kapanır), panellerin üstünü kapatmasın diye.
+// Yeni görüntü alınınca liste kendiliğinden açılır; dışarı tıklayınca kapanır, panellerin üstünü kapatmasın diye.
 // Shift+PrintScreen ya da "Yakala" ile alınan görüntüler Resimler\Screenshots\Desk Helper'a kaydedilir ve burada
 // listelenir. Görüntü sürüklenip başka uygulamaya bırakılabilir (dosyanın kendisi gider); üstüne gelince 📋 panoya
 // kopyala, 📂 klasörde göster, 🗑 sil (Geri Dönüşüm Kutusu'na). Çift tık Windows'un resim görüntüleyicisinde açar.
@@ -3063,7 +3063,8 @@ function renderShots() {
 }
 window.desk.shots?.onNew((it) => {
   shotItems = [it, ...shotItems.filter((x) => x.path !== it.path)];
-  renderShots();
+  // 0.4.0'daki gibi: yeni görüntü alınınca liste sağ altta, şeridin üstünde kendiliğinden açılır.
+  toggleShots(true);
   toast(t('Ekran görüntüsü kaydedildi ve panoya kopyalandı'));
   const b = $('#abShots');
   if (b) { b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
@@ -3144,7 +3145,11 @@ function renderTabs() {
     const unread = unreadOf([...panels.values()].filter((p) => p.ws === ws));
     const name = h('span', { class: 'name', textContent: ws.name });
     const ls = leaves(ws.root);
-    const icons = h('span', { class: 'icons' }, ...ls.slice(0, 5).map(leafIcon), ls.length > 5 ? '…' : null);
+    // Sekmede tek simge: içinde WhatsApp, Telegram ya da Instagram varsa onun (bu sırayla), yoksa ilk panelin.
+    // Hangi panellerin açık olduğu sekmenin üstüne gelince listelenir.
+    const pri = ['wa', 'tg', 'ig'];
+    const lead = pri.map((id) => ls.find((l) => shortcutForLeaf(l)?.id === id)).find(Boolean) || ls[0];
+    const icons = h('span', { class: 'icons' }, lead ? leafIcon(lead) : null);
     const zz = ls.filter((l) => asleep.has(l.id));
     const tip = ws.name + (ls.length ? '\n\n' + t('Açık:') + ' ' + ls.map((l) => l.title).join(', ') : '\n\n' + t('(boş)'))
       + (zz.length ? '\n💤 ' + t('Uyuyor (bellek boşaltıldı, sekmeye gelince açılır):') + ' ' + zz.map((l) => l.title).join(', ') : '')
