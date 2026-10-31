@@ -3,6 +3,24 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.4.1 · hazırlanıyor
+
+**Değişiklikler**
+- Kısayol çubuğu sadeleşti, kısayollara daha çok yer kaldı: solda ⭐ Favoriler'in hemen altında çalışma alanı seçici
+  (önceden üstte sekmelerin solundaydı, artık sekmelere de daha çok yer var); sağda "＋ Sekme" ile "＋ Çalışma alanı"
+  alt alta, 📷 ekran görüntüleri ile 🔔 bildirimler alt alta.
+- Ekran görüntüleri paneli artık panellerin üstünde sürekli açık durmaz: alt çubukta "Ekle"nin sağındaki 📷 Ekran
+  görüntüleri düğmesine (ya da üstteki 📷'a) tıklayınca hemen üstünde açılır, dışarı tıklayınca kapanır. Yeni görüntü
+  alınınca panel açılmaz; "kaydedildi ve panoya kopyalandı" notu çıkar ve 📷 düğmesi kısaca yanıp söner.
+- Web panellerinde ve tarayıcıda bağlantıya sağ tık > "Dış tarayıcıda aç": bağlantı Windows'un varsayılan tarayıcısında
+  açılır. Bağlantı dışında sağ tıkta "Sayfayı dış tarayıcıda aç" da var.
+
+**Düzeltmeler**
+- YouTube videolarının hiç açılmayıp sürekli donması düzeldi. 0.4.0'daki güçlendirilmiş reklam engelleyici, reklamı
+  videonun kendisine gömülü gelen videolarda oynatıcının reklam bilgisini siliyor ve reklamın sonuna atlıyordu; oynatıcı
+  bu yüzden takılıyordu. Artık video bilgisine dokunulmuyor; reklam yine kesiliyor, kesilemeyen reklam sessize alınıp
+  16 kat hızlı geçiliyor ve "Atla" çıkınca basılıyor.
+
 ## 0.4.0 · 2026-10-24
 
 **Yeni**

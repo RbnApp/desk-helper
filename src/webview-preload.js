@@ -3,47 +3,27 @@
 const { ipcRenderer, webFrame, contextBridge } = require('electron');
 
 // --- YouTube reklam engelleyici, sayfa tarafı (Ayarlar > "YouTube'da reklamları engelle"; main.js adblock.js karar verir) ---
-// YouTube video reklamlarını ayrı adreslerden değil, videonun bilgisiyle aynı yanıtın içinde (adPlacements, playerAds…)
-// gönderiyor; bu yüzden yalnızca ağ isteklerini kesmek yetmiyor (0.3.9'da reklamlar çıkmaya devam etti). Sayfanın
-// betiklerinden önce, sayfanın kendi dünyasında: video bilgisindeki reklam alanları silinir (JSON.parse, fetch yanıtları,
-// sayfaya gömülü ytInitialPlayerResponse); yine de bir reklam başlarsa sessize alınıp sonuna atlanır ve "Atla"ya basılır;
-// sayfadaki reklam kutuları gizlenir.
+// Ağ tarafı (adblock.js, Ghostery) reklam isteklerini keser. YouTube bazı reklamları videonun kendi akışına gömüyor
+// (sunucu tarafı reklam); bunlar için: reklam oynarken sessize al, 16 kat hızlandır, "Atla" çıkınca bas. Reklamın sonuna
+// atlamıyoruz ve video bilgisindeki reklam alanlarını (adPlacements…) silmiyoruz: 0.4.0'da ikisi de yapılıyordu ve gömülü
+// reklamlı videolarda oynatıcı reklamın yerini bulamayıp sürekli donuyordu (video hiç izlenemiyordu).
 function dhYtAdblock() {
   if (window.__dhYtAb) return;
   window.__dhYtAb = true;
-  const KEYS = ['adPlacements', 'adSlots', 'playerAds', 'adBreakHeartbeatParams'];
-  const prune = (o) => {
-    try {
-      if (!o || typeof o !== 'object') return o;
-      for (const k of KEYS) if (k in o) delete o[k];
-      const mr = o.auxiliaryUi && o.auxiliaryUi.messageRenderers;
-      if (mr && mr.enforcementMessageViewModel) delete mr.enforcementMessageViewModel; // "reklam engelleyici" uyarısı
-      if (o.playerResponse && typeof o.playerResponse === 'object') prune(o.playerResponse);
-      if (Array.isArray(o)) for (const x of o) if (x && typeof x === 'object' && x.playerResponse) prune(x.playerResponse);
-    } catch {}
-    return o;
-  };
-  const parse = JSON.parse;
-  JSON.parse = new Proxy(parse, { apply: (f, self, args) => prune(Reflect.apply(f, self, args)) });
-  const json = Response.prototype.json;
-  Response.prototype.json = new Proxy(json, { apply: (f, self, args) => Reflect.apply(f, self, args).then(prune) });
-  for (const name of ['ytInitialPlayerResponse', 'ytInitialData']) {
-    let val;
-    try { Object.defineProperty(window, name, { configurable: true, get: () => val, set: (v) => { val = prune(v); } }); } catch {}
-  }
-  let muted = false;
+  let saved = null; // reklamdan önceki { muted, rate }
   setInterval(() => {
     const pl = document.querySelector('.html5-video-player.ad-showing, .html5-video-player.ad-interrupting');
     const v = pl && pl.querySelector('video');
     if (v) {
-      if (!v.muted) { v.muted = true; muted = true; }
-      if (isFinite(v.duration) && v.duration > 0 && v.currentTime < v.duration - 0.1) v.currentTime = v.duration;
+      if (!saved) saved = { v, muted: v.muted, rate: v.playbackRate || 1 };
+      if (!v.muted) v.muted = true;
+      if (v.playbackRate !== 16) try { v.playbackRate = 16; } catch {}
       const skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button');
       if (skip) skip.click();
-    } else if (muted) {
-      const main = document.querySelector('.html5-video-player video');
-      if (main) main.muted = false;
-      muted = false;
+    } else if (saved) {
+      const main = document.querySelector('.html5-video-player video') || saved.v;
+      try { main.playbackRate = saved.rate; main.muted = saved.muted; } catch {}
+      saved = null;
     }
   }, 300);
   const css = 'ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, ytd-promoted-sparkles-web-renderer, ytd-promoted-video-renderer,'

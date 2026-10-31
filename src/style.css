@@ -357,12 +357,18 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 #bell .bell-ic { font-size: 15px; }
 #bell .badge { position: absolute; top: -4px; right: -4px; background: #e5534b; color: #fff; border-radius: 9px; font-size: 10px; font-weight: 700; padding: 0 5px; line-height: 16px; min-width: 16px; text-align: center; }
 #bell.dnd { color: var(--muted); }
-/* Kısayol çubuğunun sağı: ＋ Sekme, ＋ Çalışma alanı, 🔔 (en sağda) */
+/* Kısayol çubuğunun iki ucunda alt alta ikişer küçük düğme (kısayollara yer kalsın): solda Favoriler / çalışma alanı
+   seçici, sağda ＋ Sekme / ＋ Çalışma alanı ve 📷 / 🔔 */
+#bar .bar-col { display: flex; flex-direction: column; gap: 2px; flex: none; align-self: center; }
+#bar .bar-col > .sc { padding: 1px 8px; height: 21px; box-sizing: border-box; font-size: 12px; gap: 5px; }
+#bar .bar-col > .sc .emo { font-size: 12.5px; }
 #barRight { display: flex; gap: 4px; align-items: center; flex: none; margin-left: 8px; }
-#bar #bell { align-self: center; margin: 0; padding: 5px 10px; }
+#bar #bell, #bar #shotTop { align-self: stretch; justify-content: center; margin: 0; padding: 1px 8px; }
+#bar #bell .bell-ic { font-size: 12.5px; }
+#shotTop.on { background: var(--accent-soft); }
 #barRight .sc.add { white-space: nowrap; }
-/* Üstte sekmelerin solunda etkin çalışma alanı seçici */
-#spaceBtn { display: flex; align-items: center; gap: 6px; align-self: center; flex: none; max-width: 200px; margin: 0 6px 5px 0; padding: 5px 10px; background: var(--panel); border-radius: 7px; }
+/* Favoriler'in altında etkin çalışma alanı seçici */
+#spaceBtn { max-width: 170px; }
 #spaceBtn .sp-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 #spaceBtn .sp-caret { color: var(--muted); font-size: 10px; }
 .tab .icons { display: inline-flex; align-items: center; gap: 3px; }
@@ -569,16 +575,15 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .mem-bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .mem-v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-/* Ekran görüntüleri paneli (sağ alt) */
-#shotBtn { align-self: flex-end; margin-bottom: 4px; padding: 3px 8px; font-size: 15px; }
-#shotBtn.on { background: var(--accent-soft); }
+/* Ekran görüntüleri: alt çubuktaki 📷 ve üstünde açılan panel */
+.ab-shot.on .ab-ic { box-shadow: 0 0 0 2px var(--accent); }
+.ab-shot.flash .ab-ic { animation: abFlash .9s ease-out 2; }
+@keyframes abFlash { 0% { box-shadow: 0 0 0 0 var(--accent); } 60% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 #shots { position: fixed; right: 14px; bottom: 88px; width: 300px; max-height: min(560px, calc(100vh - 200px)); z-index: 900;
   display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
   box-shadow: 0 10px 32px rgba(0,0,0,.45); overflow: hidden; }
 #shots[hidden] { display: none; }
-#shots.min .sh-list { display: none; }
 .sh-head { display: flex; align-items: center; gap: 2px; padding: 6px 6px 6px 12px; border-bottom: 1px solid var(--line); flex: none; }
-#shots.min .sh-head { border-bottom: 0; }
 .sh-title { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 13px; min-width: 0; }
 .sh-title b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sh-count { color: var(--muted); font-size: 11px; background: var(--head); border-radius: 8px; padding: 0 6px; }

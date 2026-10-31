@@ -662,7 +662,9 @@ window.desk.onWebCtx((wcId, q) => {
     link ? { icon: '🗗', label: t('Yeni sekmede aç'), action: () => routeWebLink(wcId, link, 'tab') } : null,
     link ? { icon: '▣', label: t('Yeni panelde aç'), action: () => routeWebLink(wcId, link, 'panel') } : null,
     link && !inBrowser ? { icon: '🧭', label: t('Tarayıcı panelinde aç'), action: () => routeWebLink(wcId, link, 'browser') } : null,
+    link ? { icon: '↗', label: t('Dış tarayıcıda aç'), title: t('Windows\'un varsayılan tarayıcısında açar'), action: () => window.desk.openExternal(link) } : null,
     link ? { icon: '🔗', label: t('Bağlantıyı kopyala'), action: () => window.desk.copyText(link) } : null,
+    !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '↗', label: t('Sayfayı dış tarayıcıda aç'), action: () => window.desk.openExternal(wv.getURL()) } : null,
     !link && !q.isEditable && !q.selectionText ? { icon: '🔗', label: t('Sayfa adresini kopyala'), action: () => window.desk.copyText(wv.getURL()) } : null,
     !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '</>', label: t('Sayfa kaynağını görüntüle'), key: 'Ctrl+U', action: () => viewSource(wcId) } : null,
     link ? '-' : null,
@@ -2784,11 +2786,12 @@ function leafIcon(l) {
   return emo();
 }
 
-// --- Ekran görüntüleri: sağ altta küçük panel (main: shots.js) ---
+// --- Ekran görüntüleri: alt çubuğun en sağındaki 📷 düğmesi, tıklayınca üstünde açılan panel (main: shots.js) ---
+// Panel kendiliğinden açılmaz ve açık kalmaz (dışarı tıklayınca kapanır), panellerin üstünü kapatmasın diye.
 // Shift+PrintScreen ya da "Yakala" ile alınan görüntüler Resimler\Screenshots\Desk Helper'a kaydedilir ve burada
 // listelenir. Görüntü sürüklenip başka uygulamaya bırakılabilir (dosyanın kendisi gider); üstüne gelince 📋 panoya
 // kopyala, 📂 klasörde göster, 🗑 sil (Geri Dönüşüm Kutusu'na). Çift tık Windows'un resim görüntüleyicisinde açar.
-let shotItems = [], shotHotkey = true;
+let shotItems = [], shotHotkey = true, shotsOpen = false;
 // Kısa bilgi notu (pencerenin altında, birkaç saniye).
 function toast(msg) {
   let el = $('#toast');
@@ -2805,16 +2808,26 @@ function shotsPanel() {
       h('span', { class: 'sh-title' }, h('span', { textContent: '📷' }), h('b', { textContent: t('Ekran görüntüleri') }), h('span', { class: 'sh-count' })),
       h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (Shift+PrintScreen)', onclick: () => takeShot() }),
       h('button', { class: 'sh-b', textContent: '📂', title: t('Klasörü aç'), onclick: () => window.desk.shots.reveal() }),
-      h('button', { class: 'sh-b sh-min', textContent: '⌄', title: t('Küçült'), onclick: () => { state.settings.shotsMin = !state.settings.shotsMin; save(); renderShots(); } }),
       h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => toggleShots(false) })),
     h('div', { class: 'sh-list' }));
   document.body.append(el);
+  // Dışarı tıklayınca kapanır (düğmenin kendisi aç/kapa yapar).
+  document.addEventListener('mousedown', (e) => { if (shotsOpen && !el.contains(e.target) && !e.target.closest?.('#abShots, #shotTop')) toggleShots(false); }, true);
+  window.addEventListener('blur', () => { if (shotsOpen && document.activeElement?.tagName === 'WEBVIEW') toggleShots(false); });
+  window.addEventListener('resize', () => shotsOpen && placeShots());
   return el;
 }
-function toggleShots(on = !state.settings.shotsOpen) {
-  state.settings.shotsOpen = on;
-  if (on) state.settings.shotsMin = false;
-  save(); renderShots();
+// Paneli alt çubuktaki 📷 düğmesinin hemen üstüne, sağ kenarı düğmeyle hizalı yerleştir.
+function placeShots() {
+  const el = $('#shots'), b = $('#abShots');
+  if (!el || !b) return;
+  const r = b.getBoundingClientRect(), ab = $('#appbar').getBoundingClientRect();
+  el.style.bottom = (window.innerHeight - ab.top + 8) + 'px';
+  el.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+}
+function toggleShots(on = !shotsOpen) {
+  shotsOpen = on;
+  renderShots();
   if (on) window.desk.shots.list().then((l) => { shotItems = l; renderShots(); });
 }
 async function takeShot() {
@@ -2824,13 +2837,12 @@ async function takeShot() {
 }
 function renderShots() {
   const el = shotsPanel();
-  const open = !!state.settings.shotsOpen;
+  const open = shotsOpen;
   el.hidden = !open;
-  $('#shotBtn')?.classList.toggle('on', open);
+  $('#abShots')?.classList.toggle('on', open);
+  $('#shotTop')?.classList.toggle('on', open);
   if (!open) return;
-  el.classList.toggle('min', !!state.settings.shotsMin);
-  el.querySelector('.sh-min').textContent = state.settings.shotsMin ? '⌃' : '⌄';
-  el.querySelector('.sh-min').title = state.settings.shotsMin ? t('Büyüt') : t('Küçült');
+  placeShots();
   el.querySelector('.sh-count').textContent = shotItems.length || '';
   const list = el.querySelector('.sh-list');
   if (!shotItems.length) {
@@ -2855,8 +2867,10 @@ function renderShots() {
 }
 window.desk.shots?.onNew((it) => {
   shotItems = [it, ...shotItems.filter((x) => x.path !== it.path)];
-  state.settings.shotsOpen = true; state.settings.shotsMin = false; save();
   renderShots();
+  toast(t('Ekran görüntüsü kaydedildi ve panoya kopyalandı'));
+  const b = $('#abShots');
+  if (b) { b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
 });
 window.desk.shots?.onError((m) => toast(t('Ekran görüntüsü alınamadı: {err}', { err: m })));
 
@@ -3266,7 +3280,12 @@ function renderAppbar() {
   });
   const add = h('button', { class: 'ab-item ab-add', title: t('Alt çubuğa ekle') }, h('span', { class: 'ab-ic' }, h('span', { class: 'ab-emo', textContent: '＋' })), h('span', { class: 'ab-label', textContent: t('Ekle') }));
   add.onclick = appbarPicker;
-  track.replaceChildren(...items, add);
+  // Ekran görüntüleri: her zaman en sağda, "Ekle"nin yanında (kullanıcının eklediği öğelerden değil).
+  const shot = h('button', { id: 'abShots', class: 'ab-item ab-shot', title: t('Ekran görüntüleri (Shift+PrintScreen)') },
+    h('span', { class: 'ab-ic' }, h('span', { class: 'ab-emo', textContent: '📷' })), h('span', { class: 'ab-label', textContent: t('Ekran görüntüleri') }));
+  shot.onclick = () => toggleShots();
+  shot.classList.toggle('on', shotsOpen);
+  track.replaceChildren(...items, add, shot);
   $('#appbar').classList.toggle('empty', !items.length);
   updateAppbarArrows();
 }
@@ -3701,9 +3720,9 @@ async function start(saved) {
   $('#addSpace').onclick = newSpace;
   $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
-  $('#shotBtn').onclick = () => toggleShots();
+  $('#shotTop').onclick = () => toggleShots();
   window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
-  if (state.settings.shotsOpen) window.desk.shots.list().then((l) => { shotItems = l; renderShots(); });
+  delete state.settings.shotsOpen; delete state.settings.shotsMin; // 0.4.0'daki yüzen panelin ayarları
   applyDnd();
   $('#favBtn').onclick = openFavorites;
   $('#brand').onclick = () => openSettings();

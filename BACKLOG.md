@@ -15,6 +15,22 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- YouTube videoları açılmıyor, sürekli donuyor (kullanıcı, 0.4.0'dan sonra). Neden: webview-preload.js dhYtAdblock
+  JSON.parse / Response.json / ytInitialPlayerResponse üzerinden adPlacements, adSlots, playerAds… siliyor ve
+  .ad-showing'de currentTime = duration yapıyordu; YouTube'un sunucu tarafı (akışa gömülü) reklamlarında oynatıcı reklamın
+  yerini bulamayıp takılıyor (gerçek YouTube'a buradan erişim yok, çıkarım). Kaldırıldı: veri budama ve sona atlama.
+  Kaldı: Ghostery ağ engeli (0.3.9'daki gibi), reklam sırasında sessiz + playbackRate 16 + Atla'ya bas, bitince eski hız
+  ve ses geri; CSS gizleme. Test (xvfb, sahte sayfa): reklamda muted+16x, reklam bitince 1x ve ses açık; ayar kapalıyken
+  dokunulmuyor.
+- Ekran görüntüleri yüzen paneli kaldırıldı (kullanıcı: "açık sekmeleri etkiliyor, Ekle'nin en sağında, çubukta"). Alt
+  çubukta Ekle'den sonra sabit #abShots öğesi; panel onun üstünde açılan geçici kutu (dışarı tıklayınca kapanır, açık
+  durumu kaydedilmez; settings.shotsOpen/shotsMin silindi). Yeni görüntüde panel açılmaz: toast + düğme yanıp söner.
+- Kısayol çubuğu (kullanıcı: "4 tane şeyi yan yana dizmişsiniz, alt alta olsun"; "çalışma alanı seçimini Favoriler'in
+  altına al"): #bar'da .bar-col sütunları, 21 px'lik küçük düğmeler: [Favoriler / #spaceBtn], [＋ Sekme / ＋ Çalışma
+  alanı], [📷 #shotTop / 🔔]. #spaceBtn üst satırdan çıktı (sekmelere yer). #bar 57 px, #stage top 106.
+- Link sağ tık > "Dış tarayıcıda aç" (kullanıcı: "bazı linkleri varsayılan tarayıcımda açmak istiyorum"); link yoksa
+  "Sayfayı dış tarayıcıda aç". window.desk.openExternal (main: yalnızca http/https). Test: iki seçenek de doğru adresi açtı.
+
 ## 0.4.0'da çıktı (2026-10-24)
 
 - WhatsApp'ta zıplama (kullanıcı: "yazarken mesaj geldikçe uygulama zıplıyor"). setUnread → renderTabs: .tab .badge
