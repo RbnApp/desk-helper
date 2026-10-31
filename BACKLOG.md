@@ -15,6 +15,14 @@ Sıradaki sürüm: **0.4.1** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.1'de çıkacak)
 
+- Hareketli fotoğraf (kullanıcı: "telefonla çekilen fotoğraflarda Windows gösterici sol üstte hareket düğmesi çıkarıyor,
+  bizde de olmalı"; örnek 20250830_171228.jpg, Samsung, HEVC 1440×1080 3,2 sn + AAC). src/motion.js: photo:motion IPC;
+  XMP GCamera:MotionPhoto + Container:Item video/mp4 Item:Length (sondan), eski GCamera:MicroVideoOffset, eski Samsung
+  SEF trailer (SEFH/SEFT, "MotionPhoto_Data"); başında ftyp kontrolü; os.tmpdir()/desk-helper-motion/<sha1>.mp4'e
+  çıkarılır (açılışta temizlenir). app.js buildPhoto: .ph-motion (HAREKET + 🔇/🔊, settings.motionSound), .ph-vid img ile
+  aynı transform, bir kez oynar. Test (xvfb): XMP ve SEF yolu doğru ofset, düz JPEG null; H.264 ve özgün HEVC örnek
+  oynadı, ses düğmesi, bitince fotoğrafa dönüş, hareketsiz resimde düğme gizli.
+
 - YouTube videoları açılmıyor, sürekli donuyor (kullanıcı, 0.4.0'dan sonra). Neden: webview-preload.js dhYtAdblock
   JSON.parse / Response.json / ytInitialPlayerResponse üzerinden adPlacements, adSlots, playerAds… siliyor ve
   .ad-showing'de currentTime = duration yapıyordu; YouTube'un sunucu tarafı (akışa gömülü) reklamlarında oynatıcı reklamın

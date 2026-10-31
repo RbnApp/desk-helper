@@ -5,6 +5,12 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.1 · hazırlanıyor
 
+**Yeni**
+- Fotoğraf görüntüleyicide hareketli fotoğraflar: telefonla çekilen "hareketli fotoğraf"larda (Samsung, Google Pixel ve
+  benzerleri; JPEG'in içinde kısa bir video olur) sol üstte Windows Fotoğraflar'daki gibi "HAREKET" düğmesi çıkar.
+  Basınca kısa video resmin üstünde bir kez oynar, bitince fotoğrafa döner (oynarken yeniden basınca durur). Yanındaki
+  🔇 / 🔊 sesi açar-kapatır, seçim hatırlanır. Hareketli olmayan fotoğraflarda düğme görünmez.
+
 **Değişiklikler**
 - Kısayol çubuğu sadeleşti, kısayollara daha çok yer kaldı: solda ⭐ Favoriler'in hemen altında çalışma alanı seçici
   (önceden üstte sekmelerin solundaydı, artık sekmelere de daha çok yer var); sağda "＋ Sekme" ile "＋ Çalışma alanı"

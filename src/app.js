@@ -2447,7 +2447,13 @@ function buildPhoto(p) {
     h('button', { class: 'primary', textContent: t('Resim aç…'), onclick: () => pickImage() }));
   const prevB = h('button', { class: 'ph-nav prev', textContent: '‹', title: t('Önceki') + ' (←)', onclick: () => step(-1) });
   const nextB = h('button', { class: 'ph-nav next', textContent: '›', title: t('Sonraki') + ' (→)', onclick: () => step(1) });
-  const stage = h('div', { class: 'ph-stage', tabIndex: 0 }, img, err, empty, prevB, nextB);
+  // Hareketli fotoğraf (telefonların "Motion Photo"su): JPEG'e gömülü kısa video varsa sol üstte HAREKET düğmesi; basınca
+  // video resmin tam üstünde bir kez oynar (Windows Fotoğraflar gibi). Video main'de (motion.js) dosyadan çıkarılır.
+  const vid = h('video', { class: 'ph-img ph-vid', hidden: true, playsInline: true, preload: 'metadata' });
+  const moB = h('button', { class: 'ph-mo-b', title: t('Hareketli fotoğrafı oynat') }, h('span', { class: 'ph-mo-ic' }), h('span', { textContent: t('HAREKET') }));
+  const moS = h('button', { class: 'ph-mo-s' });
+  const motion = h('div', { class: 'ph-motion', hidden: true }, moB, moS);
+  const stage = h('div', { class: 'ph-stage', tabIndex: 0 }, img, vid, err, empty, motion, prevB, nextB);
   const name = h('span', { class: 'ph-name' });
   const count = h('span', { class: 'ph-count' });
   const zoomL = h('span', { class: 'ph-zoom' });
@@ -2470,7 +2476,8 @@ function buildPhoto(p) {
   };
   const fitScale = () => { const [w, hh] = natural(); return Math.min(stage.clientWidth / w, stage.clientHeight / hh, 1); };
   function apply() {
-    img.style.transform = `translate(-50%, -50%) translate(${v.x}px, ${v.y}px) rotate(${L.rot}deg) scale(${v.s})`;
+    img.style.transform = vid.style.transform = `translate(-50%, -50%) translate(${v.x}px, ${v.y}px) rotate(${L.rot}deg) scale(${v.s})`;
+    placeMotion();
     zoomL.textContent = Math.round(v.s * 100) + '%';
     stage.classList.toggle('pannable', !fitMode);
   }
@@ -2490,12 +2497,55 @@ function buildPhoto(p) {
     count.textContent = files.length ? `${idx + 1} / ${files.length}` : '';
     setTitle(p, L.title + (f ? ' · ' + baseName(f) : ''));
   }
+  // HAREKET kutusu resmin görünen sol üst köşesinde (resim panelden taşıyorsa panelin köşesinde).
+  function placeMotion() {
+    if (motion.hidden) return;
+    const [w, hh] = natural();
+    const left = stage.clientWidth / 2 + v.x - (w * v.s) / 2, top = stage.clientHeight / 2 + v.y - (hh * v.s) / 2;
+    motion.style.left = Math.max(10, left + 14) + 'px';
+    motion.style.top = Math.max(10, top + 14) + 'px';
+  }
+  const paintSound = () => {
+    const on = !!state.settings.motionSound;
+    moS.textContent = on ? '🔊' : '🔇';
+    moS.title = on ? t('Sesi kapat') : t('Sesi aç');
+    vid.muted = !on;
+  };
+  function stopMotion() {
+    try { vid.pause(); } catch {}
+    vid.hidden = true; moB.classList.remove('on');
+  }
+  function playMotion() {
+    if (moB.classList.contains('on')) { stopMotion(); return; }
+    vid.style.width = (img.naturalWidth || 1) + 'px'; vid.style.height = (img.naturalHeight || 1) + 'px';
+    paintSound();
+    try { vid.currentTime = 0; } catch {}
+    vid.hidden = false; moB.classList.add('on');
+    vid.play().catch(() => {});
+  }
+  moB.onclick = playMotion;
+  moS.onclick = () => { state.settings.motionSound = !state.settings.motionSound; save(); paintSound(); };
+  vid.addEventListener('ended', stopMotion);
+  vid.addEventListener('error', () => {
+    if (!vid.getAttribute('src')) return;
+    if (moB.classList.contains('on')) toast(t('Bu hareketli fotoğrafın videosu oynatılamadı. Windows Fotoğraflar ile açabilirsin.'));
+    stopMotion();
+  });
+  async function loadMotion(f) {
+    stopMotion(); motion.hidden = true; vid.removeAttribute('src');
+    if (!f || !/\.jpe?g$/i.test(f)) return;
+    const mp4 = await window.desk.photoMotion?.(f).catch(() => null);
+    if (!mp4 || L.file !== f) return;
+    vid.src = fileUrl(mp4);
+    motion.hidden = false; paintSound(); placeMotion();
+  }
   function show(f, keepRot) {
     if (!keepRot && f !== L.file) L.rot = 0;
     L.file = f; save();
     idx = files.indexOf(f);
     paint();
-    if (!f) { img.removeAttribute('src'); return; }
+    if (!f) { img.removeAttribute('src'); loadMotion(null); return; }
+    if (img.getAttribute('src') !== fileUrl(f)) loadMotion(f);
     img.src = fileUrl(f);
   }
   img.addEventListener('load', () => { err.hidden = true; img.hidden = false; fit(); });

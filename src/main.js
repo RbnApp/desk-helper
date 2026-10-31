@@ -3,6 +3,7 @@ const path = require('path');
 const native = require('./native');
 const adblock = require('./adblock');
 const shots = require('./shots');
+require('./motion'); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
 const os = require('os');
 
