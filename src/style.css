@@ -619,6 +619,7 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .sh-dock { display: flex; align-items: center; gap: 2px; height: 36px; padding: 0 4px 0 4px; background: var(--panel); border: 1px solid var(--line);
   border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 .sh-dock .sh-count { color: var(--muted); font-weight: 400; }
+.sh-dock[hidden] { display: none; }
 .sh-dock-t { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 7px; background: none; color: var(--text); font-size: 12.5px; white-space: nowrap; }
 .sh-dock-t:hover { background: var(--head); }
 .sh-dock .sh-b { flex: none; }

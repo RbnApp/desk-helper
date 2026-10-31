@@ -2964,7 +2964,7 @@ function leafIcon(l) {
 // Shift+PrintScreen ya da "Yakala" ile alınan görüntüler Resimler\Screenshots\Desk Helper'a kaydedilir ve burada
 // listelenir. Görüntü sürüklenip başka uygulamaya bırakılabilir (dosyanın kendisi gider); üstüne gelince 📋 panoya
 // kopyala, 📂 klasörde göster, 🗑 sil (Geri Dönüşüm Kutusu'na). Çift tık Windows'un resim görüntüleyicisinde açar.
-let shotItems = [], shotHotkey = true, shotsOpen = false;
+let shotItems = [], shotHotkey = true, shotsOpen = false, shotsShown = false; // shotsShown: şerit görünür mü
 // Kısa bilgi notu (pencerenin altında, birkaç saniye).
 function toast(msg) {
   let el = $('#toast');
@@ -3002,13 +3002,14 @@ function shotsDock() {
     h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (Shift+PrintScreen)', onclick: () => takeShot() }),
     h('button', { class: 'sh-b', textContent: '📂', title: t('Klasörü aç'), onclick: () => window.desk.shots.reveal() }),
     chev,
-    h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => toggleShots(false) }));
+    h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => showShots(false) }));
   chev.onclick = () => toggleShots();
   $('#appbar .ab-side.right').append(d);
   return d;
 }
 function paintShotsDock() {
   const d = shotsDock();
+  d.hidden = !shotsShown;
   d.classList.toggle('on', shotsOpen);
   d.querySelector('.sh-count').textContent = shotItems.length ? `(${shotItems.length})` : '';
 }
@@ -3020,8 +3021,14 @@ function placeShots() {
   el.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
   el.style.width = Math.max(300, r.width) + 'px';
 }
+// Şerit yalnızca görüntü alınınca ya da üstteki 📷 ile çıkar (liste açık), ✕ ile tamamen kapanır. Yeri hep aynı:
+// alt çubuğun sağ köşesi. Ok yalnızca listeyi açıp kapatır, şerit yerinde kalır.
+function showShots(on = !shotsShown) {
+  shotsShown = on;
+  toggleShots(on);
+}
 function toggleShots(on = !shotsOpen) {
-  shotsOpen = on;
+  shotsOpen = on && shotsShown;
   renderShots();
   if (on) window.desk.shots.list().then((l) => { shotItems = l; renderShots(); });
 }
@@ -3035,7 +3042,7 @@ function renderShots() {
   const open = shotsOpen;
   el.hidden = !open;
   paintShotsDock();
-  $('#shotTop')?.classList.toggle('on', open);
+  $('#shotTop')?.classList.toggle('on', shotsShown);
   if (!open) return;
   placeShots();
   el.querySelector('.sh-count').textContent = shotItems.length || '';
@@ -3064,7 +3071,7 @@ function renderShots() {
 window.desk.shots?.onNew((it) => {
   shotItems = [it, ...shotItems.filter((x) => x.path !== it.path)];
   // 0.4.0'daki gibi: yeni görüntü alınınca liste sağ altta, şeridin üstünde kendiliğinden açılır.
-  toggleShots(true);
+  showShots(true);
   toast(t('Ekran görüntüsü kaydedildi ve panoya kopyalandı'));
   const b = $('#abShots');
   if (b) { b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
@@ -3935,7 +3942,7 @@ async function start(saved) {
   $('#addTab').onclick = newWs;
   $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
-  $('#shotTop').onclick = () => toggleShots();
+  $('#shotTop').onclick = () => showShots();
   window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
   window.desk.shots.count?.().then((n) => { if (!shotItems.length) { const c = shotsDock().querySelector('.sh-count'); c.textContent = n ? `(${n})` : ''; } });
   delete state.settings.shotsOpen; delete state.settings.shotsMin; // 0.4.0'daki yüzen panelin ayarları

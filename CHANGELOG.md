@@ -16,7 +16,8 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 **Düzeltilen**
 - Ekran görüntüsü alınınca liste yine 0.4.0'daki gibi sağ altta kendiliğinden açılıyor (0.4.1'de elle açmak
-  gerekiyordu).
+  gerekiyordu). Ekran görüntüleri şeridi artık hep görünmüyor: görüntü alınınca ya da üstteki 📷 ile alt çubuğun sağ
+  köşesinde çıkar, ✕ ile tamamen kapanır. Ok yalnızca listeyi açıp kapatır, şerit yerinde kalır.
 - YouTube videolarının açılmayıp donması (0.4.1'de de sürüyordu). Reklam engelleyicinin kural listesi YouTube için 30
   kadar küçük betik getiriyor (video bilgisinden reklam alanlarını silen, YouTube'un yanıtlarını değiştiren betikler).
   Bunlar sayfa açıldıktan sonra geç ekleniyordu ve oynatıcı yarı değiştirilmiş bilgiyle kalıp donuyordu. Artık bu

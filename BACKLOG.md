@@ -15,6 +15,11 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.3'te çıkacak)
 
+- Şerit sabit duruyordu, ✕ kapatmıyordu (kullanıcı: "sabit olsun demedim, burda çıksın dedim, yerini değiştirmeden").
+  shotsShown: şerit yalnızca yeni görüntüde (showShots(true)) ya da #shotTop ile görünür; ✕ = showShots(false) (şerit +
+  liste gizli). Ok = toggleShots (liste), dışarı tıklama yalnızca listeyi kapatır. Test: başlangıçta gizli, görüntü
+  alınınca şerit+liste, ok iki durumda 1329,850, ✕ sonrası gizli, 📷 aç/kapa.
+
 - Üst çubuk sağ düzeni (kullanıcı: "üstte sadece sekme ekle, alt satırda solda ss, sağda bildirim; çalışma alanı
   butonunu sil"). #barRight 2 sütunlu grid: #addTab iki sütunu kaplar; #shotTop | #bell. #addSpace silindi
   (newSpace #spaceBtn menüsünde "Yeni çalışma alanı…").
