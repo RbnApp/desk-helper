@@ -364,12 +364,12 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 #bar .bar-col { display: flex; flex-direction: column; gap: 2px; flex: none; align-self: center; }
 #bar .bar-col > .sc { padding: 1px 8px; height: 21px; box-sizing: border-box; font-size: 12px; gap: 5px; }
 #bar .bar-col > .sc .emo { font-size: 12.5px; }
-#barRight { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 4px; align-items: center; flex: none; margin-left: 8px; align-self: center; }
+#barRight { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px 4px; align-items: center; flex: none; margin-left: 8px; align-self: center; }
 #barRight > .sc { padding: 1px 8px; height: 21px; box-sizing: border-box; font-size: 12px; gap: 5px; margin: 0; justify-content: center; }
 #barRight > #addTab { grid-column: 1 / -1; }
-#bar #bell, #bar #shotTop { justify-content: center; margin: 0; padding: 1px 8px; }
+#bar #bell, #bar #shotTop, #bar #sysTop { justify-content: center; margin: 0; padding: 1px 8px; }
 #bar #bell .bell-ic { font-size: 12.5px; }
-#shotTop.on { background: var(--accent-soft); }
+#shotTop.on, #sysTop.on { background: var(--accent-soft); }
 #barRight .sc.add { white-space: nowrap; }
 /* Favoriler'in altında etkin çalışma alanı seçici */
 #spaceBtn { max-width: 170px; }

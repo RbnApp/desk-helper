@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Desk Helper · Sistem</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="widget.css">
+</head>
+<body class="wd">
+  <div id="card">
+    <header id="head">
+      <div class="clock"><span id="hm">--:--</span><span id="ss"></span></div>
+      <div class="host"><b id="host"></b><small id="up"></small></div>
+      <div class="hbtns">
+        <button id="gear" title="Ayarlar">⚙</button>
+        <button id="close" title="Kapat">✕</button>
+      </div>
+      <div id="date"></div>
+      <div id="greet"></div>
+    </header>
+    <div id="secs"></div>
+  </div>
+  <script src="i18n.js"></script>
+  <script src="menu.js"></script>
+  <script src="widget-sys.js"></script>
+</body>
+</html>

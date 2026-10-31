@@ -67,6 +67,9 @@ contextBridge.exposeInMainWorld('desk', {
   readText: () => ipcRenderer.invoke('clip:read'),
   pageSource: (partition, url) => ipcRenderer.invoke('br:source', partition, url),
   onViewSource: (cb) => ipcRenderer.on('web:viewsource', (_e, id) => cb(id)),
+  widgetToggle: (kind) => ipcRenderer.send('widget:toggle', kind),
+  widgetState: () => ipcRenderer.invoke('widget:state'),
+  onWidgetState: (cb) => ipcRenderer.on('widget:state', (_e, s) => cb(s)),
   onZoom: (cb) => ipcRenderer.on('web:zoom', (_e, id, dir) => cb(id, dir)),
   hist: {
     add: (pr, url, title) => ipcRenderer.invoke('hist:add', pr, url, title),

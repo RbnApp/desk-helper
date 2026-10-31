@@ -15,12 +15,18 @@ Sıradaki sürüm: **0.4.3** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 - Masaüstü bileşenleri (2026-10-31, kullanıcı onayladı): (1) Sistem paneli: masaüstünde ayrı, çerçevesiz pencere;
   saat/tarih, hava (Open-Meteo), telemetri, müzik (2. adım), yoğun işlemler, donanım; fiyatlar YOK. Konum sağ/sol/üst/
   alt kenar ya da serbest, monitör seçimi, hatırlanır; davranış: yer ayırsın (AppBar) / her zaman üstte / arkada
-  (varsayılan için kullanıcı kararı bekleniyor). 📊 ve tepsi menüsünden aç/kapa. Veri katmanı src/sysinfo.js yazıldı
-  (henüz main.js'e bağlı değil, test edilmedi). (2) Ardından aynı altyapıyla klasör kutuları (kullanıcı "Desk
+  (varsayılan: yer ayırsın). 📊 ile aç/kapa (tepsi simgesi yok). Bitti, "Kodda hazır"da. (2) Ardından aynı altyapıyla klasör kutuları (kullanıcı "Desk
   Helper'a ekle" dedi): her kutu gerçek bir klasöre bağlı, içindeki kısayollar gerçek simgeleriyle, tıkla aç,
   sürükle-bırak ekle, klasör izlenir; kutu adı/emoji/renk/boyut/konum ayarlanır.
 
 ## Kodda hazır (0.4.3'te çıkacak)
+
+- Sistem paneli (masaüstü bileşeni, kullanıcı "Desk Helper içinde değil masaüstünde" dedi; varsayılan "yer ayırsın").
+  src/widgets.js (pencere, konum, AppBar SHAppBarMessage koffi, HWND_BOTTOM, ABN_FULLSCREENAPP, userData/widgets.json),
+  src/sysinfo.js (os + sürekli PowerShell -EncodedCommand WMI Win32_PerfFormattedData_*, nvidia-smi, statik donanım
+  bir kez, Open-Meteo 15 dk önbellek; DH_WEATHER_TEST test sunucusu), widget-sys.html/js, widget.css (PopMenu ⚙).
+  📊 #sysTop üst çubukta 📷 ile 🔔 arasında. Linux xvfb'de test edildi (sağ/alt kenar, serbest, hatırlama, menü);
+  Windows'a özgü kısımlar (AppBar, WMI sayaçları, nvidia-smi) Windows'ta doğrulanmalı. Müzik bölümü sonraya.
 
 - Tarayıcı yakınlaştırma (kullanıcı: "Ctrl+tekerlek, adres çubuğunda yüzdeyi gösteren simge, Chrome'daki gibi").
   main: webview before-input-event Ctrl =/+/−/0 ve 'zoom-changed' (Ctrl+tekerlek; bir olay için 2 kez geliyor, 40 ms

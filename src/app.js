@@ -3973,6 +3973,10 @@ async function start(saved) {
   $('#spaceBtn').onclick = openSpaces;
   $('#bell').onclick = openBell;
   $('#shotTop').onclick = () => showShots();
+  // 📊: masaüstündeki Sistem paneli (main: widgets.js) aç/kapa; düğme açıkken vurgulu.
+  $('#sysTop').onclick = () => window.desk.widgetToggle?.('sys');
+  const paintSys = (st) => $('#sysTop').classList.toggle('on', !!st?.sys);
+  window.desk.widgetState?.().then(paintSys); window.desk.onWidgetState?.(paintSys);
   window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
   window.desk.shots.count?.().then((n) => { if (!shotItems.length) { const c = shotsDock().querySelector('.sh-count'); c.textContent = n ? `(${n})` : ''; } });
   delete state.settings.shotsOpen; delete state.settings.shotsMin; // 0.4.0'daki yüzen panelin ayarları

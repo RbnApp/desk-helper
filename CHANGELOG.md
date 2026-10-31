@@ -6,6 +6,16 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 ## 0.4.3 · hazırlanıyor
 
 **Yeni**
+- Masaüstünde Sistem paneli (üst çubuktaki 📊 ile açılıp kapanır): Desk Helper'ın dışında, masaüstünde ayrı duran
+  çerçevesiz panel. Saat ve tarih, bilgisayarın açık kalma süresi, hava durumu (şehir seçilir; Open-Meteo, hesap
+  gerekmez), telemetri (işlemci, RAM, ekran kartı ve video belleği, NVIDIA kartlarda sıcaklık / güç / fan, ağ, disk
+  okuma-yazma, diskler), en yoğun işlemler (RAM'e ya da işlemciye göre), sistem ve donanım bilgisi (kasa, fan gibi
+  algılanamayan parçalar elle eklenebilir). Her bölüm ^ ile katlanır, ⚙ menüsünden gizlenir.
+  Konum ⚙ menüsünden: sağ, sol, üst ya da alt kenar (üst/altta bölümler yan yana dizilir) veya serbest (başlıktan
+  sürüklenir); birden çok ekranda hangi ekranda duracağı seçilir. Diğer pencerelerle: ekrandan yer ayırsın (görev
+  çubuğu gibi; büyütülen pencereler panelin kenarında durur, tam ekran oyun/video açılınca üstte kalmaz), her zaman
+  üstte ya da pencerelerin arkasında. Desk Helper simge durumundayken de görünür; açık bırakılırsa Desk Helper
+  yeniden açılınca yine açılır. Panel kapalıyken hiçbir ölçüm yapılmaz.
 - Tarayıcıda yakınlaştırma, Chrome'daki gibi: Ctrl + fare tekerleği, Ctrl +, Ctrl − ve Ctrl 0 (sıfırla). Oran %100
   değilken adres çubuğunda 🔍 ve yüzde görünür; tıklayınca yakınlaştır / uzaklaştır / sıfırla. Oran site başına
   hatırlanır (aynı sitenin diğer sekmeleri de aynı oranla açılır).
