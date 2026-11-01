@@ -1,59 +1,6 @@
 // Web panelleri (WhatsApp, Telegram, tarayıcı…) için: sayfanın bildirimine tıklanınca Desk Helper'a haber ver,
 // Desk Helper öne gelip o panele geçsin. Sayfanın kendi tıklama davranışı (ör. sohbeti açmak) aynen çalışır.
-const { ipcRenderer, webFrame, contextBridge } = require('electron');
-
-// --- YouTube reklam engelleyici, sayfa tarafı (Ayarlar > "YouTube'da reklamları engelle"; main.js adblock.js karar verir) ---
-// uBlock Origin'in yöntemi: listedeki YouTube betikleri (video bilgisinden reklam kısmını çıkaran json-prune vb.) sayfanın
-// kendi kodundan ÖNCE, burada çalışır. 0.4.3'te bu betikler YouTube ana sayfasını açılmaz hale getirdi; bu yüzden
-// varsayılan olarak KAPALI (adblock.js, ayarlar dosyasında adblockYTScripts: true ile denemek için açılır).
-// Ağ tarafı (adblock.js, Ghostery) reklam isteklerini keser, kütüphanenin preload'u reklam alanlarını gizler.
-// Aşağıdaki dhYtAdblock: birkaç ek gizleme kuralı ve bekçi (video yine de oynamazsa engelleyiciyi o panelde kapatır).
-function dhYtAdblock(stalled) {
-  if (window.__dhYtAb) return;
-  window.__dhYtAb = true;
-  // Bekçi: izleme sayfasında video oynatılmak istendiği halde 12 saniye ilerlemezse (sürekli yükleniyor, donmuş ya da
-  // oynatıcı hata gösteriyor) engelleyici bu panelde kapatılıp sayfa yeniden yüklenir; video ne olursa olsun izlenebilsin.
-  let still = 0, lastT = -1, lastSrc = '', blank = 0;
-  // Sayfa bekçisi: YouTube sayfası (ana sayfa, arama, kanal…) 12 saniyede hiç içerik göstermezse de aynı şey yapılır;
-  // engelleyici yüzünden sayfa açılmıyorsa kullanıcı boş ekranla kalmasın. Bir kez içerik görüldükten sonra durur.
-  const OK = 'ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, ytd-reel-video-renderer,'
-    + ' ytd-feed-nudge-renderer, ytd-background-promo-renderer, ytd-item-section-renderer, ytd-playlist-video-renderer,'
-    + ' ytd-c4-tabbed-header-renderer, yt-page-header-renderer, ytd-message-renderer, #movie_player, ytm-app, ytmusic-app';
-  const pageCheck = setInterval(() => {
-    if (document.hidden) return;
-    if (/^(consent|studio|accounts|tv)\./.test(location.hostname) || document.querySelector(OK)) { clearInterval(pageCheck); return; }
-    if (++blank >= 12) { clearInterval(pageCheck); still = -1e9; stalled(); }
-  }, 1000);
-  setInterval(() => {
-    if (!/^\/(watch|shorts\/)/.test(location.pathname) || document.hidden) { still = 0; return; }
-    const pl = document.querySelector('#movie_player.html5-video-player');
-    const v = pl && pl.querySelector('video');
-    if (!pl || pl.classList.contains('ad-showing') || pl.classList.contains('ad-interrupting')) { still = 0; return; }
-    const err = pl.classList.contains('ytp-error') || !!pl.querySelector('.ytp-error:not([style*="display: none"])');
-    const wants = v && (!v.paused || pl.classList.contains('buffering-mode') || pl.classList.contains('unstarted-mode'));
-    if (v && v.src !== lastSrc) { lastSrc = v.src; still = 0; lastT = v.currentTime; return; }
-    if (err || (wants && v.currentTime === lastT && v.readyState < 3)) still++; else still = 0;
-    if (v) lastT = v.currentTime;
-    if (still >= 12) { still = -1e9; stalled(); }
-  }, 1000);
-  const css = 'ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, ytd-promoted-sparkles-web-renderer, ytd-promoted-video-renderer,'
-    + ' ytd-display-ad-renderer, ytd-banner-promo-renderer, ytd-statement-banner-renderer, ytd-player-legacy-desktop-watch-ads-renderer,'
-    + ' #masthead-ad, #player-ads, .ytp-ad-overlay-container, .ytp-featured-product, ytd-merch-shelf-renderer,'
-    + ' ytd-rich-item-renderer:has(ytd-ad-slot-renderer), ytd-enforcement-message-view-model, tp-yt-paper-dialog:has(ytd-enforcement-message-view-model)'
-    + ' { display: none !important; }';
-  const addCss = () => { if (document.getElementById('dh-yt-ab')) return; const st = document.createElement('style'); st.id = 'dh-yt-ab'; st.textContent = css; (document.head || document.documentElement).append(st); };
-  if (document.documentElement) addCss(); else document.addEventListener('DOMContentLoaded', addCss);
-  document.addEventListener('DOMContentLoaded', addCss);
-}
-try {
-  if (ipcRenderer.sendSync('adblock:yt-page', location.href)) {
-    // webFrame.executeJavaScript ana dünyada hemen çalışır ve sayfanın CSP / Trusted Types kısıtlarına takılmaz.
-    for (const code of ipcRenderer.sendSync('adblock:yt-scriptlets', location.href) || []) {
-      try { webFrame.executeJavaScript(code).catch(() => {}); } catch {}
-    }
-    contextBridge.executeInMainWorld({ func: dhYtAdblock, args: [() => ipcRenderer.send('adblock:yt-stalled')] });
-  }
-} catch {}
+const { ipcRenderer, webFrame } = require('electron');
 
 // --- Instagram Reels: tekerlekle bir sonraki / önceki reel (YouTube Shorts gibi) ---
 // Instagram'ın masaüstü sayfasında Reels akışı normal sayfa gibi kayıyor; küçük bir tekerlek hareketi reelin bir kısmını

@@ -120,7 +120,7 @@ Yayın: her sürümün `DeskHelper-Setup-<sürüm>.exe`, `.blockmap` ve `latest.
 uygulama güncellemeyi buradan bulur (package.json > build.publish).
 
 Klasör yapısı (`src\`, dosyanın çalıştığı sürece göre):
-- `src\main\` — ana süreç: `main.js` (pencere, dosya sistemi, ayarlar), `native.js` (gerçek program pencereleri, Win32), `widgets.js` + `boxes.js` (masaüstü bileşenleri), `sysinfo.js`, `shots.js`, `adblock.js`, `passwords.js`, `motion.js`
+- `src\main\` — ana süreç: `main.js` (pencere, dosya sistemi, ayarlar), `native.js` (gerçek program pencereleri, Win32), `widgets.js` + `boxes.js` (masaüstü bileşenleri), `sysinfo.js`, `shots.js`, `passwords.js`, `motion.js`
 - `src\preload\` — köprüler: `preload.js`, `webview-preload.js`, `sw-preload.js`, `shot-preload.js`, `widget-preload.js`
 - `src\renderer\` — arayüz: `index.html`, `app\` (app.js'in parçaları: `cekirdek.js` → `baslat.js`, index.html'deki sırayla yüklenir), `annotate.js`, `yt-player.html`, `shot.html`, `logo.png`, `vendor\`
 - `src\widgets\` — bileşen pencereleri: `widget-sys.*`, `widget-box.*`, `widget.css`, `widget-theme.js`

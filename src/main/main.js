@@ -1,7 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net, webContents, protocol } = require('electron');
 const path = require('path');
 const native = require('./native');
-const adblock = require('./adblock');
 const shots = require('./shots');
 const motion = require('./motion');
 const widgets = require('./widgets');
@@ -41,7 +40,6 @@ function dock(where) {
 const themeOf = () => ({ theme: settings.theme === 'light' ? 'light' : 'dark', accent: settings.accent });
 function applySettings(s) {
   settings = s || {};
-  adblock.setEnabled(settings.adblockYT !== false, { scripts: settings.adblockYTScripts === true });
   widgets.setLang(settings.lang);
   const th = themeOf();
   widgets.setTheme(th); boxes.setTheme(th);
@@ -72,7 +70,6 @@ function createWindow() {
   Menu.setApplicationMenu(null);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   session.fromPartition('persist:desk').setUserAgent(CHROME_UA);
-  adblock.hook(session.fromPartition('persist:desk'));
   iptvBridge();
   ytPlayerBridge();
   shots.init(() => (win && !win.isDestroyed() ? win : null), () => settings.lang);
