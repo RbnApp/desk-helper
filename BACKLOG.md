@@ -373,3 +373,4 @@ Sıradaki sürüm: **0.4.4** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
   betikler yanlışlıkla çalışmasın diye) gider; geri kalanı shell.openPath ile varsayılan programa. TEXT_EXT (sağ tık >
   Not defterinde aç, 📄 simgesi) html/htm/xml/csv/svg'yi de kapsar. Test: html, pdf, csv varsayılan programa; txt, bat notta.
 - Klasör kutusu menüsü (DAPP-13): ⚙ menüsü küçük kutu penceresinde kesiliyordu; menü açılırken pencere geçici büyür (box:menu), kapanınca döner. Renk alt menüsü renkli nokta + ad gösterir (PopMenu item.color). Test: kutuda ⚙ > Renk; tüm satırlar görünür, dışarı tıklayınca eski boyut.
+- Klasör kutusu Simge alt menüsü (DAPP-17): her simge satırında emoji solda + Türkçe ad (Klasör, Bilgisayar, Oyun…; i18n TR/EN); MENU_H 360→520 ve alt menüler pencereye sığmazsa kaydırılır (.pm-subm overflow-y, maxHeight). Test: kutuda ⚙ > Simge; 16 satır da görünür/seçilebilir.

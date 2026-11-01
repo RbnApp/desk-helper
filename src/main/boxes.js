@@ -46,7 +46,7 @@ function toBottom(w) {
 
 const wins = new Map(); // kutu id -> pencere
 const menuSave = new Map(); // menü açıkken büyütülen kutunun özgün boyutu (kapanınca dönülür)
-const MENU_W = 340, MENU_H = 360; // ⚙ menüsü + Renk alt menüsü sığacak en küçük pencere
+const MENU_W = 340, MENU_H = 520; // ⚙ menüsü + Renk ve Simge (16 satır) alt menüsü sığacak en küçük pencere
 const watchers = new Map(); // kutu id -> fs.FSWatcher
 const boxOf = (sender) => { const w = BrowserWindow.fromWebContents(sender); for (const [id, bw] of wins) if (bw === w) return load().boxes.find((b) => b.id === id); return null; };
 

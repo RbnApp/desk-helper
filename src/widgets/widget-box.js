@@ -18,7 +18,8 @@ let box = null, list = [], lang = 'tr';
 const t = (s, vars) => { let o = (lang === 'en' && window.I18N_EN?.[s]) || s; if (vars) for (const [k, v] of Object.entries(vars)) o = o.replaceAll('{' + k + '}', v); return o; };
 // Palet (boxes.js COLORS) renk adları; paleti değiştirirken burası da güncellenir
 const COLOR_NAMES = { '#14b8a6': 'Turkuaz', '#3b82f6': 'Mavi', '#10b981': 'Zümrüt', '#f59e0b': 'Kehribar', '#ef4444': 'Kırmızı', '#ec4899': 'Pembe', '#64748b': 'Gri' };
-const EMOJIS = ['📁', '💻', '🎮', '🖼️', '🎵', '🎬', '🛠️', '📝', '🌐', '💼', '⭐', '📚', '🧪', '🗂️', '🤖', '🎨'];
+// Simge listesi: [emoji, ad]; ad menüde simgenin yanında görünür (i18n'de TR→EN)
+const EMOJIS = [['📁', 'Klasör'], ['💻', 'Bilgisayar'], ['🎮', 'Oyun'], ['🖼️', 'Resim'], ['🎵', 'Müzik'], ['🎬', 'Film'], ['🛠️', 'Araçlar'], ['📝', 'Not'], ['🌐', 'Web'], ['💼', 'İş'], ['⭐', 'Favori'], ['📚', 'Kitaplar'], ['🧪', 'Deney'], ['🗂️', 'Arşiv'], ['🤖', 'Robot'], ['🎨', 'Sanat']];
 
 function paintHead() {
   $('#bemo').textContent = box.emoji || '📁';
@@ -96,7 +97,7 @@ const set = async (patch) => { box = await window.boxApi.set(patch); paintHead()
 async function gear(e) {
   const items = [
     { icon: '✏️', label: t('Adını değiştir'), action: renameBox },
-    { icon: box.emoji || '📁', label: t('Simge'), sub: EMOJIS.map((em) => ({ label: em, checked: box.emoji === em, action: () => set({ emoji: em }) })) },
+    { icon: box.emoji || '📁', label: t('Simge'), sub: EMOJIS.map(([em, ad]) => ({ icon: em, label: t(ad), checked: (box.emoji || '📁') === em, action: () => set({ emoji: em }) })) },
     { icon: '🎨', label: t('Renk'), sub: [{ label: t('Tema rengi'), color: 'var(--accent)', checked: !box.color, action: () => set({ color: null }) }].concat((box.colors || []).map((c) => ({ label: t(COLOR_NAMES[c] || c), color: c, checked: box.color === c, action: () => set({ color: c }) }))) },
     '-',
     { icon: '📂', label: t('Klasörü aç'), action: () => window.boxApi.reveal() },

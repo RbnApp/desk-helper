@@ -80,6 +80,7 @@
     const sub = render(row.it.sub, lv.depth + 1);
     sub.owner = row;
     c.levels.push(sub);
+    sub.menu.style.maxHeight = (window.innerHeight - 4) + 'px'; // pencereye sığmayan alt menü kaydırılır
     const r = row.getBoundingClientRect(), m = sub.menu.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
     let x = r.right + 2;
     if (x + m.width > vw - 2) x = Math.max(2, r.left - m.width - 2);
