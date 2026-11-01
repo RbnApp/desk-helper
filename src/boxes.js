@@ -32,7 +32,7 @@ function save(now) {
   if (now) write(); else saveT = setTimeout(write, 300);
 }
 const uid = () => Math.random().toString(36).slice(2, 10);
-const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#64748b'];
+const COLORS = ['#14b8a6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#64748b'];
 
 let user32 = null;
 function toBottom(w) {
@@ -218,7 +218,7 @@ async function newBox(parent) {
   const boxes = load().boxes;
   const d = screen.getPrimaryDisplay().workArea;
   const n = boxes.length;
-  const box = { id: uid(), folder, title: path.basename(folder) || folder, emoji: '📁', color: COLORS[n % COLORS.length], layer: 'bottom',
+  const box = { id: uid(), folder, title: path.basename(folder) || folder, emoji: '📁', color: null, layer: 'bottom',
     bounds: { x: d.x + 60 + (n % 4) * 360, y: d.y + 60 + Math.floor(n / 4) * 260, width: 340, height: 230 } };
   boxes.push(box); save(true);
   openBox(box);
@@ -290,9 +290,10 @@ function init(getMain) {
   ipcMain.on('box:close', (e) => { const b = boxOf(e.sender); if (b) closeBox(b); setTimeout(notify, 100); });
   for (const b of load().boxes) if (b.open) openBox(b);
 }
+function setTheme(th) { for (const w of wins.values()) if (!w.isDestroyed()) w.webContents.send('widget:theme', th); }
 let getLang = () => 'tr';
 function setLangGetter(fn) { getLang = fn; }
 function closeAll() { for (const b of load().boxes) if (wins.has(b.id)) closeBox(b, false); }
 app.on('before-quit', closeAll);
 
-module.exports = { init, closeAll, setLangGetter, list };
+module.exports = { init, closeAll, setLangGetter, list, setTheme };

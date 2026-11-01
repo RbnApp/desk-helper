@@ -24,6 +24,8 @@ Sıradaki sürüm: **0.4.4** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 - Hava durumu şehir seçimi: 81 il listesi (src/tr-cities.js, koordinatlı), Türkçe harften bağımsız arama, ↑/↓+Enter; yurt dışı için Open-Meteo araması. Seçilen şehrin koordinatı cityGeo olarak saklanır.
 - YouTube: uBlock betikleri (scriptlet) varsayılan kapalı (ana sayfayı bozuyordu; ayarlar dosyasında adblockYTScripts: true ile denenebilir). Sayfa bekçisi: 12 sn içerik yoksa engelleyici o panelde kapanır. Windows'ta gerçek YouTube'da doğrulanmalı; video reklamları yeniden görünebilir.
 - Klasör kutularında gerçek uygulama simgeleri (Windows'ta PowerShell ile .lnk IconLocation / .url IconFile / hedef exe simgesi; Electron getFileIcon .lnk'leri uzantıya göre önbellekliyordu). Windows'ta doğrulanmalı.
+- Masaüstü bileşenleri (sistem paneli + klasör kutuları) uygulamanın açık/koyu temasını ve tema rengini kullanır (src/widget-theme.js; main.js applySettings -> widgets.js/boxes.js 'widget:theme' yayını, renk değişince canlı güncellenir); sabit mor/lavanta renkler kalktı, çubuklar tema rengi + mevcut durum renkleri (sarı/kırmızı).
+- Yeni klasör kutusu rengi tema rengini izler (color: null; ⚙ > Renk > Tema rengi); paletteki mor #8b5cf6 yerine #14b8a6. Kayıtlı kutu renkleri aynen kalır. Tema rengi seçeneklerindeki #7c5cff (kullanıcı seçerse) korundu. Windows'ta gerçek uygulamada doğrulanmalı.
 
 ## 0.4.3'te çıktı (2026-10-31)
 

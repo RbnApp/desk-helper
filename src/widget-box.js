@@ -22,7 +22,9 @@ function paintHead() {
   $('#bemo').textContent = box.emoji || '📁';
   $('#btitle').textContent = box.title || '';
   $('#bcount').textContent = list.length || '';
-  document.documentElement.style.setProperty('--bc', box.color || '#8b5cf6');
+  // Kutu rengi yoksa (varsayılan) tema rengini izler; kayıtlı özel renk aynen kalır
+  if (box.color) { document.body.style.setProperty('--bc', box.color); document.body.style.setProperty('--bcon', '#fff'); }
+  else { document.body.style.removeProperty('--bc'); document.body.style.removeProperty('--bcon'); }
   document.body.classList.toggle('shut', !!box.collapsed);
   document.title = 'Desk Helper · ' + (box.title || '');
 }
@@ -93,7 +95,7 @@ function gear(e) {
   const items = [
     { icon: '✏️', label: t('Adını değiştir'), action: renameBox },
     { icon: box.emoji || '📁', label: t('Simge'), sub: EMOJIS.map((em) => ({ label: em, checked: box.emoji === em, action: () => set({ emoji: em }) })) },
-    { icon: '🎨', label: t('Renk'), sub: (box.colors || []).map((c) => ({ label: '●', title: c, checked: box.color === c, action: () => set({ color: c }), color: c })) },
+    { icon: '🎨', label: t('Renk'), sub: [{ label: t('Tema rengi'), checked: !box.color, action: () => set({ color: null }) }].concat((box.colors || []).map((c) => ({ label: '●', title: c, checked: box.color === c, action: () => set({ color: c }), color: c }))) },
     '-',
     { icon: '📂', label: t('Klasörü aç'), action: () => window.boxApi.reveal() },
     { icon: '🔁', label: t('Başka klasöre bağla…'), action: chooseFolder },

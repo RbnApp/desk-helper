@@ -61,6 +61,8 @@ const CB_MSG = 0x8000 + 0x4d; // WM_APP + n: kabuğun bu panele haberleri
 let sysWin = null, appbarOn = false, fullscreenApp = false, lang = 'tr';
 function setLang(l) { if (l === lang) return; lang = l || 'tr'; sysWin?.webContents.send('widget:config', publicCfg()); }
 
+function setTheme(th) { if (sysWin && !sysWin.isDestroyed()) sysWin.webContents.send('widget:theme', th); }
+
 function displayOf(c) {
   const all = screen.getAllDisplays();
   return all.find((d) => d.id === c.display) || screen.getPrimaryDisplay();
@@ -206,4 +208,4 @@ function init(getMain) {
 function closeAll() { closeSys(false); }
 app.on('before-quit', closeAll);
 
-module.exports = { init, closeAll, openSys, closeSys, setLang };
+module.exports = { init, closeAll, openSys, closeSys, setLang, setTheme };

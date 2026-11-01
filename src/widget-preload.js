@@ -1,5 +1,10 @@
 // Masaüstü bileşenlerinin (widget-*.html) köprüsü. main: widgets.js, sysinfo.js.
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
+// Tema: Desk Helper ayarlarındaki açık/koyu ve tema rengi (main.js applySettings -> widgets.js / boxes.js yayını)
+contextBridge.exposeInMainWorld('wdTheme', {
+  get: () => ipcRenderer.invoke('widget:theme'),
+  on: (fn) => ipcRenderer.on('widget:theme', (_e, th) => fn(th)),
+});
 contextBridge.exposeInMainWorld('wd', {
   get: () => ipcRenderer.invoke('widget:get'),
   set: (patch) => ipcRenderer.invoke('widget:set', patch),

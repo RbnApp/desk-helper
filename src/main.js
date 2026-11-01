@@ -38,10 +38,13 @@ function dock(where) {
   win.setBounds({ x: Math.round(a.x + a.width * f[0]), y: a.y, width: Math.round(a.width * f[1]), height: a.height });
 }
 
+const themeOf = () => ({ theme: settings.theme === 'light' ? 'light' : 'dark', accent: settings.accent });
 function applySettings(s) {
   settings = s || {};
   adblock.setEnabled(settings.adblockYT !== false, { scripts: settings.adblockYTScripts === true });
   widgets.setLang(settings.lang);
+  const th = themeOf();
+  widgets.setTheme(th); boxes.setTheme(th);
   if (!win) return;
   win.setAlwaysOnTop(!!settings.alwaysOnTop);
   nativeTheme.themeSource = settings.theme === 'light' ? 'light' : 'dark';
@@ -306,6 +309,7 @@ ipcMain.handle('upd:download', async () => {
 });
 ipcMain.handle('upd:install', () => { setImmediate(() => getUpdater().quitAndInstall(true, true)); return true; });
 
+ipcMain.handle('widget:theme', () => themeOf());
 ipcMain.handle('settings:apply', (_e, s) => { applySettings(s); return true; });
 
 // --- Durum (sekmeler, düzen, kısayollar, favoriler, ayarlar) ---
