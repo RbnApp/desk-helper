@@ -185,12 +185,12 @@ function openBox(box) {
   const w = new BrowserWindow({
     width: 340, height: 230, show: false, frame: false, transparent: true, backgroundColor: '#00000000', resizable: true,
     minimizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true, hasShadow: false, minWidth: 180, minHeight: 46,
-    title: 'Desk Helper · ' + (box.title || ''), icon: path.join(__dirname, 'logo.png'),
-    webPreferences: { preload: path.join(__dirname, 'widget-preload.js'), contextIsolation: true, nodeIntegration: false },
+    title: 'Desk Helper · ' + (box.title || ''), icon: path.join(__dirname, '..', 'renderer', 'logo.png'),
+    webPreferences: { preload: path.join(__dirname, '..', 'preload', 'widget-preload.js'), contextIsolation: true, nodeIntegration: false },
   });
   w.setMenu(null);
   wins.set(box.id, w);
-  w.loadFile(path.join(__dirname, 'widget-box.html'));
+  w.loadFile(path.join(__dirname, '..', 'widgets', 'widget-box.html'));
   w.once('ready-to-show', () => { place(box, w); w.setAlwaysOnTop(box.layer === 'top'); w.showInactive(); if (box.layer !== 'top') toBottom(w); });
   let placing = false;
   const remember = () => {

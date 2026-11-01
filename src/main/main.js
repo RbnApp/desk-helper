@@ -7,7 +7,7 @@ const motion = require('./motion');
 const widgets = require('./widgets');
 const boxes = require('./boxes');
 // Web panellerindeki service worker bildirimleri sayfaya yönlendirilir (tıklama Desk Helper'a ulaşsın; sw-preload.js).
-app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
+app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, '..', 'preload', 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
 const os = require('os');
 
@@ -60,17 +60,17 @@ function createWindow() {
     minHeight: 360,
     backgroundColor: settings.theme === 'light' ? '#f3f4f7' : '#1e1f24',
     title: 'Desk Helper',
-    icon: path.join(__dirname, 'logo.png'),
+    icon: path.join(__dirname, '..', 'renderer', 'logo.png'),
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       webviewTag: true,
     },
   });
   Menu.setApplicationMenu(null);
-  win.loadFile(path.join(__dirname, 'index.html'));
+  win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   session.fromPartition('persist:desk').setUserAgent(CHROME_UA);
   adblock.hook(session.fromPartition('persist:desk'));
   iptvBridge();
@@ -118,7 +118,7 @@ app.on('web-contents-created', (_e, wc) => {
   if (wc.getType() === 'webview' || wc.getType() === 'window') {
     wc.setWindowOpenHandler(({ url, disposition }) => {
       if (wc.getType() === 'webview' && (disposition === 'new-window' || url === 'about:blank')) {
-        return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true, parent: win, icon: path.join(__dirname, 'logo.png') } };
+        return { action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true, parent: win, icon: path.join(__dirname, '..', 'renderer', 'logo.png') } };
       }
       if (/^https?:/.test(url)) {
         if (win) win.webContents.send('web:link', wc.id, url, 'auto'); // kendi tarayıcımızda açılır
@@ -154,7 +154,7 @@ app.on('web-contents-created', (_e, wc) => {
     win?.webContents.send('web:link', wc.id, url, 'browser');
   });
   // Tüm web panellerine bildirim tıklamasını yakalayan küçük betik
-  if (wc.getType() === 'window') wc.on('will-attach-webview', (_ev, prefs) => { prefs.preload = path.join(__dirname, 'webview-preload.js'); });
+  if (wc.getType() === 'window') wc.on('will-attach-webview', (_ev, prefs) => { prefs.preload = path.join(__dirname, '..', 'preload', 'webview-preload.js'); });
 });
 
 // Web panellerinde sağ tık: menü Desk Helper'ın kendi menü bileşeninde çizilir (src/menu.js), burada yalnızca bilgi gider.
@@ -261,8 +261,8 @@ ipcMain.handle('pw:import', async (_e, profile) => {
 });
 
 // Uygulamanın GitHub deposu tek yerden: package.json > build.publish (güncelleme kaynağı da burası).
-const REPO = (() => { try { const p = require('../package.json').build.publish[0]; return `https://github.com/${p.owner}/${p.repo}`; } catch { return ''; } })();
-ipcMain.handle('app:changelog', () => { try { return fs.readFileSync(path.join(__dirname, '..', 'CHANGELOG.md'), 'utf8'); } catch { return ''; } });
+const REPO = (() => { try { const p = require('../../package.json').build.publish[0]; return `https://github.com/${p.owner}/${p.repo}`; } catch { return ''; } })();
+ipcMain.handle('app:changelog', () => { try { return fs.readFileSync(path.join(__dirname, '..', '..', 'CHANGELOG.md'), 'utf8'); } catch { return ''; } });
 ipcMain.handle('app:info', () => ({
   name: 'Desk Helper',
   email: 'info@rbnbilisim.com.tr',
@@ -392,7 +392,7 @@ function ytPlayerBridge() {
   const ses = session.fromPartition('persist:ytplayer');
   if (ses.protocol.isProtocolHandled('dhyt')) return;
   ses.setUserAgent(CHROME_UA);
-  ses.protocol.handle('dhyt', () => new Response(fs.readFileSync(path.join(__dirname, 'yt-player.html')), { headers: { 'content-type': 'text/html; charset=utf-8' } }));
+  ses.protocol.handle('dhyt', () => new Response(fs.readFileSync(path.join(__dirname, '..', 'renderer', 'yt-player.html')), { headers: { 'content-type': 'text/html; charset=utf-8' } }));
   ses.webRequest.onBeforeSendHeaders({ urls: ['https://www.youtube.com/*', 'https://www.youtube-nocookie.com/*'] }, (d, cb) => {
     const h = d.requestHeaders;
     const ref = h.Referer || h.referer || '';

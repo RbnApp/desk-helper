@@ -79,14 +79,14 @@ function openOverlay(disp, image) {
   overlay = new BrowserWindow({
     x, y, width, height, frame: false, show: false, resizable: false, movable: false, skipTaskbar: true,
     alwaysOnTop: true, fullscreenable: false, hasShadow: false, enableLargerThanScreen: true, backgroundColor: '#000000',
-    webPreferences: { preload: path.join(__dirname, 'shot-preload.js'), contextIsolation: true, nodeIntegration: false },
+    webPreferences: { preload: path.join(__dirname, '..', 'preload', 'shot-preload.js'), contextIsolation: true, nodeIntegration: false },
   });
   overlay.setAlwaysOnTop(true, 'screen-saver');
   overlay.setBounds({ x, y, width, height });
   const ov = overlay;
   ov.__image = image;
   ov.__disp = disp;
-  ov.loadFile(path.join(__dirname, 'shot.html'));
+  ov.loadFile(path.join(__dirname, '..', 'renderer', 'shot.html'));
   ov.webContents.once('did-finish-load', () => {
     ov.webContents.send('shot:image', image.toDataURL(), { en: getLang() === 'en' });
   });

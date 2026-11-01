@@ -3,7 +3,7 @@
   "version": "0.4.3",
   "description": "WhatsApp, Telegram, not defteri, dosya gezgini ve favori programları tek pencerede toplayan masaüstü uygulaması",
   "license": "MIT",
-  "main": "src/main.js",
+  "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
     "bump": "node scripts/bump.js",

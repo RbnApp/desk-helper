@@ -148,11 +148,11 @@ function openSys(getMain) {
   sysWin = new BrowserWindow({
     width: c.width, height: 600, show: false, frame: false, transparent: true, backgroundColor: '#00000000',
     resizable: true, minimizable: false, maximizable: false, fullscreenable: false, skipTaskbar: true, hasShadow: false,
-    title: 'Desk Helper · Sistem', icon: path.join(__dirname, 'logo.png'),
-    webPreferences: { preload: path.join(__dirname, 'widget-preload.js'), contextIsolation: true, nodeIntegration: false },
+    title: 'Desk Helper · Sistem', icon: path.join(__dirname, '..', 'renderer', 'logo.png'),
+    webPreferences: { preload: path.join(__dirname, '..', 'preload', 'widget-preload.js'), contextIsolation: true, nodeIntegration: false },
   });
   sysWin.setMenu(null);
-  sysWin.loadFile(path.join(__dirname, 'widget-sys.html'));
+  sysWin.loadFile(path.join(__dirname, '..', 'widgets', 'widget-sys.html'));
   if (WIN) {
     sysWin.hookWindowMessage(CB_MSG, (wParam, lParam) => {
       const code = wParam.length >= 8 ? Number(wParam.readBigUInt64LE(0)) : wParam.readUInt32LE(0);

@@ -165,7 +165,7 @@ function readStatic() {
 const GEO = process.env.DH_WEATHER_TEST ? process.env.DH_WEATHER_TEST + '/geo' : 'https://geocoding-api.open-meteo.com/v1/search';
 const FC = process.env.DH_WEATHER_TEST ? process.env.DH_WEATHER_TEST + '/fc' : 'https://api.open-meteo.com/v1/forecast';
 const wCache = new Map();
-const TR = require('./tr-cities');
+const TR = require('../shared/tr-cities');
 // Yurt dışı şehir araması (Türkiye'nin 81 ili uygulamada hazır; listede yoksa Open-Meteo'ya sorulur).
 async function geoSearch(q, lang) {
   if (String(q || '').trim().length < 2) return [];
