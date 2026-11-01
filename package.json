@@ -7,7 +7,8 @@
   "scripts": {
     "start": "electron .",
     "bump": "node scripts/bump.js",
-    "dist": "electron-builder --win nsis --publish never"
+    "dist": "electron-builder --win nsis --publish never",
+    "shortcuts:doc": "node scripts/shortcuts-doc.js"
   },
   "build": {
     "appId": "com.rbnbilisim.deskhelper",

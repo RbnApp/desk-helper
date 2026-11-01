@@ -63,7 +63,7 @@ function leafIcon(l) {
 
 // --- Ekran görüntüleri: alt çubuğun en sağındaki 📷 düğmesi, tıklayınca üstünde açılan panel (main: shots.js) ---
 // Yeni görüntü alınınca liste kendiliğinden açılır; dışarı tıklayınca kapanır, panellerin üstünü kapatmasın diye.
-// Shift+PrintScreen ya da "Yakala" ile alınan görüntüler Resimler\Screenshots\Desk Helper'a kaydedilir ve burada
+// Tablodaki ekran görüntüsü kısayolu (bkz. shared/shortcuts.js) ya da "Yakala" ile alınan görüntüler Resimler\Screenshots\Desk Helper'a kaydedilir ve burada
 // listelenir. Görüntü sürüklenip başka uygulamaya bırakılabilir (dosyanın kendisi gider); üstüne gelince 📋 panoya
 // kopyala, 📂 klasörde göster, 🗑 sil (Geri Dönüşüm Kutusu'na). Çift tık Windows'un resim görüntüleyicisinde açar.
 let shotItems = [], shotHotkey = true, shotsOpen = false, shotsShown = false; // shotsShown: şerit görünür mü
@@ -81,7 +81,7 @@ function shotsPanel() {
   el = h('div', { id: 'shots', hidden: true },
     h('div', { class: 'sh-head' },
       h('span', { class: 'sh-title' }, h('span', { textContent: '📷' }), h('b', { textContent: t('Ekran görüntüleri') }), h('span', { class: 'sh-count' })),
-      h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (Shift+PrintScreen)', onclick: () => takeShot() }),
+      h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (' + Shortcuts.key('shot.capture') + ')', onclick: () => takeShot() }),
       h('button', { class: 'sh-b', textContent: '📂', title: t('Klasörü aç'), onclick: () => window.desk.shots.reveal() }),
       h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => toggleShots(false) })),
     h('div', { class: 'sh-list' }));
@@ -99,9 +99,9 @@ function shotsDock() {
   if (d) return d;
   const chev = h('button', { class: 'sh-b sh-chev', title: t('Göster / gizle') }, h('i'));
   d = h('div', { id: 'abShots', class: 'sh-dock' },
-    h('button', { class: 'sh-dock-t', title: t('Ekran görüntüleri (Shift+PrintScreen)'), onclick: () => toggleShots() },
+    h('button', { class: 'sh-dock-t', title: t('Ekran görüntüleri') + ' (' + Shortcuts.key('shot.capture') + ')', onclick: () => toggleShots() },
       h('span', { textContent: '📷' }), h('b', { textContent: t('Ekran görüntüleri') }), h('span', { class: 'sh-count' })),
-    h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (Shift+PrintScreen)', onclick: () => takeShot() }),
+    h('button', { class: 'sh-b', textContent: '＋', title: t('Ekran görüntüsü al') + ' (' + Shortcuts.key('shot.capture') + ')', onclick: () => takeShot() }),
     h('button', { class: 'sh-b', textContent: '📂', title: t('Klasörü aç'), onclick: () => window.desk.shots.reveal() }),
     chev,
     h('button', { class: 'sh-b', textContent: '✕', title: t('Kapat'), onclick: () => showShots(false) }));
@@ -152,7 +152,7 @@ function renderShots() {
   if (!shotItems.length) {
     list.replaceChildren(h('div', { class: 'sh-empty' },
       h('div', { textContent: t('Henüz ekran görüntüsü yok.') }),
-      h('div', { textContent: shotHotkey ? t('Shift+PrintScreen ile ya da ＋ ile al.') : t('Shift+PrintScreen başka bir program tarafından kullanılıyor; ＋ ile al.') })));
+      h('div', { textContent: shotHotkey ? t('{key} ile ya da ＋ ile al.', { key: Shortcuts.key('shot.capture') }) : t('{key} başka bir program tarafından kullanılıyor; ＋ ile al.', { key: Shortcuts.key('shot.capture') }) })));
     return;
   }
   list.replaceChildren(...shotItems.map((it) => {

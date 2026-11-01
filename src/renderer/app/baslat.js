@@ -16,6 +16,24 @@ function translateStatic() {
   for (const el of document.querySelectorAll('[data-title]')) el.title = t(el.dataset.title);
 }
 
+// Tuş yazısı taşıyan başlıklar tablodan (src/shared/shortcuts.js) üretilir; elle yazılmaz.
+function shortcutTitles() {
+  const withKey = (el, text, id) => { if (el) el.title = t(text) + ' (' + Shortcuts.key(id) + ')'; };
+  withKey($('#favBtn'), 'Favoriler', 'favorites.open');
+  withKey($('#addTab'), 'Yeni sekme', 'tab.new');
+  withKey($('#shotTop'), 'Ekran görüntüleri', 'shot.capture');
+}
+
+// Ekran görüntüsü kısayolu alınamadıysa sessiz kalma: söyle, düğmeden alınabildiğini hatırlat.
+// Kısayol sonradan boşa düşerse (main yeniden dener) durum 'shot:info' ile güncellenir.
+function applyShotStatus(i) {
+  shotHotkey = !!i?.hotkeyOk;
+  renderShots();
+  if (!shotHotkey) {
+    toast(t('Kısayol alınamadı: {key}', { key: Shortcuts.key('shot.capture') }) + ' · ' + t('Başka bir program bu tuşu kullanıyor olabilir.'));
+  }
+}
+
 async function init() {
   window.desk.info().then((i) => { $('#brandVer').textContent = 'v' + i.version; });
   const saved = await window.desk.loadState();
@@ -57,6 +75,7 @@ async function start(saved) {
   if (!state.settings.sleepOff041) { if (state.settings.sleepMin === '15') state.settings.sleepMin = '0'; state.settings.sleepOff041 = true; }
   applySettings();
   translateStatic();
+  shortcutTitles();
   renderShortcuts();
   initAppbar();
   refreshIcons();
@@ -91,23 +110,29 @@ async function start(saved) {
       { icon: '＋', label: t('Yeni klasör kutusu…'), title: t('Masaüstünde bir klasörün içindekileri simgeleriyle gösteren kutu'), action: () => window.desk.boxes.add() },
     ]);
   };
-  window.desk.shots.info().then((i) => { shotHotkey = i.hotkeyOk; renderShots(); });
+  window.desk.shots.info().then((i) => { applyShotStatus(i); });
+  window.desk.shortcuts?.onStatus((st) => { if (st?.shot) applyShotStatus(st.shot); });
   window.desk.shots.count?.().then((n) => { if (!shotItems.length) { const c = shotsDock().querySelector('.sh-count'); c.textContent = n ? `(${n})` : ''; } });
   delete state.settings.shotsOpen; delete state.settings.shotsMin; // 0.4.0'daki yüzen panelin ayarları
   applyDnd();
   $('#favBtn').onclick = openFavorites;
   $('#brand').onclick = () => openSettings();
   document.querySelectorAll('#dock button').forEach((b) => b.onclick = () => window.desk.dock(b.dataset.dock));
+  // Uygulama kısayolları tek tablodan eşleşir (src/shared/shortcuts.js).
   window.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key.toLowerCase() === 't') { e.preventDefault(); newWs(); }
-    if (e.ctrlKey && e.key === ' ') { e.preventDefault(); openFavorites(); }
-    if (e.ctrlKey && e.altKey && /^Digit[1-9]$/.test(e.code)) { const sp = state.spaces[+e.code.slice(5) - 1]; if (sp) { e.preventDefault(); switchSpace(sp.id); } }
-    if (e.ctrlKey && e.key === 'Tab') {
+    const id = Shortcuts.match(e, 'app');
+    if (!id) return;
+    if (id === 'tab.new') { e.preventDefault(); newWs(); return; }
+    if (id === 'favorites.open') { e.preventDefault(); openFavorites(); return; }
+    if (id === 'ws.next' || id === 'ws.prev') {
       e.preventDefault();
       const i = state.workspaces.findIndex((w) => w.id === state.activeWs);
       const n = state.workspaces.length;
-      switchWs(state.workspaces[(i + (e.shiftKey ? n - 1 : 1)) % n].id);
+      switchWs(state.workspaces[(i + (id === 'ws.prev' ? n - 1 : 1)) % n].id);
+      return;
     }
+    const ws = /^ws\.(\d)$/.exec(id);
+    if (ws) { const sp = state.spaces[+ws[1] - 1]; if (sp) { e.preventDefault(); switchSpace(sp.id); } }
   });
   save();
   if (state.settings.autoUpdate) setTimeout(() => checkUpdate(false), 4000);

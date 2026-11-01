@@ -80,7 +80,7 @@ async function buildNotes(p) {
     clearTimeout(timer); timer = setTimeout(flush, 600);
   });
   text.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 's') { e.preventDefault(); flush(); }
+    if (Shortcuts.is(e, 'notes.save')) { e.preventDefault(); flush(); }
     if (e.key === 'Tab') { e.preventDefault(); text.setRangeText('\t', text.selectionStart, text.selectionEnd, 'end'); text.dispatchEvent(new Event('input')); }
   });
   text.addEventListener('blur', flush);
@@ -101,7 +101,7 @@ async function buildFiles(p) {
   p.body.append(
     h('div', { class: 'files-bar' },
       h('button', { textContent: '⬆', title: t('Üst klasör'), onclick: () => parent && go(parent) }),
-      h('button', { textContent: '⟳', title: t('Yenile') + ' (F5)', onclick: () => refresh() }),
+      h('button', { textContent: '⟳', title: t('Yenile') + ' (' + Shortcuts.key('files.refresh') + ')', onclick: () => refresh() }),
       pathIn, placeSel,
       h('button', { textContent: '↗', title: t('Windows Gezgini\'nde aç'), onclick: () => window.desk.open(p.leaf.dir) })),
     list);
@@ -218,18 +218,18 @@ async function buildFiles(p) {
       en.isDir ? { label: t('Yapıştır'), key: 'Ctrl+V', disabled: !fileClip.items.length, action: () => run(async () => { await window.desk.paste(fileClip.items, en.path, fileClip.cut); if (fileClip.cut) fileClip.items = []; refresh(); }) } : null,
       { label: t('Yolu kopyala'), action: () => window.desk.copyText(en.path) },
       '-',
-      { label: t('Sil'), key: 'Del', action: () => remove(en) },
-      { label: t('Yeniden adlandır'), key: 'F2', action: () => startRename(row) },
+      { label: t('Sil'), key: Shortcuts.key('files.delete'), action: () => remove(en) },
+      { label: t('Yeniden adlandır'), key: Shortcuts.key('files.rename'), action: () => startRename(row) },
     ]);
   }
 
   function blankMenu(e) {
     contextMenu(e, p.body, [
-      { label: t('Yenile'), key: 'F5', action: () => refresh() },
+      { label: t('Yenile'), key: Shortcuts.key('files.refresh'), action: () => refresh() },
       '-',
       { label: t('Yapıştır'), key: 'Ctrl+V', disabled: !fileClip.items.length, action: doPaste },
       '-',
-      { label: t('Yeni klasör'), key: 'Ctrl+Shift+N', action: newFolder },
+      { label: t('Yeni klasör'), key: Shortcuts.key('files.newFolder'), action: newFolder },
       { label: t('Yeni metin belgesi'), action: newFile },
       '-',
       { label: t('Yolu kopyala'), action: () => window.desk.copyText(p.leaf.dir) },
@@ -243,12 +243,13 @@ async function buildFiles(p) {
     if (e.target !== list) return;
     const en = sel?.en, k = e.key;
     const stop = () => { e.preventDefault(); e.stopPropagation(); };
-    if (e.ctrlKey && e.shiftKey && k.toLowerCase() === 'n') { stop(); newFolder(); }
-    else if (e.ctrlKey && k.toLowerCase() === 'v') { stop(); doPaste(); }
-    else if (k === 'Backspace') { stop(); if (parent) go(parent); }
+    const id = Shortcuts.match(e, 'panel');
+    if (id === 'files.newFolder') { stop(); newFolder(); }
+    else if (e.ctrlKey && k.toLowerCase() === 'v') { stop(); doPaste(); } // standart yapıştır: dosya panosu
+    else if (id === 'files.up') { stop(); if (parent) go(parent); }
     else if (!en) return;
-    else if (k === 'Delete') { stop(); remove(en); }
-    else if (k === 'F2') { stop(); startRename(sel); }
+    else if (id === 'files.delete') { stop(); remove(en); }
+    else if (id === 'files.rename') { stop(); startRename(sel); }
     else if (k === 'Enter') { stop(); openEntry(en); }
     else if (e.ctrlKey && k.toLowerCase() === 'c') { stop(); setClip(en, false); }
     else if (e.ctrlKey && k.toLowerCase() === 'x') { stop(); setClip(en, true); }
@@ -258,7 +259,7 @@ async function buildFiles(p) {
       if (next) { pick(next); next.scrollIntoView({ block: 'nearest' }); }
     }
   });
-  p.body.addEventListener('keydown', (e) => { if (e.key === 'F5') { e.preventDefault(); e.stopPropagation(); refresh(); } });
+  p.body.addEventListener('keydown', (e) => { if (Shortcuts.is(e, 'files.refresh')) { e.preventDefault(); e.stopPropagation(); refresh(); } });
   p.onFileClip = markCut;
   go(p.leaf.dir);
 }

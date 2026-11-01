@@ -125,6 +125,48 @@ olarak gizlenir.
 | **Yerleşim** | Sekmeler sürükle-bırak ile sıralanır. Paneli başlığından tutup başka panelin kenarına bırakınca yerleşir; ortasına bırakırsanız yer değiştirir. Aradaki çizgiyi sürükleyerek boyutlandırın, çift tık eşitler. |
 | **Ayarlar ve Hakkında** | Sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Ayarlar sekmesinde dil (Türkçe / English), tema ve tema rengi, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü, açılışta güncelleme denetimi; Hakkında'da sürüm bilgisi, iletişim, GitHub deposu ve **Yenilikler** (sürüm notları). |
 
+## ⌨️ Kısayollar
+
+Aşağıdaki tablo uygulamanın kendi kısayol tablosundan (`src/shared/shortcuts.js`) üretilir; elle düzenlenmez
+(`npm run shortcuts:doc`). Kopyala, yapıştır, kes ve geri al gibi standart düzenleme tuşları işletim sisteminin
+olduğu için listede yoktur. Ekran görüntüsü kısayolu başka bir program tarafından kullanılıyorsa Ayarlar bunu
+söyler; görüntü 📷 düğmesinden de alınabilir.
+
+<!-- KISAYOLLAR:BASLANGIC -->
+
+| Kısayol · Shortcut | Ne yapar | What it does | Nerede · Where |
+|---|---|---|---|
+| `Shift+PrintScreen` | Ekran görüntüsü al | Take screenshot | Her yerde · Global |
+| `Shift+F8` | Hava durumunu göster/gizle | Show/hide weather | Her yerde · Global |
+| `Ctrl+T` | Yeni sekme | New tab | Uygulama penceresi · App window |
+| `Ctrl+Space` | Favoriler | Favorites | Uygulama penceresi · App window |
+| `Ctrl+Tab` | Sonraki sekme | Next tab | Uygulama penceresi · App window |
+| `Ctrl+Shift+Tab` | Önceki sekme | Previous tab | Uygulama penceresi · App window |
+| `F12` | Geliştirici araçları | Developer tools | Uygulama penceresi · App window |
+| `Ctrl+Alt+1` | Çalışma alanı 1 | Workspace 1 | Uygulama penceresi · App window |
+| `Ctrl+Alt+2` | Çalışma alanı 2 | Workspace 2 | Uygulama penceresi · App window |
+| `Ctrl+Alt+3` | Çalışma alanı 3 | Workspace 3 | Uygulama penceresi · App window |
+| `Ctrl+Alt+4` | Çalışma alanı 4 | Workspace 4 | Uygulama penceresi · App window |
+| `Ctrl+Alt+5` | Çalışma alanı 5 | Workspace 5 | Uygulama penceresi · App window |
+| `Ctrl+Alt+6` | Çalışma alanı 6 | Workspace 6 | Uygulama penceresi · App window |
+| `Ctrl+Alt+7` | Çalışma alanı 7 | Workspace 7 | Uygulama penceresi · App window |
+| `Ctrl+Alt+8` | Çalışma alanı 8 | Workspace 8 | Uygulama penceresi · App window |
+| `Ctrl+Alt+9` | Çalışma alanı 9 | Workspace 9 | Uygulama penceresi · App window |
+| `Ctrl++` | Yakınlaştır | Zoom in | İlgili panel · Focused panel |
+| `Ctrl+-` | Uzaklaştır | Zoom out | İlgili panel · Focused panel |
+| `Ctrl+0` | Normal boyut | Actual size | İlgili panel · Focused panel |
+| `Ctrl+U` | Sayfa kaynağını görüntüle | View page source | İlgili panel · Focused panel |
+| `Ctrl+H` | Geçmiş | History | İlgili panel · Focused panel |
+| `Ctrl+S` | Notu kaydet | Save note | İlgili panel · Focused panel |
+| `Ctrl+Shift+N` | Yeni klasör | New folder | İlgili panel · Focused panel |
+| `F5` | Yenile | Reload | İlgili panel · Focused panel |
+| `F2` | Yeniden adlandır | Rename | İlgili panel · Focused panel |
+| `Delete` | Sil | Delete | İlgili panel · Focused panel |
+| `Backspace` | Üst klasör | Parent folder | İlgili panel · Focused panel |
+| `Ctrl+S` | İşaretlemeyi kaydet | Save annotation | İlgili panel · Focused panel |
+
+<!-- KISAYOLLAR:BITIS -->
+
 ## 🚑 Açılışta sorun olursa
 
 - Desk Helper her sürüm yükseltmesinden önce kayıtlı düzenin yedeğini alır (uygulamanın veri klasöründe

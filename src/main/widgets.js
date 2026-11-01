@@ -5,10 +5,11 @@
 //    Tam ekran bir program (oyun, video) açılınca üstte kalmayı bırakır.
 //  - top: her zaman üstte.  - bottom: pencerelerin arkasında (tıklanınca öne gelir, odak gidince yine arkaya).
 // Açık olan bileşen Desk Helper yeniden açılınca yine açılır; Desk Helper kapanınca hepsi kapanır.
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const sysinfo = require('./sysinfo');
+const shortcuts = require('../shared/shortcuts');
 
 const WIN = process.platform === 'win32';
 const cfgPath = () => path.join(app.getPath('userData'), 'widgets.json');
@@ -188,6 +189,7 @@ function closeSys(remember = true) {
 }
 
 function init(getMain) {
+  getMainWin = getMain;
   ipcMain.handle('widget:get', () => publicCfg());
   ipcMain.handle('widget:set', (_e, patch) => {
     const c = load().sys;
@@ -200,12 +202,68 @@ function init(getMain) {
   ipcMain.on('widget:close', () => closeSys());
   ipcMain.on('widget:toggle', (_e, kind) => { if (kind === 'sys') (sysWin ? closeSys() : openSys(getMain)); });
   ipcMain.handle('widget:state', () => ({ sys: !!sysWin }));
+  registerWeatherHotkey();
   screen.on('display-metrics-changed', () => setTimeout(placeSys, 200));
   screen.on('display-removed', () => setTimeout(placeSys, 200));
   if (load().sys.open) openSys(getMain);
 }
-// Desk Helper kapanırken: ayrılan ekran alanını geri ver, pencereleri kapat (açık olduğu hatırlanır).
-function closeAll() { closeSys(false); }
-app.on('before-quit', closeAll);
+// --- Hava durumu kısayolu (global) ---
+// Panel kapalıyken: paneli açar ve hava durumunu gösterir. Panel açıkken: hava durumu görünüyorsa gizler, gizliyse gösterir.
+// Durum widgets.json'da (sys.hidden.weather) tutulur: uygulama yeniden açılınca aynı kalır.
+let getMainWin = () => null, weatherReg = { accel: '', ok: false, fallback: false }, weatherTimer = null, weatherTries = 0;
 
-module.exports = { init, closeAll, openSys, closeSys, setLang, setTheme };
+function weatherVisible() { return !load().sys.hidden?.weather; }
+
+function setWeather(on) {
+  const c = load().sys;
+  c.hidden = { ...(c.hidden || {}), weather: !on };
+  if (on && c.collapsed?.weather) c.collapsed = { ...c.collapsed, weather: false };
+  saveNow();
+  if (on) openSys(getMainWin);
+  if (sysWin && !sysWin.isDestroyed()) sysWin.webContents.send('widget:config', publicCfg());
+  getMainWin()?.webContents.send('weather:state', { open: on });
+  return on;
+}
+
+function toggleWeather() { return setWeather(!(sysWin && weatherVisible())); }
+
+function weatherStatus() { return { ...weatherReg, key: shortcuts.key('weather.toggle'), primary: shortcuts.key('weather.toggle'), active: shortcuts.format(weatherReg.accel || ''), visible: weatherVisible(), panel: !!sysWin }; }
+
+function registerWeatherHotkey() {
+  if (weatherReg.ok) return true;
+  const list = [shortcuts.accel('weather.toggle'), shortcuts.fallback('weather.toggle')].filter(Boolean);
+  for (let i = 0; i < list.length; i += 1) {
+    const a = list[i];
+    let ok = false;
+    try { ok = globalShortcut.register(a, () => toggleWeather()); } catch { ok = false; }
+    if (ok) {
+      weatherReg = { accel: a, ok: true, fallback: i > 0 };
+      if (weatherTimer) { clearInterval(weatherTimer); weatherTimer = null; }
+      console.info('widgets: hava durumu kısayolu alındı', a, i > 0 ? '(yedek)' : '');
+      getMainWin()?.webContents.send('shortcut:status', { weather: weatherStatus() });
+      return true;
+    }
+    console.warn('widgets: hava durumu kısayolu alınamadı', a);
+  }
+  weatherTries += 1;
+  getMainWin()?.webContents.send('shortcut:status', { weather: weatherStatus() });
+  if (!weatherTimer) {
+    weatherTimer = setInterval(registerWeatherHotkey, 15000);
+    if (weatherTimer.unref) weatherTimer.unref();
+  }
+  return false;
+}
+
+// Desk Helper kapanırken: ayrılan ekran alanını geri ver, pencereleri kapat (açık olduğu hatırlanır), tuşları bırak.
+function closeAll() {
+  closeSys(false);
+  if (weatherTimer) { clearInterval(weatherTimer); weatherTimer = null; }
+  for (const a of new Set([shortcuts.accel('weather.toggle'), shortcuts.fallback('weather.toggle')])) {
+    if (a) { try { globalShortcut.unregister(a); } catch {} }
+  }
+  weatherReg.ok = false;
+}
+app.on('before-quit', closeAll);
+app.on('browser-window-focus', () => { if (!weatherReg.ok) registerWeatherHotkey(); });
+
+module.exports = { init, closeAll, openSys, closeSys, setLang, setTheme, setWeather, weatherStatus, registerWeatherHotkey };

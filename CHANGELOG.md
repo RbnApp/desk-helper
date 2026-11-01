@@ -5,6 +5,14 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.5 · 2026-11-01
 
+**Yeni**
+- Sistem panelindeki hava durumu artık Shift+F8 ile açılıp kapanıyor: panel kapalıysa açılır, açıkken bölümü gösterir ya da gizler; seçim yeniden açılışta korunur. Tuş başka bir program tarafından kullanılıyorsa Shift+F7 denenir, ikisi de olmazsa Ayarlar durumu söyler.
+- Bütün klavye kısayolları tek tabloda toplandı (`src/shared/shortcuts.js`); ana pencere, paneller ve ekran görüntüsü aynı tablodan okuyor. README'deki Kısayollar tablosu bu tablodan üretiliyor (`npm run shortcuts:doc`), elle yazılmıyor.
+
+**Düzeltilen**
+- Ayarlar penceresi sekmeler arasında büyüyüp küçülüyordu; artık tek boyutta açılıyor (560×640) ve uzun içerik pencerenin içinde kayıyor. Notlar klasörünün yolu ile Değiştir / Varsayılan / Klasörü aç düğmeleri bitişikti; aralarına boşluk kondu, aynı hizada duruyorlar.
+- Ekran görüntüsü kısayolu açılışta başka bir program ya da Desk Helper kopyası tarafından tutulduysa sessizce devre dışı kalıyordu. Artık kısa aralıklarla yeniden deneniyor; alınamazsa Ayarlar'da tuşun adı ve nedeni yazıyor, görüntünün 📷 düğmesinden de alınabildiği söyleniyor.
+- Hava durumu kısayolu açılışta alınamazsa sessiz kalınmıyor: yedek tuş deneniyor, olmazsa Ayarlar'da durumu görünüyor.
 **Düzeltilen**
 - Güncelleme yarıda kaldığında uygulama bir daha açılmıyor, masaüstü kısayolu kayboluyor ve hiçbir bilgi verilmiyordu. Artık güncelleme başlamadan önce tüm pencereler ve yardımcı süreçler kapatılıp gerçekten kapandığı ölçülüyor; uygulama kapandıktan sonra kurulum bir sebeple çökerse (antivirüs, kilitli dosya, beklenmeyen hata) ayrı bir bekçi süreç Desk Helper'ı yeniden açıyor. Sonraki açılışta sürüm değişmemişse "Güncelleme tamamlanamadı" penceresi çıkıyor, elle kurulum bağlantısı veriliyor ve eksik masaüstü / Başlat menüsü kısayolları yeniden oluşturuluyor. Güncelleme adımları veri klasöründeki `update.log` dosyasına yazılıyor (sürüm, adres, hata; kişisel bilgi yok).
 

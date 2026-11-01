@@ -127,7 +127,7 @@ window.desk.onWebCtx((wcId, q) => {
     link ? { icon: '🔗', label: t('Bağlantıyı kopyala'), action: () => window.desk.copyText(link) } : null,
     !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '↗', label: t('Sayfayı dış tarayıcıda aç'), action: () => window.desk.openExternal(wv.getURL()) } : null,
     !link && !q.isEditable && !q.selectionText ? { icon: '🔗', label: t('Sayfa adresini kopyala'), action: () => window.desk.copyText(wv.getURL()) } : null,
-    !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '</>', label: t('Sayfa kaynağını görüntüle'), key: 'Ctrl+U', action: () => viewSource(wcId) } : null,
+    !link && !q.isEditable && !q.selectionText && /^https?:/.test(wv.getURL()) ? { icon: '</>', label: t('Sayfa kaynağını görüntüle'), key: Shortcuts.key('web.source'), action: () => viewSource(wcId) } : null,
     link ? '-' : null,
     // Pano işlemleri metin üzerinden (bkz. yazı kutusu menüsü): Windows'ta wv.paste() menüden çalışmıyordu.
     q.isEditable ? { icon: '✂', label: t('Kes'), key: 'Ctrl+X', disabled: !q.selectionText, action: async () => { await window.desk.copyText(q.selectionText); wv.focus(); wv.delete(); } } : null,
@@ -142,7 +142,7 @@ window.desk.onWebCtx((wcId, q) => {
     { icon: '🔍', label: t('İncele'), action: () => wv.inspectElement(Math.round(q.x), Math.round(q.y)) },
   ]);
 });
-// Sayfa kaynağı (sağ tık ya da Ctrl+U): tarayıcı panelinde yanına yeni sekme; diğer panellerde tarayıcı panelinde.
+// Sayfa kaynağı (sağ tık ya da tablodaki web.source kısayolu): tarayıcı panelinde yanına yeni sekme; diğer panellerde tarayıcı panelinde.
 // view-source: adresi geçmişe yazılmaz (geçmiş yalnızca http/https kaydeder).
 function viewSource(wcId) {
   const src = [...panels.values()].find((p) => p.ownsWc?.(wcId));
@@ -153,7 +153,7 @@ function viewSource(wcId) {
   else openInDeskBrowser('view-source:' + url, src?.ws);
 }
 window.desk.onViewSource?.(viewSource);
-// Tarayıcı panelinde yakınlaştırma (Ctrl+tekerlek, Ctrl +/−/0): Chrome'daki adımlar. Diğer web panellerinde yok sayılır.
+// Tarayıcı panelinde yakınlaştırma (Ctrl+tekerlek ve tablodaki web.zoom* kısayolları): Chrome'daki adımlar. Diğer web panellerinde yok sayılır.
 window.desk.onZoom?.((wcId, dir) => [...panels.values()].find((p) => p.ownsWc?.(wcId) && p.leaf.kind === 'browser')?.zoom?.(wcId, dir));
 
 function routeWebLink(wcId, url, mode) {

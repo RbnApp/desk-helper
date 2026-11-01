@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('desk', {
     onNew: (fn) => ipcRenderer.on('shot:new', (_e, it) => fn(it)),
     onError: (fn) => ipcRenderer.on('shot:error', (_e, m) => fn(m)),
   },
+  shortcuts: {
+    status: () => ipcRenderer.invoke('shortcut:status'),
+    onStatus: (fn) => { const f = (_e, st) => fn(st); ipcRenderer.on('shortcut:status', f); return () => ipcRenderer.removeListener('shortcut:status', f); },
+  },
+  onWeatherState: (fn) => ipcRenderer.on('weather:state', (_e, s) => fn(s)),
   backupState: (tag) => ipcRenderer.invoke('state:backup', tag),
   info: () => ipcRenderer.invoke('app:info'),
   feedback: () => ipcRenderer.invoke('feedback:open'), // tek amaçlı kanal: sabit GitHub adresi, varsayılan tarayıcı

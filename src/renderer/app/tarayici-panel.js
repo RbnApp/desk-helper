@@ -424,7 +424,7 @@ function buildBrowser(p) {
     ], { align: 'right' });
   };
   p.hist = historyDrawer(p, () => L.profile, (url) => { const wv = cur(); if (wv) { wv.loadURL(url).catch(() => {}); wv.focus(); } });
-  p.body.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key.toLowerCase() === 'h' && L.profile !== '__private') { e.preventDefault(); p.hist.toggle(); } });
+  p.body.addEventListener('keydown', (e) => { if (Shortcuts.is(e, 'browser.history') && L.profile !== '__private') { e.preventDefault(); p.hist.toggle(); } });
 
   back.onclick = () => { try { cur().goBack(); } catch {} };
   fwd.onclick = () => { try { cur().goForward(); } catch {} };

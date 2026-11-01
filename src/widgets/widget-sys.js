@@ -59,7 +59,7 @@ function buildSections() {
     const chev = h('button', { class: 'chev', title: t('Daralt / genişlet') }, h('i'));
     const body = h('div', { class: 'sb' });
     const sec = h('section', { class: 'sec' + (cfg.collapsed?.[s.id] ? ' shut' : ''), 'data-id': s.id },
-      h('div', { class: 'sh' }, h('span', { class: 'si', text: s.icon }), h('b', { text: t(s.title) }), extra, chev), body);
+      h('div', { class: 'sh', title: s.id === 'weather' ? t('Hava durumunu göster/gizle') + ' (' + Shortcuts.key('weather.toggle') + ')' : '' }, h('span', { class: 'si', text: s.icon }), h('b', { text: t(s.title) }), extra, chev), body);
     const toggle = () => { cfg.collapsed = { ...cfg.collapsed, [s.id]: !cfg.collapsed?.[s.id] }; sec.classList.toggle('shut', !!cfg.collapsed[s.id]); window.wd.set({ collapsed: cfg.collapsed }); };
     chev.onclick = toggle;
     sec.querySelector('.sh').addEventListener('dblclick', toggle);
@@ -292,7 +292,7 @@ function gearMenu(e) {
   items.push({ label: t('Her zaman üstte'), checked: chk('layer', 'top'), action: () => set({ layer: 'top' }) });
   items.push({ label: t('Pencerelerin arkasında'), checked: chk('layer', 'bottom'), action: () => set({ layer: 'bottom' }) });
   items.push('-', { header: t('Bölümler') });
-  for (const s of SECTIONS) items.push({ label: t(s.title), checked: !cfg.hidden?.[s.id], action: () => set({ hidden: { ...cfg.hidden, [s.id]: !cfg.hidden?.[s.id] } }) });
+  for (const s of SECTIONS) items.push({ label: t(s.title), key: s.id === 'weather' ? Shortcuts.key('weather.toggle') : '', checked: !cfg.hidden?.[s.id], action: () => set({ hidden: { ...cfg.hidden, [s.id]: !cfg.hidden?.[s.id] } }) });
   items.push('-', { icon: '📍', label: t('Şehri değiştir…'), action: () => { if (cfg.hidden?.weather) set({ hidden: { ...cfg.hidden, weather: false } }).then(() => setTimeout(editCity, 50)); else editCity(); } });
   items.push({ icon: '✕', label: t('Paneli kapat'), action: () => window.wd.close() });
   PopMenu.open(e.currentTarget, items, { align: 'right' });

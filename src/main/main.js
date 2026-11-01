@@ -7,6 +7,7 @@ const widgets = require('./widgets');
 const boxes = require('./boxes');
 const update = require('./update');
 const FEEDBACK = require('../shared/feedback');
+const shortcuts = require('../shared/shortcuts');
 // Web panellerindeki service worker bildirimleri sayfaya yönlendirilir (tıklama Desk Helper'a ulaşsın; sw-preload.js).
 app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, '..', 'preload', 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
@@ -105,7 +106,7 @@ function createWindow() {
   boxes.setLangGetter(() => settings.lang);
   boxes.init(() => (win && !win.isDestroyed() ? win : null));
   win.webContents.on('before-input-event', (e, input) => {
-    if (input.type === 'keyDown' && input.key === 'F12') win.webContents.toggleDevTools();
+    if (shortcuts.match(input, 'app') === 'devtools') win.webContents.toggleDevTools();
   });
 }
 
@@ -126,12 +127,13 @@ app.on('web-contents-created', (_e, wc) => {
     });
   }
   if (wc.getType() === 'webview') wc.on('context-menu', (_ev, p) => webContextMenu(wc, p));
-  // Ctrl+U: sayfa kaynağı (web sayfasının içindeyken tuşlar Desk Helper'a ulaşmaz, burada yakalanır)
+  // Web sayfasının içindeyken tuşlar Desk Helper'a ulaşmaz: sayfa kaynağı ve yakınlaştırma burada yakalanır.
+  // Tuşlar tek tablodan (src/shared/shortcuts.js) eşleşir.
+  const ZOOM_DIR = { 'web.zoomIn': 'in', 'web.zoomOut': 'out', 'web.zoomReset': 'reset' };
   if (wc.getType() === 'webview') wc.on('before-input-event', (ev, i) => {
-    if (i.type === 'keyDown' && (i.control || i.meta) && !i.shift && !i.alt && i.key.toLowerCase() === 'u') { ev.preventDefault(); win?.webContents.send('web:viewsource', wc.id); }
-    // Yakınlaştırma (Ctrl + / Ctrl - / Ctrl 0): yalnızca tarayıcı panelinde uygulanır (renderer karar verir).
-    const zk = { '=': 'in', '+': 'in', '-': 'out', '0': 'reset' }[i.key];
-    if (zk && i.type === 'keyDown' && (i.control || i.meta) && !i.alt) { ev.preventDefault(); win?.webContents.send('web:zoom', wc.id, zk); }
+    const id = shortcuts.match(i, 'panel');
+    if (id === 'web.source') { ev.preventDefault(); win?.webContents.send('web:viewsource', wc.id); }
+    else if (ZOOM_DIR[id]) { ev.preventDefault(); win?.webContents.send('web:zoom', wc.id, ZOOM_DIR[id]); }
   });
   // Ctrl + fare tekerleği (Electron kendisi yakınlaştırmaz, yalnızca haber verir).
   // Bir tekerlek olayı için Chromium bazen iki kez haber veriyor: 40 ms içindeki ikincisi sayılmaz.
@@ -273,6 +275,8 @@ ipcMain.handle('app:info', () => ({
   notesDir: notesDir(),
   defaultNotesDir: path.join(dataDir(), 'notes'),
 }));
+// Kısayolların gerçek durumu (Ayarlar gösterir): kaydedildi mi, hangi tuş, yedek tuşa düşüldü mü.
+ipcMain.handle('shortcut:status', () => ({ shot: shots.status(), weather: widgets.weatherStatus() }));
 // Geri bildirim: varsayılan tarayıcıda GitHub'ın "yeni issue" sayfası açılır (uygulama içi pencere DEĞİL;
 // GitHub girişi gömülü tarayıcıda sorun çıkarır). Adres src/shared/feedback.js'teki sabitten gelir, kullanıcı
 // girdisinden KURULMAZ; yalnız https://github.com/RbnApp/ ile başlıyorsa açılır. Ön dolu: sürüm + Windows sürümü.

@@ -1,12 +1,13 @@
-// Ekran görüntüsü: Shift+PrintScreen (Desk Helper arka plandayken de) ya da panelden "Yakala". İmlecin olduğu ekranın
+// Ekran görüntüsü: tablodaki global kısayol (src/shared/shortcuts.js; Desk Helper arka plandayken de) ya da panelden "Yakala". İmlecin olduğu ekranın
 // görüntüsü alınır, o ekranda donmuş görüntünün üstünde alan seçilir (sürükle; Enter tüm ekran; Esc vazgeç), seçilen
 // alan PNG olarak Resimler\Screenshots\Desk Helper klasörüne kaydedilir ve panoya da kopyalanır. Desk Helper'daki
 // sağ alt paneli (app.js) son görüntüleri bu klasörden listeler; görüntü panelden başka uygulamalara sürüklenebilir.
 const { app, BrowserWindow, ipcMain, globalShortcut, desktopCapturer, screen, clipboard, ClipboardItem, shell, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const shortcuts = require('../shared/shortcuts');
 
-const HOTKEY = 'Shift+PrintScreen';
+const HOTKEY = shortcuts.accel('shot.capture');
 const dir = () => path.join(app.getPath('pictures'), 'Screenshots', 'Desk Helper');
 const inDir = (f) => { const d = path.resolve(dir()), p = path.resolve(String(f || '')); return path.dirname(p) === d && /\.png$/i.test(p); };
 let getWin = () => null, getLang = () => 'tr';
@@ -15,7 +16,10 @@ async function copyPng(buf) {
   try { await clipboard.write([new ClipboardItem({ 'image/png': new Blob([buf], { type: 'image/png' }) })]); return true; }
   catch (err) { console.warn('shots: panoya kopyalanamadı', err?.message || err); return false; }
 }
-let overlay = null, busy = false, hotkeyOk = false;
+let overlay = null, busy = false, hotkeyOk = false, hotkeyTimer = null, hotkeyTries = 0;
+// Kısayol açılışta alınamazsa (başka bir Desk Helper kopyası ya da bir program tutuyor olabilir) sessiz kalma:
+// kısa aralıklarla yeniden denenir, alınınca arayüze haber verilir. Arayüz durumu Ayarlar'da gösterir.
+const HOTKEY_RETRY_MS = 15000;
 
 const pad = (n) => String(n).padStart(2, '0');
 function fileName() {
@@ -137,7 +141,7 @@ ipcMain.on('shot:select', (e, rect) => {
 ipcMain.handle('shot:capture', () => capture());
 ipcMain.handle('shot:list', () => list());
 ipcMain.handle('shot:count', () => { try { return fs.readdirSync(dir()).filter((n) => /\.png$/i.test(n)).length; } catch { return 0; } });
-ipcMain.handle('shot:info', () => ({ dir: dir(), hotkey: HOTKEY, hotkeyOk }));
+ipcMain.handle('shot:info', () => ({ dir: dir(), hotkey: HOTKEY, hotkeyKey: shortcuts.key('shot.capture'), hotkeyOk }));
 // Silinen görüntü Geri Dönüşüm Kutusu'na gider (yanlışlıkla silineni geri almak mümkün).
 ipcMain.handle('shot:delete', async (_e, file) => { if (!inDir(file)) return false; thumbs.delete(file); try { await shell.trashItem(file); return true; } catch { try { fs.unlinkSync(file); return true; } catch { return false; } } });
 ipcMain.handle('shot:reveal', (_e, file) => {
@@ -169,11 +173,36 @@ ipcMain.handle('annot:save', (_e, file, bytes) => {
 });
 ipcMain.handle('annot:copy', (_e, bytes) => copyPng(Buffer.from(bytes)));
 
+function status() { return { accel: HOTKEY, key: shortcuts.key('shot.capture'), ok: hotkeyOk, tries: hotkeyTries }; }
+function notify() { getWin()?.webContents.send('shortcut:status', { shot: status() }); }
+
+function registerHotkey() {
+  if (hotkeyOk) return true;
+  try { hotkeyOk = globalShortcut.register(HOTKEY, () => capture()); } catch { hotkeyOk = false; }
+  hotkeyTries += 1;
+  if (hotkeyOk) {
+    if (hotkeyTimer) { clearInterval(hotkeyTimer); hotkeyTimer = null; }
+    console.info('shots: kısayol alındı', HOTKEY, 'deneme', hotkeyTries);
+    notify();
+  } else {
+    console.warn('shots: kısayol alınamadı', HOTKEY, 'deneme', hotkeyTries);
+  }
+  return hotkeyOk;
+}
+
 function init(win, lang) {
   getWin = win; getLang = lang;
-  try { hotkeyOk = globalShortcut.register(HOTKEY, () => capture()); } catch { hotkeyOk = false; }
-  if (!hotkeyOk) console.warn('shots: kısayol alınamadı', HOTKEY);
+  if (registerHotkey()) return;
+  if (!hotkeyTimer) {
+    hotkeyTimer = setInterval(registerHotkey, HOTKEY_RETRY_MS);
+    if (hotkeyTimer.unref) hotkeyTimer.unref();
+  }
 }
-app.on('will-quit', () => { try { globalShortcut.unregister(HOTKEY); } catch {} });
+// Pencere öne gelince bir kez daha dene: kısayolu tutan program/kopya kapanmış olabilir.
+app.on('browser-window-focus', () => { if (!hotkeyOk) registerHotkey(); });
+app.on('will-quit', () => {
+  if (hotkeyTimer) { clearInterval(hotkeyTimer); hotkeyTimer = null; }
+  try { globalShortcut.unregister(HOTKEY); } catch {}
+});
 
-module.exports = { init, capture, list, dir };
+module.exports = { init, capture, list, dir, status, registerHotkey };

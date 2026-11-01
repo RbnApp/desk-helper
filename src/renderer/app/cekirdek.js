@@ -330,7 +330,7 @@ function openSpaces() {
   const cur = curSpace();
   PopMenu.open($('#spaceBtn'), [
     { header: t('Çalışma alanları') },
-    ...state.spaces.map((sp, i) => ({ label: sp.name, checked: sp.id === cur.id, key: i < 9 ? 'Ctrl+Alt+' + (i + 1) : '', action: () => switchSpace(sp.id) })),
+    ...state.spaces.map((sp, i) => ({ label: sp.name, checked: sp.id === cur.id, key: i < 9 ? Shortcuts.key('ws.' + (i + 1)) : '', action: () => switchSpace(sp.id) })),
     '-',
     { icon: '＋', label: t('Yeni çalışma alanı…'), action: newSpace },
     { icon: '✎', label: t('"{name}" adını değiştir…', { name: cur.name }), action: () => renameSpace(cur) },

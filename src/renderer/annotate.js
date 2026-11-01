@@ -41,7 +41,7 @@
       h('div', { class: 'an-group' }, undoB, redoB),
       h('div', { class: 'an-spacer' }),
       h('button', { class: 'an-b wide', textContent: '📋 ' + t('Kopyala'), title: t('Panoya kopyala') + ' (Ctrl+C)', onclick: () => copy() }),
-      h('button', { class: 'an-b wide primary', textContent: '💾 ' + t('Kaydet'), title: t('Yanına yeni dosya olarak kaydet') + ' (Ctrl+S)', onclick: () => saveFile() }),
+      h('button', { class: 'an-b wide primary', textContent: '💾 ' + t('Kaydet'), title: t('Yanına yeni dosya olarak kaydet') + ' (' + Shortcuts.key('annotate.save') + ')', onclick: () => saveFile() }),
       h('button', { class: 'an-b', textContent: '✕', title: t('Kapat') + ' (Esc)', onclick: () => close() }));
     const title = h('div', { class: 'an-title', textContent: '✏️ ' + t('İşaretle') + ' · ' + baseName(file) + `  ${W}×${H}` });
     const root = h('div', { id: 'annot', tabIndex: -1 }, h('div', { class: 'an-top' }, title, bar), wrap);
@@ -211,7 +211,7 @@
       const k = e.key.toLowerCase();
       if (e.ctrlKey && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
       else if (e.ctrlKey && k === 'y') { e.preventDefault(); redo(); }
-      else if (e.ctrlKey && k === 's') { e.preventDefault(); saveFile(); }
+      else if (Shortcuts.is(e, 'annotate.save')) { e.preventDefault(); saveFile(); }
       else if (e.ctrlKey && k === 'c') { e.preventDefault(); copy(); }
       else if (k === 'escape') { e.preventDefault(); e.stopPropagation(); close(); }
       else if (!e.ctrlKey && !e.altKey) { const tl = TOOLS.find((x) => x[3].toLowerCase() === k); if (tl) setTool(tl[0]); }

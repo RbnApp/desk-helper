@@ -341,11 +341,14 @@ async function sendFeedback() {
 async function openSettings(tab = 'settings') {
   const info = await window.desk.info();
   const s = state.settings;
-  Modal.open({ title: 'Desk Helper', icon: '⚙', size: 'md', buttons: [{ label: t('Tamam'), primary: true, value: true }], body: (api) => {
+  // Kısayollar tek tablodan (src/shared/shortcuts.js) okunur; gerçek kayıt durumu main'den gelir.
+  // Bir tuş alınamadıysa burada görünür (sessiz kalmaz): hangi tuş, çalışıyor mu, yedek tuşa düşüldü mü.
+  let offScStatus = null;
+  Modal.open({ title: 'Desk Helper', icon: '⚙', size: 'md', cls: 'mdl-ayarlar', buttons: [{ label: t('Tamam'), primary: true, value: true }], onClose: () => { try { offScStatus?.(); } catch {} }, body: (api) => {
     const sel = (key, opts, after) => h('select', { onchange: (e) => { set(key, e.target.value); after?.(); } },
       ...opts.map(([v, txt]) => h('option', { value: v, textContent: txt, selected: s[key] === v })));
     const chk = (key) => h('input', { type: 'checkbox', checked: !!s[key], onchange: (e) => set(key, e.target.checked) });
-    const notesLbl = h('span', { class: 'hint', textContent: s.notesDir || info.defaultNotesDir });
+    const notesLbl = h('span', { class: 'hint', textContent: s.notesDir || info.defaultNotesDir, title: s.notesDir || info.defaultNotesDir });
     function set(key, val) { s[key] = val; applySettings(); save(); }
     function accentRow() {
       const box = h('div', { class: 'swatches' });
@@ -356,6 +359,31 @@ async function openSettings(tab = 'settings') {
       return h('div', { class: 'row' }, h('span', { textContent: t('Tema rengi') }), box);
     }
 
+    // Kısayollar bölümü: tablodaki bütün tuşlar + global tuşların gerçek durumu.
+    const scStatus = h('div', { class: 'sc-state' });
+    let scCache = {};
+    const paintScStatus = () => {
+      const row = (title, info) => {
+        if (!info) return null;
+        const note = info.ok ? t('Kısayol çalışıyor') : t('Kısayol kullanılamıyor') + ' · ' + t('Başka bir program bu tuşu kullanıyor olabilir.');
+        return h('div', { class: 'sc-state-row' + (info.ok ? '' : ' bad') },
+          h('span', { class: 'sc-name', textContent: title }),
+          h('span', { class: 'sc-key', textContent: info.active || info.key || Shortcuts.format(info.accel || '') }),
+          h('span', { class: 'sc-note', textContent: note + (info.fallback ? ' · ' + t('Yedek tuş kullanılıyor') : '') }));
+      };
+      scStatus.replaceChildren(...[row(t('Ekran görüntüsü kısayolu'), scCache.shot), row(t('Hava durumu kısayolu'), scCache.weather)].filter(Boolean));
+    };
+    window.desk.shortcuts?.status().then((st) => { scCache = { ...scCache, ...st }; paintScStatus(); }).catch(() => {});
+    offScStatus = window.desk.shortcuts?.onStatus((st) => { scCache = { ...scCache, ...st }; paintScStatus(); });
+    const scBlock = h('div', { class: 'sc-block' },
+      h('h4', { class: 'sc-h', textContent: t('Kısayollar') }),
+      scStatus,
+      h('div', { class: 'sc-list' }, ...Shortcuts.byScope('global').concat(Shortcuts.byScope('app'), Shortcuts.byScope('panel')).map((sc) =>
+        h('div', { class: 'sc-row' },
+          h('span', { class: 'sc-name', textContent: t(sc.label, sc.vars) }),
+          h('span', { class: 'sc-key', textContent: Shortcuts.key(sc.id) })))),
+      h('div', { class: 'hint', textContent: t('Kopyala, yapıştır, kes, geri al gibi standart düzenleme tuşları sistemindir; burada listelenmez.') }));
+
     const settingsPane = h('div', { class: 'pane' },
       h('label', { class: 'row' }, t('Dil / Language'), sel('lang', [['tr', 'Türkçe'], ['en', 'English']], () => setTimeout(() => location.reload(), 350))),
       h('label', { class: 'row' }, t('Tema'), sel('theme', [['dark', t('Koyu')], ['light', t('Açık')]])),
@@ -365,11 +393,13 @@ async function openSettings(tab = 'settings') {
       h('label', { class: 'row' }, t('Her zaman üstte'), chk('alwaysOnTop')),
       h('label', { class: 'row' }, t('Dolu sekmeyi kapatırken sor'), chk('confirmTabClose')),
       h('label', { class: 'row' }, t('Açılışta yeni sürümü denetle'), chk('autoUpdate')),
-      h('label', {}, t('Notların kaydedileceği klasör'), notesLbl,
-        h('div', { class: 'fav-add' },
-          h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; } } }),
-          h('button', { textContent: t('Varsayılan'), onclick: () => { set('notesDir', ''); notesLbl.textContent = info.defaultNotesDir; } }),
-          h('button', { textContent: t('Klasörü aç'), onclick: () => window.desk.open(s.notesDir || info.defaultNotesDir) }))));
+      h('label', { class: 'notes-field' }, t('Notların kaydedileceği klasör'),
+        h('div', { class: 'notes-line' }, notesLbl,
+          h('div', { class: 'fav-add notes-btns' },
+            h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; notesLbl.title = d; } } }),
+            h('button', { textContent: t('Varsayılan'), onclick: () => { set('notesDir', ''); notesLbl.textContent = info.defaultNotesDir; notesLbl.title = info.defaultNotesDir; } }),
+            h('button', { textContent: t('Klasörü aç'), onclick: () => window.desk.open(s.notesDir || info.defaultNotesDir) })))),
+      scBlock);
 
     const aboutPane = h('div', { class: 'pane about' },
       h('img', { src: 'logo.png', alt: '' }),
