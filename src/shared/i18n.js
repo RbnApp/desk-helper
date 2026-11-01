@@ -163,7 +163,7 @@ window.I18N_EN = {
   "Kapalı": "Off",
   "{n} dakika sonra": "after {n} minutes",
   "1 saat sonra": "after 1 hour",
-  "Uyuyan panel sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp, Telegram, Instagram ve X bildirim kaçmasın diye, ses çalan sayfalar da hiç uyutulmaz.": "A sleeping panel reopens at the same address when you switch to its tab. WhatsApp, Telegram, Instagram and X (so you don't miss notifications) and pages playing sound are never put to sleep.",
+  "Uyuyan panel sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp, Telegram, Instagram ve X bildirim kaçmasın diye hiç uyutulmaz. Ses çalan veya son 15 dakikada ses çalmış paneller de uyutulmaz.": "A sleeping panel reopens at the same address when you switch to its tab. WhatsApp, Telegram, Instagram and X (so you don't miss notifications) are never put to sleep. Panels playing sound — or that played sound in the last 15 minutes — are never put to sleep either.",
   "Bellek": "Memory",
   "Uyuyor (bellek boşaltıldı, sekmeye gelince açılır):": "Sleeping (memory freed, reopens when you open the tab):",
   '(ör. MPEG-2 görüntü, AC-3 ses)': '(e.g. MPEG-2 video, AC-3 audio)',

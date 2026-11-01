@@ -432,7 +432,7 @@ async function openSettings(tab = 'settings') {
       memList,
       h('label', { class: 'row' }, t('Görünmeyen sekmelerdeki web panellerini uyut'),
         sel('sleepMin', [['0', t('Kapalı')], ['5', t('{n} dakika sonra', { n: 5 })], ['15', t('{n} dakika sonra', { n: 15 })], ['30', t('{n} dakika sonra', { n: 30 })], ['60', t('1 saat sonra')]])),
-      h('div', { class: 'hint', textContent: t('Uyuyan panel sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp, Telegram, Instagram ve X bildirim kaçmasın diye, ses çalan sayfalar da hiç uyutulmaz.') }));
+      h('div', { class: 'hint', textContent: t('Uyuyan panel sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp, Telegram, Instagram ve X bildirim kaçmasın diye hiç uyutulmaz. Ses çalan veya son 15 dakikada ses çalmış paneller de uyutulmaz.') }));
 
     const tabs = h('div', { class: 'dtabs' });
     const show = (which) => {

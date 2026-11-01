@@ -479,8 +479,12 @@ function setActive(ws, id) {
 
 // ---------- Uyku: uzun süre görünmeyen web panelleri ----------
 // Başka sekmede kalan ve ayarlardaki süre boyunca açılmayan web/tarayıcı panelleri kapatılır (bellek boşalır); sekmesine
-// geçince aynı adresle yeniden açılır. Bildirim sayacı olan servisler (WhatsApp, Telegram, Instagram, X), ses çalan
-// sayfalar ve gizli tarayıcı uyutulmaz. Uyku yalnızca bu oturumluk (asleep), duruma yazılmaz.
+// geçince aynı adresle yeniden açılır. Bildirim sayacı olan servisler (WhatsApp, Telegram, Instagram, X) ve gizli
+// tarayıcı uyutulmaz. MEDYA ÇALAN panel HİÇ uyutulmaz: ses çalıyorsa, son 15 dakikada ses duyulduysa ya da sayfada
+// oynayan bir <video>/<audio> varsa panel açık kalır. Böylece şarkılar arası sessizlikte, arabelleğe alırken ya da
+// liste geçişinde ses kesilmez, sekmeye dönünce sayfa yeniden yüklenmez. (Tek başına anlık isCurrentlyAudible()
+// sorgusu bu anlarda false döner — patronun "video susuyor, geri gidince yenileniyor" şikâyetinin kök nedeni.)
+// Uyku yalnızca bu oturumluk (asleep), duruma yazılmaz.
 const asleep = new Set();
 // Açılışta (ve çalışma alanı değişince) yalnızca açık sekmenin web panelleri yüklenir; diğer sekmelerinkiler ilk kez
 // açılınca, kaldıkları adresle yüklenir. Bildirim sayan servisler (WhatsApp, Telegram…) her zaman hemen yüklenir.
@@ -494,9 +498,52 @@ function deferHidden() {
     }
   }
 }
+// Medya durumu (panel başına, yalnız bu oturumluk): oynuyor mu, en son ne zaman ses duyuldu, durum bilinmiyor mu.
+const MEDIA_GRACE_MS = 15 * 60000; // sesten sonra bu süre boyunca panel uyutulmaz (şarkı arası, liste geçişi, tampon)
+const MEDIA_POLL_MS = 5000;
+const MEDIA_QUERY = "(() => { try { return [...document.querySelectorAll('video,audio')].some((x) => !x.paused && !x.ended && x.readyState > 1); } catch { return true; } })()";
+function mediaOf(p) { return (p.media ||= { playing: false, lastAudibleAt: 0, unknown: false }); }
+// Panelin webview'lerini izlemeye al: oynatma/duraklatma olayları anında işaretler, 5 sn'lik yoklama tazeler.
+function watchMedia(p) {
+  for (const wv of p.body.querySelectorAll('webview')) {
+    if (wv.__mediaWatched) continue;
+    wv.__mediaWatched = true;
+    wv.addEventListener('media-started-playing', () => { const m = mediaOf(p); m.playing = true; m.lastAudibleAt = Date.now(); });
+    wv.addEventListener('media-paused', () => { mediaOf(p).playing = false; });
+  }
+  return mediaOf(p);
+}
+let mediaBusy = false;
+// 5 sn'de bir: duyulan ses zamanını tazele, sayfada gerçekten oynayan medya var mı sor. Sorgu başarısızsa
+// (sayfa henüz hazır değil) "bilinmiyor" işaretlenir ve panel uyutulmaz — ses kesmektense bellekte kalsın.
+async function mediaTick() {
+  if (!state || mediaBusy) return;
+  mediaBusy = true;
+  try {
+    for (const p of panels.values()) {
+      if (p.leaf.kind !== 'web' && p.leaf.kind !== 'browser') continue;
+      const m = watchMedia(p);
+      const wvs = [...p.body.querySelectorAll('webview')];
+      let audible = false, playing = false, unknown = false;
+      for (const wv of wvs) { try { if (wv.isCurrentlyAudible()) audible = true; } catch {} }
+      for (const wv of wvs) {
+        try { if (await wv.executeJavaScript(MEDIA_QUERY, false)) playing = true; } catch { unknown = true; }
+      }
+      m.unknown = unknown;
+      if (audible) { m.lastAudibleAt = Date.now(); m.playing = true; }
+      else if (playing) m.playing = true;
+      else if (!unknown) m.playing = false;
+    }
+  } finally { mediaBusy = false; }
+}
 function canSleep(p) {
   if (p.leaf.kind !== 'web' && p.leaf.kind !== 'browser') return false;
   if (counted(serviceOf(p.leaf)) || p.leaf.profile === '__private') return false;
+  const m = p.media;
+  if (m) {
+    if (m.playing || m.unknown) return false; // şu an çalıyor ya da durumu bilinmiyor → uyutma
+    if (m.lastAudibleAt && Date.now() - m.lastAudibleAt < MEDIA_GRACE_MS) return false; // yakın zamanda ses duyuldu
+  }
   return ![...p.body.querySelectorAll('webview')].some((w) => { try { return w.isCurrentlyAudible(); } catch { return false; } });
 }
 function sleepTick() {
@@ -519,6 +566,7 @@ function sleepNow() {
   return n;
 }
 setInterval(() => { if (state) sleepTick(); }, 60000);
+setInterval(() => { if (state) mediaTick(); }, MEDIA_POLL_MS);
 
 function destroyPanel(id, { close = false } = {}) {
   const p = panels.get(id);
@@ -570,6 +618,7 @@ function createPanel(ws, leaf) {
   else if (leaf.kind === 'files') buildFiles(p);
   else if (leaf.kind === 'media') buildMedia(p);
   else if (leaf.kind === 'photo') buildPhoto(p);
+  watchMedia(p); // ses çalan panel uyutulmasın diye webview'leri hemen izlemeye al
   return p;
 }
 
