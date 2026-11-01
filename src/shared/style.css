@@ -185,6 +185,7 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
 .pm-item.danger.sel { background: rgba(255, 90, 80, .14); }
 .pm-ic { width: 18px; flex: none; text-align: center; font-size: 13px; line-height: 1; display: flex; justify-content: center; }
 .pm-ic img { width: 14px; height: 14px; }
+.pm-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(128, 128, 128, .45); }
 .pm-lbl { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pm-key { color: var(--muted); font-size: 11px; padding-left: 12px; }
 .pm-item.checked .pm-key { color: var(--accent); font-size: 13px; }

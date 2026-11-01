@@ -1,8 +1,8 @@
 // Desk Helper'ın tek açılır menü bileşeni. Bütün sağ tık ve açılır menüler (profil menüsü, sekmeler, dosyalar,
 // yer imleri, kısayollar, web sayfalarındaki sağ tık) buradan açılır; görünüm style.css > "Menü motoru" (.pm-*).
 //
-//   PopMenu.open(eventOrPointOrButton, items, { bounds, align: 'left'|'right' })
-//   items: '-' (ayraç) | { header } | { label, icon, checked, danger, disabled, bold, key, title,
+//   PopMenu.open(eventOrPointOrButton, items, { bounds, align: 'left'|'right', onClose })
+//   items: '-' (ayraç) | { header } | { label, icon, color (renkli nokta), checked, danger, disabled, bold, key, title,
 //                                     action(ev), middle(), ctx(ev), sub: [items] }
 //   sub: yana açılan alt menü (üstüne gelince ya da tıklayınca; klavyede → açar, ← kapatır).
 // Klavye: ↑ ↓ ile gez, Enter ile seç, Esc ile kapat.
@@ -14,6 +14,7 @@
     if (!current) return;
     const c = current; current = null;
     clearTimeout(c.timer);
+    c.onClose?.();
     for (const lv of c.levels) lv.menu.remove();
     window.removeEventListener('mousedown', c.outside, true);
     window.removeEventListener('keydown', c.keys, true);
@@ -36,7 +37,8 @@
       row.it = it;
       if (it.title) row.title = it.title;
       const ic = el('span', 'pm-ic');
-      if (it.icon instanceof Node) ic.append(it.icon); else if (it.icon) ic.textContent = it.icon;
+      if (it.color) { const dot = el('i', 'pm-dot'); dot.style.background = it.color; ic.append(dot); } // renk örneği: renkli nokta
+      else if (it.icon instanceof Node) ic.append(it.icon); else if (it.icon) ic.textContent = it.icon;
       row.append(ic, el('span', 'pm-lbl', it.label), el('span', 'pm-key', it.sub ? '›' : it.checked ? '✓' : it.key || ''));
       row.addEventListener('click', (ev) => {
         if (it.disabled) return;
@@ -88,9 +90,9 @@
     if (keyboard) focusRow(sub, 0);
   }
 
-  function open(at, items, { bounds = document.body, align = 'left' } = {}) {
+  function open(at, items, { bounds = document.body, align = 'left', onClose } = {}) {
     close();
-    current = { levels: [], timer: 0 };
+    current = { levels: [], timer: 0, onClose };
     const lv = render(items, 0);
     const menu = lv.menu;
     current.levels.push(lv);

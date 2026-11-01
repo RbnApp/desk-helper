@@ -32,4 +32,5 @@ contextBridge.exposeInMainWorld('boxApi', {
   drop: (files) => ipcRenderer.invoke('box:drop', [...files].map((f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } }).filter(Boolean)),
   remove: () => ipcRenderer.invoke('box:remove'),
   close: () => ipcRenderer.send('box:close'),
+  menu: (on) => ipcRenderer.invoke('box:menu', on),
 });

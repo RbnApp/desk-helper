@@ -45,6 +45,8 @@ function toBottom(w) {
 }
 
 const wins = new Map(); // kutu id -> pencere
+const menuSave = new Map(); // menü açıkken büyütülen kutunun özgün boyutu (kapanınca dönülür)
+const MENU_W = 340, MENU_H = 360; // ⚙ menüsü + Renk alt menüsü sığacak en küçük pencere
 const watchers = new Map(); // kutu id -> fs.FSWatcher
 const boxOf = (sender) => { const w = BrowserWindow.fromWebContents(sender); for (const [id, bw] of wins) if (bw === w) return load().boxes.find((b) => b.id === id); return null; };
 
@@ -194,7 +196,7 @@ function openBox(box) {
   w.once('ready-to-show', () => { place(box, w); w.setAlwaysOnTop(box.layer === 'top'); w.showInactive(); if (box.layer !== 'top') toBottom(w); });
   let placing = false;
   const remember = () => {
-    if (placing || w.isDestroyed()) return;
+    if (placing || menuSave.has(box.id) || w.isDestroyed()) return;
     const b = w.getBounds();
     box.bounds = { ...b, height: box.collapsed ? (box.bounds?.height || 230) : b.height };
     save();
@@ -235,6 +237,18 @@ function init(getMain) {
   ipcMain.on('boxes:all', (_e, on) => { for (const b of load().boxes) { if (on && !wins.has(b.id)) openBox(b); if (!on && wins.has(b.id)) closeBox(b); } setTimeout(notify, 100); });
   // Kutunun kendi penceresinden
   ipcMain.handle('box:get', (e) => { const b = boxOf(e.sender); return b && { ...b, colors: COLORS, lang: getLang() }; });
+  // ⚙ menüsü küçük kutu penceresinde kesilmesin: açılırken pencere (ekran çalışma alanında kalarak) büyür, kapanınca döner.
+  // Dönüş: kartın büyüyen pencere içindeki kayması ve özgün ölçüsü (renderer kartı aynı yerde tutar)
+  ipcMain.handle('box:menu', (e, on) => {
+    const b = boxOf(e.sender), w = b && wins.get(b.id); if (!w || w.isDestroyed()) return null;
+    if (!on) { const old = menuSave.get(b.id); if (old) { menuSave.delete(b.id); w.setBounds(old); } return null; }
+    const old = menuSave.get(b.id) || w.getBounds(); menuSave.set(b.id, old);
+    const wa = screen.getDisplayMatching(old).workArea;
+    const width = Math.max(old.width, MENU_W), height = Math.max(old.height, MENU_H);
+    const x = Math.max(wa.x, Math.min(old.x, wa.x + wa.width - width)), y = Math.max(wa.y, Math.min(old.y, wa.y + wa.height - height));
+    w.setBounds({ x, y, width, height });
+    return { x: old.x - x, y: old.y - y, w: old.width, h: old.height };
+  });
   ipcMain.handle('box:items', async (e) => { const b = boxOf(e.sender); return b ? items(b) : { items: [] }; });
   ipcMain.handle('box:set', (e, patch) => {
     const b = boxOf(e.sender); if (!b) return null;

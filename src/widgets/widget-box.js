@@ -16,6 +16,8 @@ const h = (tag, props = {}, ...kids) => {
 };
 let box = null, list = [], lang = 'tr';
 const t = (s, vars) => { let o = (lang === 'en' && window.I18N_EN?.[s]) || s; if (vars) for (const [k, v] of Object.entries(vars)) o = o.replaceAll('{' + k + '}', v); return o; };
+// Palet (boxes.js COLORS) renk adları; paleti değiştirirken burası da güncellenir
+const COLOR_NAMES = { '#14b8a6': 'Turkuaz', '#3b82f6': 'Mavi', '#10b981': 'Zümrüt', '#f59e0b': 'Kehribar', '#ef4444': 'Kırmızı', '#ec4899': 'Pembe', '#64748b': 'Gri' };
 const EMOJIS = ['📁', '💻', '🎮', '🖼️', '🎵', '🎬', '🛠️', '📝', '🌐', '💼', '⭐', '📚', '🧪', '🗂️', '🤖', '🎨'];
 
 function paintHead() {
@@ -91,11 +93,11 @@ function renameBox() {
 }
 async function chooseFolder() { const b = await window.boxApi.pickFolder(); if (b) { box = b; paintHead(); } }
 const set = async (patch) => { box = await window.boxApi.set(patch); paintHead(); };
-function gear(e) {
+async function gear(e) {
   const items = [
     { icon: '✏️', label: t('Adını değiştir'), action: renameBox },
     { icon: box.emoji || '📁', label: t('Simge'), sub: EMOJIS.map((em) => ({ label: em, checked: box.emoji === em, action: () => set({ emoji: em }) })) },
-    { icon: '🎨', label: t('Renk'), sub: [{ label: t('Tema rengi'), checked: !box.color, action: () => set({ color: null }) }].concat((box.colors || []).map((c) => ({ label: '●', title: c, checked: box.color === c, action: () => set({ color: c }), color: c }))) },
+    { icon: '🎨', label: t('Renk'), sub: [{ label: t('Tema rengi'), color: 'var(--accent)', checked: !box.color, action: () => set({ color: null }) }].concat((box.colors || []).map((c) => ({ label: t(COLOR_NAMES[c] || c), color: c, checked: box.color === c, action: () => set({ color: c }) }))) },
     '-',
     { icon: '📂', label: t('Klasörü aç'), action: () => window.boxApi.reveal() },
     { icon: '🔁', label: t('Başka klasöre bağla…'), action: chooseFolder },
@@ -106,9 +108,24 @@ function gear(e) {
     { icon: '✕', label: t('Kutuyu gizle'), action: () => window.boxApi.close() },
     { icon: '🗑', label: t('Kutuyu kaldır (klasöre dokunulmaz)'), danger: true, action: () => window.boxApi.remove() },
   ];
-  PopMenu.open(e.currentTarget, items, { align: 'right' });
-  // Renk alt menüsündeki noktaları kendi renginde göster
-  setTimeout(() => document.querySelectorAll('.pm-subm .pm-item').forEach((row) => { const it = (box.colors || []).find((c) => row.title === c); if (it) row.querySelector('.pm-lbl').style.color = it; }), 0);
+  const btn = e.currentTarget;
+  // Kutu penceresi küçük: menü ve Renk alt menüsü sığsın diye pencere menü açıkken büyür, kapanınca eski boyutuna döner
+  const tok = ++menuTok;
+  const m = await window.boxApi.menu(true);
+  if (m) fitCard(m);
+  if (tok !== menuTok) return;
+  PopMenu.open(btn, items, { align: 'right', onClose: () => endMenu(tok) });
+}
+let menuTok = 0;
+// Pencere büyüyünce kart eski ölçüsünde ve ekranda aynı yerinde kalır (fazlalık saydam)
+function fitCard(m) {
+  const s = document.body.style;
+  s.setProperty('--mx', m.x + 'px'); s.setProperty('--my', m.y + 'px'); s.setProperty('--cw', (m.w - 12) + 'px'); s.setProperty('--ch', (m.h - 12) + 'px');
+  document.body.classList.add('mx');
+}
+async function endMenu(tok) {
+  await window.boxApi.menu(false);
+  if (tok === menuTok) document.body.classList.remove('mx');
 }
 
 // Dışarıdan bırakılan dosyalar

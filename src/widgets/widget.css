@@ -106,6 +106,9 @@ body.wd.horiz .sh { border-top: 0; }
 /* Klasör kutusu (widget-box.html) */
 body.wd.box { padding: 6px; } /* --bc / --bcon yalnız kayıtlı özel kutu rengi varsa JS ile yazılır; yoksa tema rengi */
 body.box #card { border-color: color-mix(in srgb, var(--bc, var(--accent)) 45%, var(--line)); }
+/* Menü açıkken pencere büyür (box:menu); kart eski ölçüsünde ve yerinde kalır */
+body.wd.box.mx { padding: calc(6px + var(--my, 0px)) 0 0 calc(6px + var(--mx, 0px)); }
+body.box.mx #card { width: var(--cw); height: var(--ch); }
 body.box #bhead { flex: none; height: 34px; display: flex; align-items: center; gap: 7px; padding: 0 6px 0 12px; -webkit-app-region: drag; cursor: move; }
 body.box #bhead button, body.box #bhead input, body.box #btitle { -webkit-app-region: no-drag; }
 body.box #bemo { font-size: 15px; }
