@@ -164,7 +164,7 @@ Uygulamayı çalıştırmak için ayrıca bir kurulum adımı ya da hesap gerekm
 
 ## 🔢 Sürüm
 
-Biçim **ANA.ARA.YAMA**'dır (şu an: `0.4.3`). YAMA artar; 9'dan sonra ARA'ya, ARA 9'dan sonra ANA'ya devreder
+Biçim **ANA.ARA.YAMA**'dır (şu an: `0.4.4`). YAMA artar; 9'dan sonra ARA'ya, ARA 9'dan sonra ANA'ya devreder
 (0.4.9 → 0.5.0, 0.9.9 → 1.0.0). Tek kaynak `package.json:3`; kural ve nasıl uygulanacağı:
 [VERSIONING.md](VERSIONING.md). Sürüm numarası yalnız yeni bir yapı yayımlanırken artırılır; sürüm notları
 [CHANGELOG.md](CHANGELOG.md) içinde tutulur.

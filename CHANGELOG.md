@@ -3,17 +3,21 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
-## 0.4.4 · hazırlanıyor
+## 0.4.4 · 2026-11-02
 
 **Yeni**
 - Ayarlar > Hakkında'da “Geri bildirim gönder” düğmesi: hata ya da öneriniz varsayılan tarayıcıda GitHub'ın yeni issue sayfasında açılır; sürüm ve Windows sürümü hazır yazılı gelir. Başka hiçbir bilgi (kimlik, makine adı, dosya yolu, ayar, log) gönderilmez.
 
 **İyileştirilen**
 - Sistem panelinde hava durumu şehri artık listeden seçiliyor. Türkiye'nin 81 ili uygulamada hazır; yazdıkça eşleşenler çıkıyor ("ant" yazınca Antalya; Türkçe harf, plaka ve bilinen adlar da olur: "igdir", "07", "Antakya"). Tıklayarak ya da ok tuşları ve Enter ile seçiliyor. Listede olmayan yurt dışı şehirler internetten aranıyor.
+- Masaüstü bileşenleri (sistem paneli ve klasör kutuları) artık uygulamanın temasını ve seçtiğiniz tema rengini kullanıyor; sabit mor/lavanta renkler kalktı, renk değiştirilince bileşenler beklemeden güncelleniyor. Yeni klasör kutusu da tema rengiyle açılıyor (kayıtlı kutu renkleri aynen kalır).
+- Klasör kutusu menüsü artık kesilmiyor: Renk alt menüsünde renkler renkli nokta ve adlarıyla, Simge alt menüsünde simgeler adlarıyla listeleniyor; uzun listeler ok tuşlarıyla kaydırılabiliyor.
 
 **Düzeltilen**
-- YouTube ana sayfası reklam engelleyici açıkken açılmıyordu. Sebep 0.4.3'te eklenen, sayfa başında çalışan YouTube betikleriydi; bunlar kapatıldı. Engelleyici artık reklam isteklerini kesiyor ve reklam alanlarını gizliyor. Ayrıca bir YouTube sayfası 12 saniyede hiç içerik göstermezse engelleyici o panelde kendiliğinden kapanıp sayfa yeniden yükleniyor.
+- YouTube panelinde video açılırken sayfa donuyor, iskelette kalıyordu. Sebep reklam engelleyicinin sayfaya enjekte ettiği betiklerdi; engelleyici tümüyle kaldırıldı (Ayarlar'daki seçenek de kalktı). YouTube artık engelleyicisiz, normal açılıyor.
 - Klasör kutuları artık programların gerçek simgelerini gösteriyor: kısayolda seçilmiş özel .ico, Steam/oyun .url simgeleri ve hedef programın kendi simgesi okunuyor (önceden aynı türdeki kısayollar hep aynı genel simgeyi alıyordu).
+- Ses çalan panel artık uyutulmuyor: şarkılar arasındaki sessizlikte, ara belleğe alma sırasında ya da çok sessiz bölümlerde panel kapanıp ses kesilmiyor, sekmeye dönünce sayfa yeniden yüklenmiyor. Sessiz panel eskisi gibi uyutulup belleği boşaltılıyor.
+- Masaüstü kutusu ve sistem panelinin kart gölgesi pencereye sığmayıp kırpılıyor, kart çevresinde kirli bir pus bırakıyordu; gölge kaldırıldı, kart dışı tam şeffaf.
 
 ## 0.4.3 · 2026-10-31
 
