@@ -692,5 +692,12 @@ window.I18N_EN = {
   'Kısayol çalışıyor': 'Shortcut is working',
   'Kısayol kullanılamıyor': 'Shortcut is unavailable',
   'Yedek tuş kullanılıyor': 'Using the fallback key',
+  'Global tuşlar uygulama arkada olsa da çalışır. Global bir tuş alınamazsa yeniden denenir; hava durumu tablodaki yedek tuşa düşer. Ekran görüntüsü tuşu alınamazsa görüntüyü ＋ düğmesiyle de alabilirsin.': 'Global keys work even when the app is in the background. A global key that cannot be registered is retried; the weather shortcut falls back to the backup key in the table. If the screenshot key is unavailable, you can still capture with the ＋ button.',
+  'Global': 'Global',
+  'Uygulama': 'App',
+  'Panel': 'Panel',
+  'Çalışıyor': 'Working',
+  'Alınamadı': 'Unavailable',
+  'Yedek tuş': 'Fallback key',
   'Kopyala, yapıştır, kes, geri al gibi standart düzenleme tuşları sistemindir; burada listelenmez.': 'Standard editing keys such as copy, paste, cut and undo belong to the system and are not listed here.',
 };

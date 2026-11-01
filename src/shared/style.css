@@ -689,26 +689,45 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
   font-weight: 600; font-family: "Segoe UI", system-ui, sans-serif; line-height: 1.2; resize: none; outline: none; overflow: hidden; z-index: 1; }
 .sh-acts button:first-child { font-size: 12px; }
 
-/* Ayarlar penceresi (DAPP-43): sekmeler arasında boyut değişmez; uzun içerik pencerenin İÇİNDE kayar.
-   Küçük ekranda max-width/max-height ile sığar (16px pencere kenarı modal motorundan). */
+/* Ayarlar penceresi (DAPP-43, DAPP-45): sekmeler arasında boyut değişmez; uzun içerik pencerenin İÇİNDE kayar.
+   Küçük ekranda max-width/max-height ile sığar (16px pencere kenarı modal motorundan).
+   DAPP-45: beş sekme (Ayarlar · Kısayollar · Bellek · Yenilikler · Hakkında); dar pencerede sekme çubuğu alt satıra
+   sarar, adlar kesilmez. */
 .mdl.mdl-ayarlar { width: min(560px, calc(100vw - 32px)); height: min(640px, calc(100vh - 32px)); }
-.mdl.mdl-ayarlar .mdl-body { flex: 1 1 auto; }
+.mdl.mdl-ayarlar .mdl-body { flex: 1 1 auto; scrollbar-gutter: stable; }
 .mdl.mdl-ayarlar .pane.changelog { max-height: none; overflow: visible; padding-right: 0; }
+.mdl.mdl-ayarlar .dtabs { flex-wrap: wrap; row-gap: 2px; }
+.mdl.mdl-ayarlar .dtabs button { white-space: nowrap; }
+@media (max-width: 460px) {
+  .mdl.mdl-ayarlar .dtabs button { padding: 6px 7px; font-size: 12px; }
+}
+/* DAPP-45: sekme içeriği gövdeye yayılır. Kısa içerik (.center — ör. Hakkında) dikey ve yatay ortalanır;
+   uzun içerik (Ayarlar, Kısayollar, Yenilikler, Bellek) üstten başlar, gövde kayar. Kural tek yerde. */
+.mdl.mdl-ayarlar .mdl-body > .pane { flex: 1 0 auto; }
+.mdl.mdl-ayarlar .mdl-body > .pane.center { justify-content: center; }
+/* Pencere içerikten kısaysa ortalanmış içeriğin üstü kırpılmasın: 'safe center' taşan içeriği baştan hizalar (kaydırılabilir). */
+@supports (justify-content: safe center) {
+  .mdl.mdl-ayarlar .mdl-body > .pane.center { justify-content: safe center; }
+}
 /* Notlar klasörü: yol yazısı ile düğmeler arasında boşluk ve dikey ortalama (DAPP-43). */
 .mdl .notes-line { display: flex; align-items: center; gap: calc(var(--gutter) * 2); flex-wrap: wrap; }
 .mdl .notes-line .hint { flex: 1 1 160px; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mdl .notes-line .fav-add { flex: 0 0 auto; gap: var(--gutter); }
 .mdl .notes-line .fav-add button { height: 30px; display: inline-flex; align-items: center; }
-/* Kısayollar: Ayarlar sekmesindeki liste ve global tuşların durumu. */
-.sc-block { display: flex; flex-direction: column; gap: 8px; margin-top: var(--gutter); }
-.sc-h { margin: 0; }
-.sc-state { display: flex; flex-direction: column; gap: 4px; }
-.sc-state-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
-.sc-state-row.bad .sc-name::before { content: '⚠ '; }
-.sc-state-row.bad .sc-note { color: var(--text); }
-.sc-note { color: var(--muted); }
+/* Kısayollar sekmesi (DAPP-45): liste tablodan; satır = ad · tuş · kapsam · durum. */
 .sc-list { display: flex; flex-direction: column; }
 .sc-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .sc-row:last-child { border-bottom: 0; }
+.sc-row.bad .sc-name::before { content: '⚠ '; }
 .sc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-key { flex: 0 0 auto; font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
+.sc-scope { flex: 0 0 auto; width: 62px; color: var(--muted); font-size: 11.5px; }
+.sc-status { flex: 0 0 auto; width: 104px; color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.sc-status.bad { color: #e0a040; }
+/* Dar pencere (375 px): kısayol satırı iki satıra iner — ad üstte, tuş · kapsam · durum altta; yatay taşma olmaz. */
+@media (max-width: 460px) {
+  .sc-row { flex-wrap: wrap; row-gap: 2px; }
+  .sc-row .sc-name { flex: 1 1 100%; }
+  .sc-scope, .sc-status { width: auto; }
+  .sc-status { text-align: left; }
+}

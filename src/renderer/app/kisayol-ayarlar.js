@@ -359,30 +359,36 @@ async function openSettings(tab = 'settings') {
       return h('div', { class: 'row' }, h('span', { textContent: t('Tema rengi') }), box);
     }
 
-    // Kısayollar bölümü: tablodaki bütün tuşlar + global tuşların gerçek durumu.
-    const scStatus = h('div', { class: 'sc-state' });
+    // Kısayollar sekmesi (DAPP-45): liste TEK tablodan (src/shared/shortcuts.js) türer; burada tuş dizgisi yazılmaz
+    // (DAPP-43 kuralı). Global tuşların (ekran görüntüsü, hava durumu) gerçek kayıt durumu main'den gelir; tuş
+    // alınamazsa main onu 15 sn'de bir yeniden dener ve hava durumu tablodaki yedek tuşa düşer. Uygulama/panel
+    // kapsamlı tuşlar arayüzde eşleştiği için her zaman kullanılabilir.
     let scCache = {};
-    const paintScStatus = () => {
-      const row = (title, info) => {
-        if (!info) return null;
-        const note = info.ok ? t('Kısayol çalışıyor') : t('Kısayol kullanılamıyor') + ' · ' + t('Başka bir program bu tuşu kullanıyor olabilir.');
-        return h('div', { class: 'sc-state-row' + (info.ok ? '' : ' bad') },
-          h('span', { class: 'sc-name', textContent: title }),
-          h('span', { class: 'sc-key', textContent: info.active || info.key || Shortcuts.format(info.accel || '') }),
-          h('span', { class: 'sc-note', textContent: note + (info.fallback ? ' · ' + t('Yedek tuş kullanılıyor') : '') }));
-      };
-      scStatus.replaceChildren(...[row(t('Ekran görüntüsü kısayolu'), scCache.shot), row(t('Hava durumu kısayolu'), scCache.weather)].filter(Boolean));
-    };
-    window.desk.shortcuts?.status().then((st) => { scCache = { ...scCache, ...st }; paintScStatus(); }).catch(() => {});
-    offScStatus = window.desk.shortcuts?.onStatus((st) => { scCache = { ...scCache, ...st }; paintScStatus(); });
-    const scBlock = h('div', { class: 'sc-block' },
-      h('h4', { class: 'sc-h', textContent: t('Kısayollar') }),
-      scStatus,
-      h('div', { class: 'sc-list' }, ...Shortcuts.byScope('global').concat(Shortcuts.byScope('app'), Shortcuts.byScope('panel')).map((sc) =>
-        h('div', { class: 'sc-row' },
+    const GLOBAL_STATUS = { 'shot.capture': 'shot', 'weather.toggle': 'weather' }; // tablo id → main durum anahtarı
+    const scopeName = { global: t('Global'), app: t('Uygulama'), panel: t('Panel') };
+    const scList = h('div', { class: 'sc-list' });
+    const paintScList = () => {
+      scList.replaceChildren(...['global', 'app', 'panel'].flatMap((scope) => Shortcuts.byScope(scope)).map((sc) => {
+        const info = GLOBAL_STATUS[sc.id] ? scCache[GLOBAL_STATUS[sc.id]] : null;
+        const ok = !info || info.ok;
+        const activeKey = info ? info.active || info.key || Shortcuts.format(info.accel || '') : '';
+        const status = sc.scope !== 'global' ? t('Çalışıyor') : info ? (info.ok ? t('Çalışıyor') : t('Alınamadı')) : '…';
+        const fallback = info && info.fallback ? ' · ' + t('Yedek tuş') : '';
+        const note = sc.scope === 'global' && info && !info.ok ? t('Başka bir program bu tuşu kullanıyor olabilir.') : '';
+        return h('div', { class: 'sc-row' + (ok ? '' : ' bad'), title: [note, fallback.replace(' · ', '')].filter(Boolean).join(' · ') || t(sc.label, sc.vars) },
           h('span', { class: 'sc-name', textContent: t(sc.label, sc.vars) }),
-          h('span', { class: 'sc-key', textContent: Shortcuts.key(sc.id) })))),
+          h('span', { class: 'sc-key', textContent: activeKey || Shortcuts.key(sc.id) }),
+          h('span', { class: 'sc-scope', textContent: scopeName[sc.scope] || sc.scope }),
+          h('span', { class: 'sc-status' + (ok ? ' ok' : ' bad'), textContent: status + fallback }));
+      }));
+    };
+    window.desk.shortcuts?.status().then((st) => { scCache = { ...scCache, ...st }; paintScList(); }).catch(() => {});
+    offScStatus = window.desk.shortcuts?.onStatus((st) => { scCache = { ...scCache, ...st }; paintScList(); });
+    const kisaPane = h('div', { class: 'pane shortcuts' },
+      h('div', { class: 'hint', textContent: t('Global tuşlar uygulama arkada olsa da çalışır. Global bir tuş alınamazsa yeniden denenir; hava durumu tablodaki yedek tuşa düşer. Ekran görüntüsü tuşu alınamazsa görüntüyü ＋ düğmesiyle de alabilirsin.') }),
+      scList,
       h('div', { class: 'hint', textContent: t('Kopyala, yapıştır, kes, geri al gibi standart düzenleme tuşları sistemindir; burada listelenmez.') }));
+    paintScList();
 
     const settingsPane = h('div', { class: 'pane' },
       h('label', { class: 'row' }, t('Dil / Language'), sel('lang', [['tr', 'Türkçe'], ['en', 'English']], () => setTimeout(() => location.reload(), 350))),
@@ -398,10 +404,10 @@ async function openSettings(tab = 'settings') {
           h('div', { class: 'fav-add notes-btns' },
             h('button', { textContent: t('Değiştir…'), onclick: async () => { const d = await window.desk.pick('folder'); if (d) { set('notesDir', d); notesLbl.textContent = d; notesLbl.title = d; } } }),
             h('button', { textContent: t('Varsayılan'), onclick: () => { set('notesDir', ''); notesLbl.textContent = info.defaultNotesDir; notesLbl.title = info.defaultNotesDir; } }),
-            h('button', { textContent: t('Klasörü aç'), onclick: () => window.desk.open(s.notesDir || info.defaultNotesDir) })))),
-      scBlock);
+            h('button', { textContent: t('Klasörü aç'), onclick: () => window.desk.open(s.notesDir || info.defaultNotesDir) })))));
 
-    const aboutPane = h('div', { class: 'pane about' },
+    // Kısa içerikli sekme: CSS'teki tek kural (mdl-ayarlar .pane.center) içeriği gövdenin ortasında tutar.
+    const aboutPane = h('div', { class: 'pane about center' },
       h('img', { src: 'logo.png', alt: '' }),
       h('h3', { textContent: info.name }),
       h('div', { class: 'ver', textContent: t('Sürüm') + ' ' + info.version }),
@@ -476,18 +482,26 @@ async function openSettings(tab = 'settings') {
         sel('sleepMin', [['0', t('Kapalı')], ['5', t('{n} dakika sonra', { n: 5 })], ['15', t('{n} dakika sonra', { n: 15 })], ['30', t('{n} dakika sonra', { n: 30 })], ['60', t('1 saat sonra')]])),
       h('div', { class: 'hint', textContent: t('Uyuyan panel sekmesine geçince kaldığı adresle yeniden açılır. WhatsApp, Telegram, Instagram ve X bildirim kaçmasın diye hiç uyutulmaz. Ses çalan veya son 15 dakikada ses çalmış paneller de uyutulmaz.') }));
 
+    // Sekme sırası (kullanıcı, 02.11.2026): Ayarlar · Kısayollar · Bellek · Yenilikler · Hakkında.
+    const TABS = [
+      ['settings', '⚙', t('Ayarlar')],
+      ['shortcuts', '⌨', t('Kısayollar')],
+      ['mem', '📊', t('Bellek')],
+      ['notes', '✨', t('Yenilikler')],
+      ['about', 'ⓘ', t('Hakkında')],
+    ];
+    const panes = { settings: settingsPane, shortcuts: kisaPane, mem: memPane, notes: notesPane, about: aboutPane };
     const tabs = h('div', { class: 'dtabs' });
     const show = (which) => {
-      settingsPane.hidden = which !== 'settings'; aboutPane.hidden = which !== 'about'; notesPane.hidden = which !== 'notes'; memPane.hidden = which !== 'mem';
+      if (!panes[which]) which = 'settings';
+      for (const [key, pane] of Object.entries(panes)) pane.hidden = key !== which; // diyalog boyutu sabit kalır (5 sekmede de 560×640)
       if (which === 'mem') fillMem();
-      tabs.replaceChildren(
-        h('button', { class: which === 'settings' ? 'on' : '', textContent: '⚙ ' + t('Ayarlar'), onclick: () => show('settings') }),
-        h('button', { class: which === 'notes' ? 'on' : '', textContent: '✨ ' + t('Yenilikler'), onclick: () => show('notes') }),
-        h('button', { class: which === 'mem' ? 'on' : '', textContent: '📊 ' + t('Bellek'), onclick: () => show('mem') }),
-        h('button', { class: which === 'about' ? 'on' : '', textContent: 'ⓘ ' + t('Hakkında'), onclick: () => show('about') }));
+      if (which === 'shortcuts') paintScList();
+      tabs.replaceChildren(...TABS.map(([key, icon, label]) =>
+        h('button', { class: which === key ? 'on' : '', textContent: icon + ' ' + label, onclick: () => show(key) })));
     };
     show(tab);
-    return [tabs, settingsPane, notesPane, memPane, aboutPane];
+    return [tabs, settingsPane, kisaPane, notesPane, memPane, aboutPane];
   } });
 }
 

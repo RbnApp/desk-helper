@@ -123,7 +123,7 @@ olarak gizlenir.
 | **Favoriler** | ⭐ veya Ctrl+Space: bilgisayarınızdaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır. |
 | **Simgeler** | Sekmelerde, panel başlıklarında, kısayollarda ve alt çubukta gerçek logolar görünür. Beğenmediğiniz simgeye sağ tık → **Simgeyi değiştir…** ile kendi resminizi, bir emoji ya da harf + renk verebilirsiniz; "Varsayılana dön" geri alır. |
 | **Yerleşim** | Sekmeler sürükle-bırak ile sıralanır. Paneli başlığından tutup başka panelin kenarına bırakınca yerleşir; ortasına bırakırsanız yer değiştirir. Aradaki çizgiyi sürükleyerek boyutlandırın, çift tık eşitler. |
-| **Ayarlar ve Hakkında** | Sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Ayarlar sekmesinde dil (Türkçe / English), tema ve tema rengi, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü, açılışta güncelleme denetimi; Hakkında'da sürüm bilgisi, iletişim, GitHub deposu ve **Yenilikler** (sürüm notları). |
+| **Ayarlar ve Hakkında** | Sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Beş sekme: **Ayarlar** (dil Türkçe / English, tema ve tema rengi, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü, açılışta güncelleme denetimi), **Kısayollar** (tuş listesi ve global tuşların durumu), **Bellek**, **Yenilikler** (sürüm notları), **Hakkında** (sürüm bilgisi, iletişim, GitHub deposu). |
 
 ## ⌨️ Kısayollar
 
