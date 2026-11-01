@@ -1,133 +1,208 @@
-# Desk Helper — rbnbilisim
+<p align="center">
+  <img src="src/renderer/logo.png" width="96" alt="Desk Helper">
+</p>
 
-WhatsApp, Telegram, Instagram, X ve YouTube'u, kendi sekmeli tarayıcısını, not defterini, dosya gezginini ve
-favori programlarını tek pencerede toplayan Windows masaüstü uygulaması: tarayıcı gibi sekmeler, istediğin gibi bölünüp
-boyutlandırılan paneller, tek bir bildirim merkezi.
+<h1 align="center">Desk Helper</h1>
 
-Sürüm: 0.4.3 · sürüm notları [CHANGELOG.md](CHANGELOG.md) · sürüm kuralı [VERSIONING.md](VERSIONING.md) ·
-iletişim info@rbnbilisim.com.tr
+<p align="center">
+  <b>WhatsApp, Telegram, Instagram, X, YouTube, tarayıcı, not defteri, dosya gezgini ve favori
+  programlarınız — tek pencerede.</b><br>
+  Tarayıcı gibi sekmeler, istediğiniz gibi bölünüp boyutlandırılan paneller, tek bir bildirim merkezi.
+</p>
 
-## Kurulum
-`release\DeskHelper-Setup-<sürüm>.exe` dosyasını çalıştır. Kurulum masaüstüne ve Başlat menüsüne
-(rbnbilisim klasörü) "Desk Helper" kısayolu ekler. Kaldırmak için: Ayarlar > Uygulamalar > Desk Helper.
-Kurulum dosyası imzasız olduğu için SmartScreen "Yine de çalıştır" isteyebilir.
-Kurulum dosyası GitHub'daki Releases sayfasındadır. Desk Helper açılışta yeni sürümü kendisi denetler, sürüm notlarını
-gösterip onay isteyerek indirir ve kurar (Ayarlar > Hakkında > Güncellemeleri denetle).
+<p align="center">
+  <img alt="sürüm 0.4.3" src="https://img.shields.io/badge/version-0.4.3-6E4AFF?style=flat-square">
+  <img alt="Windows 10 ve 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?style=flat-square">
+  <img alt="MIT lisansı" src="https://img.shields.io/badge/license-MIT-3DA639?style=flat-square">
+  <img alt="Electron" src="https://img.shields.io/badge/Electron-44-47848F?style=flat-square">
+</p>
 
-## WhatsApp, Telegram, Instagram, X
-Hepsi Desk Helper'ın içinde gömülü web paneli olarak açılır (web.whatsapp.com, web.telegram.org,
-instagram.com, x.com). Oturum kalıcıdır: bir kez giriş yaparsın (WhatsApp ve Telegram'da QR ile), sonra hep açık kalır.
-Sekme değiştirme, panel taşıma ve boyutlandırma hiç sorun çıkarmaz, görev çubuğunda ayrı simge oluşmaz.
-Instagram dar panelde telefon görünümünde açılır. X'e e-posta ve şifreyle girilir. Desk Helper kapalıyken bunlardan
-bildirim gelmez.
+---
 
-## Bildirim merkezi ve Rahatsız etme
-Sağ üstteki 🔔 zil WhatsApp, Telegram, Instagram ve X'teki okunmamış sayısının toplamını gösterir; tıklayınca servisler
-ayrı ayrı sayılarıyla listelenir, birine tıklayınca açık paneline geçilir (açık değilse yeni sekmede açılır). Zilin
-menüsündeki **Rahatsız etme** 1 saat, bugün boyunca ya da kapatana kadar bildirimleri ve sesleri susturur.
+## 🧭 Nedir?
 
-## YouTube
-YouTube varsayılan olarak Desk Helper'ın içinde açılır; aynı anda birkaç video yan yana izlenebilir:
-bir videoya sağ tıklayıp **Yeni panelde aç** dersen (veya orta tıklarsan) video yanına yeni panel olarak açılır.
-YouTube girişsiz kullanılır: Google, uygulama içine gömülü tarayıcılarda hesap girişine izin vermediği için Google
-hesabıyla giriş (YouTube, Gmail) desteklenmez. Video izlemek için giriş gerekmez.
+Desk Helper, gün içinde ayrı ayrı açtığınız her şeyi tek pencereye toplar. Her uygulama kendi
+sekmesinde ya da panelinde durur; panellerin yerini, boyutunu ve sırasını siz belirlersiniz.
+Sekmeler ve açık sayfalar uygulama kapanınca hatırlanır.
 
+## ✨ Özellikler
+
+### 💬 WhatsApp, Telegram, Instagram, X
+- Dördü de Desk Helper'ın içinde gömülü web paneli olarak açılır: web.whatsapp.com, web.telegram.org,
+  instagram.com, x.com.
+- Oturum kalıcıdır: bir kez giriş yaparsınız (WhatsApp ve Telegram'da QR ile), sonra açık kalır.
+- Sekme değiştirme, panel taşıma ve boyutlandırma sorun çıkarmaz; görev çubuğunda ayrı simge oluşmaz.
+- Instagram dar panelde telefon görünümünde açılır. X'e e-posta ve şifreyle girilir.
+- Desk Helper kapalıyken bu servislerden bildirim gelmez.
+
+### 🔔 Bildirim merkezi ve Rahatsız etme
+- Sağ üstteki 🔔 zil, WhatsApp, Telegram, Instagram ve X'teki okunmamış sayıların toplamını gösterir.
+- Tıklayınca servisler ayrı ayrı sayılarıyla listelenir; birine tıklayınca açık paneline geçilir
+  (panel açık değilse yeni sekmede açılır).
+- Zilin menüsündeki **Rahatsız etme** 1 saat, bugün boyunca ya da kapatana kadar bildirimleri ve sesleri susturur.
+
+### ▶️ YouTube
+- YouTube varsayılan olarak Desk Helper'ın içinde açılır; aynı anda birkaç video yan yana izlenebilir.
+- Bir videoya sağ tıklayıp **Yeni panelde aç** derseniz (veya orta tıklarsanız) video yanına yeni panel olarak açılır.
+- YouTube girişsiz kullanılır: Google, uygulama içine gömülü tarayıcılarda hesap girişine izin vermediği
+  için Google hesabıyla giriş (YouTube, Gmail) desteklenmez. Video izlemek için giriş gerekmez.
+
+### 🧭 Tarayıcı (Desk Helper'ın kendi tarayıcısı)
 **Chrome, Opera veya Edge hiç kullanılmaz.** WhatsApp, Telegram ve diğer panellerdeki linkler, ↗ düğmesi,
-sağ tık > "Tarayıcı panelinde aç" ve Favorilerdeki siteler Desk Helper'ın kendi tarayıcı panelinde yeni sekme olarak açılır
-(sekmede tarayıcı paneli yoksa yanına açılır).
-WhatsApp, Telegram ve Instagram panelleri tek sitelik "uygulama" panelidir: sekme ve adres çubuğu yoktur, başka siteye
-gitmezler; içlerindeki her link (yeni sekmede / yeni panelde aç dahil) tarayıcı paneline gider. Tüm web panellerinde sağ tık menüsü vardır: yeni sekmede aç, yeni panelde aç,
-tarayıcı panelinde aç, bağlantıyı kopyala, kes/kopyala/yapıştır.
+sağ tık → **Tarayıcı panelinde aç** ve Favorilerdeki siteler Desk Helper'ın kendi tarayıcı panelinde yeni
+sekme olarak açılır (sekmede tarayıcı paneli yoksa yanına açılır).
 
-## Tarayıcı (Desk Helper'ın kendi tarayıcısı)
-🧭 **Tarayıcı** kısayolu Desk Helper'ın içinde sekmeli bir tarayıcı paneli açar: sekmeler (＋, ✕, orta tık),
-geri / ileri / yenile, adres çubuğu (`localhost:3000` yazınca doğrudan açılır, adres değilse Google'da arar).
-Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık > "Yeni panelde aç" yanına ayrı panel açar.
-👤 düğmesinden profil seçilir: her profilin girişleri ve çerezleri ayrıdır, "Yeni profil…" ile eklenir;
-🕶 Gizli seçilirse hiçbir şey kaydedilmez. Sekmeler ve açık sayfalar uygulama kapanınca hatırlanır.
-**Yer imleri profile bağlıdır:** adres çubuğunun altındaki çubukta yalnızca seçili profilin yer imleri görünür.
-☆ ile açık sayfa eklenir (★ ise düzenle / kaldır), tek tıkla açılır, Ctrl+tık veya orta tık yeni sekmede açar.
-Çubuğa sağ tıklayınca yeni klasör ve Chrome'dan içe aktarma (Chrome'da Yer işaretleri yöneticisi > ⋮ > Dışa aktar ile
-alınan HTML dosyası) çıkar. Sürükle-bırak ile sıralanır, klasörün üstüne bırakılan yer imi klasöre girer.
-🍪 düğmesi yalnızca açık sekmedeki sitenin (alan adı ve alt alan adları) çerezlerini, o profilde temizler: önce hangi
-çerezlerin silineceğini listeler ve onay ister; istersen o sitenin yerel verileri de silinir. Diğer siteler ve profiller etkilenmez.
-**Şifre yöneticisi (Chrome'dan bağımsız):** bir sitede giriş yapınca üstte "Şifre kaydedilsin mi?" çubuğu çıkar
-(Kaydet / Bu sitede asla / Şimdi değil); aynı kullanıcı farklı şifreyle girerse "Şifre güncellensin mi?" sorulur.
-Kayıtlı siteye gelince tek hesap varsa kullanıcı adı ve şifre kendiliğinden dolar, birden çok hesap varsa alana tıklayınca
-seçim listesi çıkar. Şifreler profile bağlıdır ve Desk Helper'ın veri klasöründe (`passwords.json`) Windows'un kullanıcı
-şifrelemesiyle (DPAPI) saklanır; Chrome silinse de durur, başka Windows kullanıcısı veya bilgisayar çözemez.
-👤 > **Kayıtlı şifreler…**: listele, göster, kopyala, düzenle, sil, "asla kaydetme" listesi ve Chrome'dan CSV içe aktarma
-(Chrome > Ayarlar > Şifre Yöneticisi > Ayarlar > Dışa aktar). Şifreyi göstermek/kopyalamak için ana parola istenir
-(ilk seferde belirlenir, 5 dakika açık kalır); otomatik doldurma ana parola istemez. Gizli pencerede şifre kaydedilmez.
-Adres çubuğundaki 🔑: bu sitenin kayıtlı hesapları (tıklayınca sayfaya doldurur) ve **Bu site için şifre ekle…** ile elle kayıt.
-Kayıtlı şifreler penceresinde de **＋ Şifre ekle** vardır (site, kullanıcı adı, şifre). Not: phpMyAdmin zaten açık bir oturumla
-açılıyorsa (veya `auth_type = config` ile şifre sorulmuyorsa) giriş formu olmadığından kaydetme önerilmez; o zaman elle ekle.
-Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 > "Bu profili sil…" profili, yer imlerini ve girişlerini siler.
-"＋ Kısayol ekle" > **Tarayıcıda bir site** ile ör. phpMyAdmin için tek tıklık kısayol eklenir; tıklayınca tarayıcı panelinde sekme açar.
+- 🧭 **Tarayıcı** kısayolu sekmeli bir tarayıcı paneli açar: sekmeler (+ , ✕, orta tık), geri / ileri / yenile,
+  adres çubuğu (`localhost:3000` yazınca doğrudan açılır, adres değilse Google'da arar).
+- Yeni sekmede açılan linkler aynı panelde yeni sekme olur; sağ tık → **Yeni panelde aç** yanına ayrı panel açar.
+- 👤 düğmesinden profil seçilir: her profilin girişleri ve çerezleri ayrıdır, **Yeni profil…** ile eklenir.
+  🕶 Gizli seçilirse hiçbir şey kaydedilmez.
+- WhatsApp, Telegram ve Instagram panelleri tek sitelik "uygulama" panelidir: sekme ve adres çubuğu yoktur,
+  başka siteye gitmezler; içlerindeki her link (yeni sekmede / yeni panelde aç dahil) tarayıcı paneline gider.
+- Tüm web panellerinde sağ tık menüsü vardır: yeni sekmede aç, yeni panelde aç, tarayıcı panelinde aç,
+  bağlantıyı kopyala, kes / kopyala / yapıştır.
 
-## Programlar panelde
-"Kısayol ekle" ile eklenen programlar bilgisayardaki **gerçek programlardır**.
-Desk Helper programın penceresini bulur (açık değilse açar) ve panelin üstüne oturtur:
+#### 🔖 Yer imleri
+- Yer imleri **profile bağlıdır**: adres çubuğunun altındaki çubukta yalnız seçili profilin yer imleri görünür.
+- ☆ ile açık sayfa eklenir (★ ise düzenle / kaldır); tek tıkla açılır, Ctrl+tık veya orta tık yeni sekmede açar.
+- Çubuğa sağ tıklayınca yeni klasör ve **Chrome'dan içe aktarma** çıkar (Chrome'da Yer işaretleri yöneticisi →
+  ⋮ → Dışa aktar ile alınan HTML dosyası).
+- Sürükle-bırak ile sıralanır; klasörün üstüne bırakılan yer imi klasöre girer.
+
+#### 🍪 Çerez temizleme
+- Yalnız açık sekmedeki sitenin (alan adı ve alt alan adları) çerezlerini o profilde temizler.
+- Önce hangi çerezlerin silineceğini listeler ve onay ister; isterseniz o sitenin yerel verileri de silinir.
+- Diğer siteler ve profiller etkilenmez.
+
+### 🔐 Şifre yöneticisi (Chrome'dan bağımsız)
+- Bir sitede giriş yapınca üstte **"Şifre kaydedilsin mi?"** çubuğu çıkar (Kaydet / Bu sitede asla / Şimdi değil).
+  Aynı kullanıcı farklı şifreyle girerse "Şifre güncellensin mi?" sorulur.
+- Kayıtlı siteye gelince tek hesap varsa kullanıcı adı ve şifre kendiliğinden dolar; birden çok hesap varsa
+  alana tıklayınca seçim listesi çıkar.
+- Şifreler profile bağlıdır ve Desk Helper'ın veri klasöründe (`passwords.json`) Windows'un kullanıcı
+  şifrelemesiyle (DPAPI) saklanır. Chrome silinse de durur; başka bir Windows kullanıcısı veya bilgisayar çözemez.
+- 👤 → **Kayıtlı şifreler…**: listele, göster, kopyala, düzenle, sil, "asla kaydetme" listesi ve Chrome'dan CSV
+  içe aktarma (Chrome → Ayarlar → Şifre Yöneticisi → Ayarlar → Dışa aktar).
+- Şifreyi göstermek/kopyalamak için ana parola istenir (ilk seferde belirlenir, 5 dakika açık kalır);
+  otomatik doldurma ana parola istemez. Gizli pencerede şifre kaydedilmez.
+- Adres çubuğundaki 🔑: bu sitenin kayıtlı hesapları (tıklayınca sayfaya doldurur) ve **Bu site için şifre ekle…**.
+  Kayıtlı şifreler penceresinde de **+ Şifre ekle** vardır (site, kullanıcı adı, şifre).
+- Not: phpMyAdmin zaten açık bir oturumla açılıyorsa (veya `auth_type = config` ile şifre sorulmuyorsa)
+  giriş formu olmadığından kaydetme önerilmez; o zaman elle ekleyin.
+- Gizli pencere varsayılan profilin yer imlerini gösterir. 👤 → **Bu profili sil…** profili, yer imlerini ve
+  girişlerini siler.
+- **+ Kısayol ekle** → **Tarayıcıda bir site** ile örneğin phpMyAdmin için tek tıklık kısayol eklenir;
+  tıklayınca tarayıcı panelinde sekme açar.
+
+### 🪟 Programlar panelde
+**Kısayol ekle** ile eklenen programlar bilgisayarınızdaki gerçek programlardır. Desk Helper programın
+penceresini bulur (açık değilse açar) ve panelin üstüne oturtur:
+
 - Panel taşınınca, boyutlanınca, Desk Helper küçülünce pencere de takip eder.
 - Başka sekmeye geçince o sekmenin pencereleri ekran dışına park edilir, geri dönünce yerine gelir.
 - Paneldeki pencerenin görev çubuğunda ayrı simgesi olmaz; panelden ayrılınca (⇱) simge geri gelir.
 - Program kendi oturumu, profili, sekmeleri ve eklentileriyle çalışır.
 - ⇱ pencereyi panelden ayırır, ✕ paneli kapatır.
-- Desk Helper kapanınca programlar serbest bırakılır. Beklenmedik kapanmada ekran dışında kalan
-  pencereler bir sonraki açılışta geri getirilir.
+- Desk Helper kapanınca programlar serbest bırakılır. Beklenmedik kapanmada ekran dışında kalan pencereler
+  bir sonraki açılışta geri getirilir.
 - Doğru pencere bulunamazsa panel başlığındaki 🗗 düğmesi açık pencerelerden seçtirir.
 
-Sınırlar: Windows başka bir programın penceresini gerçekten gömmeye izin vermez; pencere panelin üstünde durur.
-Bu yüzden Desk Helper'ın açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici gizlenir.
+**Sınır:** Windows, başka bir programın penceresini gerçekten gömmeye izin vermez; pencere panelin üstünde
+durur. Bu yüzden Desk Helper'ın açılır pencereleri (Ayarlar, Favoriler…) açıkken paneldeki programlar geçici
+olarak gizlenir.
 
-## Açılışta sorun olursa
-Desk Helper her sürüm yükseltmesinden önce kayıtlı düzenin yedeğini alır (uygulamanın veri klasöründe `state.backup-*.json`).
-Kayıtlı düzen yüklenemezse boş ekran yerine hata penceresi çıkar; "Düzeni sıfırla" sekmeleri ve kısayolları varsayılana döndürür,
-favoriler, alt çubuk, yer imleri, tarayıcı profilleri ve ayarlar korunur.
+## 🎛️ Kullanım
 
-## Kullanım
-- **Sekmeler:** ＋ veya Ctrl+T yeni sekme açar ve ad sorar. Çift tık veya sağ tık ile yeniden adlandır.
-  Sekmede içindeki panellerin simgeleri görünür, üzerine gelince açık olanların listesi çıkar. Ctrl+Tab ile geçiş.
-- **Kısayollar:** tıkla, aktif sekmeye panel eklenir. Sağ tık: panel ekle, alt çubuğa ekle, düzenle/sil. "＋ Kısayol ekle" ile
-  tarayıcıda açılan bir site, kurulu herhangi bir program ya da uygulama içi web sayfası eklenir.
-- **Dosyalar:** sağ tık menüsü (Windows 10 tarzı): aç, not defterinde aç, kes/kopyala/yapıştır, yolu kopyala,
-  sil (Geri Dönüşüm Kutusu'na), yeniden adlandır; boş alanda yeni klasör, yeni metin belgesi, yapıştır, yenile.
-  Kısayollar: Del, F2, Ctrl+C/X/V, Ctrl+Shift+N, F5, Enter, Backspace (üst klasör). Paneller arası kopyala-yapıştır çalışır.
-- **Alt çubuk:** en altta, her sekmede görünen tek sıralık uygulama rafı (Android'deki ana ekran gibi). Bir kısayola
-  veya favoriye sağ tık > **Alt çubuğa ekle**; çubuktaki simgeye sağ tık > **Alt çubuktan kaldır**. "＋" ile kısayol ve
-  favorilerden seçebilir ya da yeni program, klasör, web sitesi ekleyebilirsin. **Kurulu uygulama** düğmesi Başlat
-  menüsündeki tüm uygulamaları (Microsoft Store uygulamaları dahil, ör. Claude) simgeleriyle ve arama kutusuyla listeler;
-  exe dosyasını bulmana gerek kalmaz. Simgeler sürükleyerek sıralanır,
-  sığmayınca fare tekerleği veya ‹ › ile yana kayar, üstüne gelinen simge büyür.
-- **Favoriler (⭐ veya Ctrl+Space):** bilgisayarındaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır.
-- **Simgeler:** sekmelerde, panel başlıklarında, kısayollarda ve alt çubukta gerçek logolar görünür. Beğenmediğin simgeye
-  sağ tık > **Simgeyi değiştir…** ile kendi resmini, bir emoji ya da harf + renk verebilirsin; "Varsayılana dön" geri alır.
-- **Sekme sırası:** üstteki sekmeler sürükle-bırak ile sıralanır.
-- **Panel taşıma:** başlıktan tutup başka panelin kenarına bırak; ortasına bırakırsan yer değiştirir.
-- **Boyutlandırma:** aradaki çizgiyi sürükle, çift tık eşitler.
-- **Ayarlar ve Hakkında:** sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Ayarlar sekmesinde dil
-  (Türkçe / English), tema ve tema rengi, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü,
-açılışta güncelleme denetimi; Hakkında'da sürüm bilgisi, iletişim, GitHub deposu ve **Yenilikler** (sürüm notları).
+| Ne | Nasıl |
+|---|---|
+| **Sekmeler** | ＋ veya Ctrl+T yeni sekme açar ve ad sorar. Çift tık ya da sağ tık ile yeniden adlandırılır. Sekmede içindeki panellerin simgeleri görünür, üzerine gelince açık olanların listesi çıkar. Ctrl+Tab ile geçiş. |
+| **Kısayollar** | Tıkla, aktif sekmeye panel eklenir. Sağ tık: panel ekle, alt çubuğa ekle, düzenle/sil. **+ Kısayol ekle** ile tarayıcıda açılan bir site, kurulu herhangi bir program ya da uygulama içi web sayfası eklenir. |
+| **Dosyalar** | Windows 10 tarzı sağ tık menüsü: aç, not defterinde aç, kes/kopyala/yapıştır, yolu kopyala, sil (Geri Dönüşüm Kutusu'na), yeniden adlandır; boş alanda yeni klasör, yeni metin belgesi, yapıştır, yenile. Kısayollar: Del, F2, Ctrl+C/X/V, Ctrl+Shift+N, F5, Enter, Backspace (üst klasör). Paneller arası kopyala-yapıştır çalışır. |
+| **Alt çubuk** | En altta, her sekmede görünen tek sıralık uygulama rafı. Bir kısayola veya favoriye sağ tık → **Alt çubuğa ekle**; çubuktaki simgeye sağ tık → **Alt çubuktan kaldır**. ＋ ile kısayollardan ve favorilerden seçilir ya da yeni program, klasör, web sitesi eklenir. **Kurulu uygulama** düğmesi Başlat menüsündeki tüm uygulamaları (Microsoft Store uygulamaları dahil) simgeleriyle ve arama kutusuyla listeler; exe dosyasını bulmanız gerekmez. Simgeler sürükleyerek sıralanır, sığmayınca fare tekerleği veya ‹ › ile yana kayar, üstüne gelinen simge büyür. |
+| **Favoriler** | ⭐ veya Ctrl+Space: bilgisayarınızdaki programlar, dosyalar, klasörler ve siteler; tıklayınca açılır. |
+| **Simgeler** | Sekmelerde, panel başlıklarında, kısayollarda ve alt çubukta gerçek logolar görünür. Beğenmediğiniz simgeye sağ tık → **Simgeyi değiştir…** ile kendi resminizi, bir emoji ya da harf + renk verebilirsiniz; "Varsayılana dön" geri alır. |
+| **Yerleşim** | Sekmeler sürükle-bırak ile sıralanır. Paneli başlığından tutup başka panelin kenarına bırakınca yerleşir; ortasına bırakırsanız yer değiştirir. Aradaki çizgiyi sürükleyerek boyutlandırın, çift tık eşitler. |
+| **Ayarlar ve Hakkında** | Sol üstteki Desk Helper düğmesi (sürüm numarası yanında yazar). Ayarlar sekmesinde dil (Türkçe / English), tema ve tema rengi, açılışta pencere konumu, Windows ile başlat, her zaman üstte, not klasörü, açılışta güncelleme denetimi; Hakkında'da sürüm bilgisi, iletişim, GitHub deposu ve **Yenilikler** (sürüm notları). |
 
-## Geliştirme
+## 🚑 Açılışta sorun olursa
+
+- Desk Helper her sürüm yükseltmesinden önce kayıtlı düzenin yedeğini alır (uygulamanın veri klasöründe
+  `state.backup-*.json`).
+- Kayıtlı düzen yüklenemezse boş ekran yerine hata penceresi çıkar; **Düzeni sıfırla** sekmeleri ve
+  kısayolları varsayılana döndürür. Favoriler, alt çubuk, yer imleri, tarayıcı profilleri ve ayarlar korunur.
+
+## 🚀 Kurulum
+
+1. GitHub'daki **Releases** sayfasından `DeskHelper-Setup-<sürüm>.exe` dosyasını indirin.
+2. Kurulumu çalıştırın. Kurulum masaüstüne ve Başlat menüsüne (rbnbilisim klasörü) **Desk Helper**
+   kısayolu ekler; kullanıcı hesabına kurulur, yönetici hakkı gerekmez.
+3. Kaldırmak için: Ayarlar → Uygulamalar → Desk Helper.
+
+Kurulum dosyası **imzasızdır**; Windows SmartScreen "Yine de çalıştır" isteyebilir. Bu beklenen durumdur.
+
+Desk Helper açılışta yeni sürümü kendisi denetler, sürüm notlarını gösterip onay isteyerek indirir ve kurar
+(Ayarlar → Hakkında → Güncellemeleri denetle). Güncelleme dosyaları GitHub Release'e yüklenir
+(`DeskHelper-Setup-<sürüm>.exe`, `.blockmap`, `latest.yml`); uygulama güncellemeyi buradan bulur.
+
+## 📋 Gereksinimler
+
+| Gereksinim | Neden |
+|---|---|
+| Windows 10 veya Windows 11, x64 | Kurulum paketi x64 NSIS olarak üretilir (`package.json` → `build.win`). |
+| İnternet | WhatsApp, Telegram, Instagram, X ve YouTube web panel olarak açılır. |
+
+Uygulamayı çalıştırmak için ayrıca bir kurulum adımı ya da hesap gerekmez; yalnız geliştirmek için
+**Node.js** gerekir (aşağıdaki bölüm).
+
+## 💬 Geri bildirim
+
+- Uygulamada **Hakkında → Geri bildirim gönder** düğmesi vardır; tarayıcıda GitHub'ın "yeni issue" sayfasını açar.
+- Önceden doldurulan tek bilgi sürüm ve Windows sürümüdür; kimlik, makine adı, kullanıcı adı, dosya yolu,
+  ayar ve günlük gönderilmez.
+- Doğrudan bağlantı: [RbnApp/desk-helper · Issues](https://github.com/RbnApp/desk-helper/issues/new).
+
+## 🔢 Sürüm
+
+Biçim **ANA.ARA.YAMA**'dır (şu an: `0.4.3`). YAMA artar; 9'dan sonra ARA'ya, ARA 9'dan sonra ANA'ya devreder
+(0.4.9 → 0.5.0, 0.9.9 → 1.0.0). Tek kaynak `package.json:3`; kural ve nasıl uygulanacağı:
+[VERSIONING.md](VERSIONING.md). Sürüm numarası yalnız yeni bir yapı yayımlanırken artırılır; sürüm notları
+[CHANGELOG.md](CHANGELOG.md) içinde tutulur.
+
+## 📄 Lisans
+
+MIT — ayrıntılar için [LICENSE](LICENSE). Telif: © 2026 rbnbilisim.
+
+## 🛠️ Geliştirme
+
 Node.js gerekli. Bu klasörde:
-- `npm install` — bağımlılıkları kur
-- `npm start` — geliştirme modunda aç (F12: geliştirici araçları)
-- `npm run bump` — sürümü kurala göre artır
-- `npm run dist` — `dist\` içine kurulum dosyası üret
 
-Yayın: her sürümün `DeskHelper-Setup-<sürüm>.exe`, `.blockmap` ve `latest.yml` dosyaları GitHub Release'e yüklenir;
-uygulama güncellemeyi buradan bulur (package.json > build.publish).
+```powershell
+npm install     # bağımlılıkları kur
+npm start       # geliştirme modunda aç (F12: geliştirici araçları)
+npm run bump    # sürümü kurala göre artır
+npm run dist    # dist\ içine kurulum dosyası üret
+```
 
-Klasör yapısı (`src\`, dosyanın çalıştığı sürece göre):
-- `src\main\` — ana süreç: `main.js` (pencere, dosya sistemi, ayarlar), `native.js` (gerçek program pencereleri, Win32), `widgets.js` + `boxes.js` (masaüstü bileşenleri), `sysinfo.js`, `shots.js`, `passwords.js`, `motion.js`
-- `src\preload\` — köprüler: `preload.js`, `webview-preload.js`, `sw-preload.js`, `shot-preload.js`, `widget-preload.js`
-- `src\renderer\` — arayüz: `index.html`, `app\` (app.js'in parçaları: `cekirdek.js` → `baslat.js`, index.html'deki sırayla yüklenir), `annotate.js`, `yt-player.html`, `shot.html`, `logo.png`, `vendor\`
-- `src\widgets\` — bileşen pencereleri: `widget-sys.*`, `widget-box.*`, `widget.css`, `widget-theme.js`
-- `src\shared\` — iki ya da daha çok süreçte kullanılanlar: `style.css`, `i18n.js`, `menu.js`, `modal.js`, `tr-cities.js`
-- `build\icon.ico` (uygulama simgesi), `scripts\bump.js` (sürüm), `scripts\duman.js` (duman testi)
+Duman testi: `node scripts/duman.js --etiket once|sonra` — uygulamayı ayrı bir geçici profille açar,
+gerçek fare olaylarıyla temel akışları dener, konsol hatalarını sayar ve ekran görüntüsü alır.
 
-## Geliştirici notu: pencere (modal) motoru
-Uygulamadaki bütün açılır pencereler (onaylar, formlar, çerez temizleme, şifreler, Favoriler, Ayarlar, alt çubuk…)
-tek motordan açılır: `src/shared/modal.js`; bütün sağ tık ve açılır menüler de tek bileşenden: `src/shared/menu.js` (`PopMenu.open`, stil: `.pm-*`) (`Modal.open / form / confirm / alert / choose`). Görünüm `style.css` içindeki
-"Modal motoru" bölümündedir (`.mdl-*`). Tasarım ya da klavye davranışı (Enter, Esc, Tab) değişecekse yalnızca bu iki yer değişir.
+| Yol | İçerik |
+|---|---|
+| `src/main/` | Ana süreç: `main.js` (pencere, dosya sistemi, ayarlar), `native.js` (gerçek program pencereleri, Win32), `widgets.js` + `boxes.js` (masaüstü bileşenleri), `sysinfo.js`, `shots.js`, `passwords.js`, `motion.js` |
+| `src/preload/` | Köprüler: `preload.js`, `webview-preload.js`, `sw-preload.js`, `shot-preload.js`, `widget-preload.js` |
+| `src/renderer/` | Arayüz: `index.html`, `app/` (parçalar `cekirdek.js` → `baslat.js` sırasıyla yüklenir), `annotate.js`, `yt-player.html`, `shot.html`, `logo.png`, `vendor/` |
+| `src/widgets/` | Bileşen pencereleri: `widget-sys.*`, `widget-box.*`, `widget.css`, `widget-theme.js` |
+| `src/shared/` | İki ya da daha çok süreçte kullanılanlar: `style.css`, `i18n.js`, `menu.js`, `modal.js`, `tr-cities.js` |
+| `build/`, `scripts/` | `icon.ico` (uygulama simgesi), `bump.js` (sürüm), `duman.js` (duman testi) |
+
+### 🧰 Geliştirici notu: pencere (modal) motoru
+
+Uygulamadaki bütün açılır pencereler (onaylar, formlar, çerez temizleme, şifreler, Favoriler, Ayarlar,
+alt çubuk…) tek motordan açılır: `src/shared/modal.js` (`Modal.open / form / confirm / alert / choose`).
+Bütün sağ tık ve açılır menüler de tek bileşenden: `src/shared/menu.js` (`PopMenu.open`, stil `.pm-*`).
+Görünüm `style.css` içindeki "Modal motoru" bölümündedir (`.mdl-*`). Tasarım ya da klavye davranışı
+(Enter, Esc, Tab) değişecekse yalnızca bu iki yer değişir.
+
+---
+
+<p align="center"><sub>© 2026 rbnbilisim · Desk Helper · info@rbnbilisim.com.tr</sub></p>
