@@ -11,10 +11,11 @@
 </p>
 
 <p align="center">
-  <img alt="sürüm 0.4.3" src="https://img.shields.io/badge/version-0.4.3-6E4AFF?style=flat-square">
-  <img alt="Windows 10 ve 11" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?style=flat-square">
-  <img alt="MIT lisansı" src="https://img.shields.io/badge/license-MIT-3DA639?style=flat-square">
-  <img alt="Electron" src="https://img.shields.io/badge/Electron-44-47848F?style=flat-square">
+  <a href="https://github.com/RbnApp/desk-helper/releases/latest"><img alt="Son sürüm" src="https://img.shields.io/github/v/release/RbnApp/desk-helper?style=for-the-badge&amp;label=SON%20S%C3%9CR%C3%9CM"></a>
+  <a href="#-gereksinimler"><img alt="Windows 10 ve 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=for-the-badge&amp;logo=windows"></a>
+  <a href="LICENSE"><img alt="MIT lisansı" src="https://img.shields.io/github/license/RbnApp/desk-helper?style=for-the-badge"></a>
+  <a href="https://github.com/RbnApp/desk-helper/issues/new/choose"><img alt="Geri bildirim" src="https://img.shields.io/badge/GER%C4%B0%20B%C4%B0LD%C4%B0R%C4%B0M-issues-2ea44f?style=for-the-badge&amp;logo=github"></a>
+  <a href="https://www.electronjs.org/"><img alt="Electron 44" src="https://img.shields.io/badge/Electron-44-47848F?style=for-the-badge&amp;logo=electron&amp;logoColor=white"></a>
 </p>
 
 ---
