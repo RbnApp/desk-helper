@@ -22,6 +22,12 @@ Sıradaki sürüm: **0.4.4** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Kodda hazır (0.4.4'te çıkacak)
 
+- Geri bildirim düğmesi (2026-11-01, CAPP-211): Ayarlar > Hakkında'ya "Geri bildirim gönder" eklendi. Tıklayınca
+  varsayılan tarayıcıda github.com/RbnApp/desk-helper "yeni issue" sayfası açılır; yalnız sürüm + Windows sürümü ön
+  dolu (kimlik, makine/kullanıcı adı, dosya yolu, ayar içeriği, log GÖNDERİLMEZ). Adres tek yerde:
+  `src/shared/feedback.js`; main süreç yalnız `https://github.com/RbnApp/` ile başlayan sabit adresi açar
+  (preload köprüsü tek amaçlı kanal: `desk.feedback()`). Depoya Türkçe issue şablonları eklendi
+  (`.github/ISSUE_TEMPLATE/`: hata-bildirimi.md, oneri.md, config.yml) — GitHub'da görünmesi için push gerekir.
 - Uyku ses çalan paneli kesmiyor (2026-11-01, DAPP-16): gizli sekmedeki paneli koruyan tek şey `webview.isCurrentlyAudible()` anlık sorgusuydu; şarkılar arası sessizlik, arabelleğe alma, çok sessiz bölüm ve liste geçişinde bu sorgu `false` dönünce panel yok ediliyor (ses susuyor), sekmeye dönünce sayfa yeniden yükleniyordu (patron şikâyeti). Artık panel başına medya durumu tutuluyor: `media-started-playing` / `media-paused` olayları + 5 sn'lik yoklama (`isCurrentlyAudible()` + sayfadaki oynayan `<video>/<audio>` sorgusu). Ses çalıyorsa, son 15 dakikada ses duyulduysa ya da sorgu başarısızsa panel uyutulmuyor; sessiz panel eskisi gibi uyutulup belleği boşaltıyor. Ayarlar > Bellek açıklaması TR/EN güncellendi. Ölçüm: `scripts/uyku-test.js` (4 senaryo; yerel ses + gerçek YouTube), duman testi konsol hatası 0.
 - Klasör düzeni (2026-11-01, DAPP-12): `src\` süreç klasörlerine ayrıldı — main, preload, renderer, widgets, shared; `src\renderer\app.js` (4.020 satır) `src\renderer\app\` altında 10 parçaya bölündü (cekirdek, program-panel, tarayici-panel, yer-imleri-sifreler, dosyalar-notlar, medya-iptv, fotograf-duzen, bildirim-sekmeler, kisayol-ayarlar, baslat). Satırlar birebir korundu, davranış değişmedi: duman testi (scripts/duman.js) önce/sonra aynı, konsol hatası 0. Yeni script eklerken index.html'deki SIRA korunmalı (klasik script'ler aynı global kapsamı paylaşır).
 - Hava durumu şehir seçimi: 81 il listesi (src/tr-cities.js, koordinatlı), Türkçe harften bağımsız arama, ↑/↓+Enter; yurt dışı için Open-Meteo araması. Seçilen şehrin koordinatı cityGeo olarak saklanır.

@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('desk', {
   },
   backupState: (tag) => ipcRenderer.invoke('state:backup', tag),
   info: () => ipcRenderer.invoke('app:info'),
+  feedback: () => ipcRenderer.invoke('feedback:open'), // tek amaçlı kanal: sabit GitHub adresi, varsayılan tarayıcı
   changelog: () => ipcRenderer.invoke('app:changelog'),
   applySettings: (s) => ipcRenderer.invoke('settings:apply', s),
   update: {

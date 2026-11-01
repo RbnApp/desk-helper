@@ -5,6 +5,7 @@ const shots = require('./shots');
 const motion = require('./motion');
 const widgets = require('./widgets');
 const boxes = require('./boxes');
+const FEEDBACK = require('../shared/feedback');
 // Web panellerindeki service worker bildirimleri sayfaya yönlendirilir (tıklama Desk Helper'a ulaşsın; sw-preload.js).
 app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, '..', 'preload', 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
 const fs = require('fs');
@@ -271,6 +272,15 @@ ipcMain.handle('app:info', () => ({
   notesDir: notesDir(),
   defaultNotesDir: path.join(dataDir(), 'notes'),
 }));
+// Geri bildirim: varsayılan tarayıcıda GitHub'ın "yeni issue" sayfası açılır (uygulama içi pencere DEĞİL;
+// GitHub girişi gömülü tarayıcıda sorun çıkarır). Adres src/shared/feedback.js'teki sabitten gelir, kullanıcı
+// girdisinden KURULMAZ; yalnız https://github.com/RbnApp/ ile başlıyorsa açılır. Ön dolu: sürüm + Windows sürümü.
+ipcMain.handle('feedback:open', async () => {
+  const url = FEEDBACK.url({ version: app.getVersion(), windows: `${os.version()} ${os.release()}`.trim() });
+  if (!url.startsWith('https://github.com/RbnApp/')) throw new Error('geri bildirim adresi geçersiz');
+  await shell.openExternal(url);
+  return url;
+});
 // --- Otomatik güncelleme (GitHub Releases, electron-updater) ---
 // Açılışta ve Ayarlar > Hakkında'dan denetlenir; kullanıcı onaylarsa indirilir, uygulama kapanıp yeni sürüm aynı
 // klasöre sessizce kurulur ve yeniden açılır (aynı exe ve kısayollar). Kaynak: package.json > build.publish.

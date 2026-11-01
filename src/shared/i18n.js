@@ -677,4 +677,7 @@ window.I18N_EN = {
   "Şimdi güncelle": "Update now",
   "Yenilikler": "What's new",
   "Bu sürüm için not yok.": "No notes for this version.",
+  "Geri bildirim gönder": "Send feedback",
+  "Hata ya da öneriyi GitHub'da bildir (tarayıcıda açılır)": "Report a bug or suggestion on GitHub (opens in your browser)",
+  "Tarayıcı açılamadı. Adresi elle açabilirsin: {url}": "Couldn't open the browser. You can open this address yourself: {url}",
 };

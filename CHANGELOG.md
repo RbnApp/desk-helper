@@ -5,6 +5,9 @@ GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullan�
 
 ## 0.4.4 · hazırlanıyor
 
+**Yeni**
+- Ayarlar > Hakkında'da “Geri bildirim gönder” düğmesi: hata ya da öneriniz varsayılan tarayıcıda GitHub'ın yeni issue sayfasında açılır; sürüm ve Windows sürümü hazır yazılı gelir. Başka hiçbir bilgi (kimlik, makine adı, dosya yolu, ayar, log) gönderilmez.
+
 **İyileştirilen**
 - Sistem panelinde hava durumu şehri artık listeden seçiliyor. Türkiye'nin 81 ili uygulamada hazır; yazdıkça eşleşenler çıkıyor ("ant" yazınca Antalya; Türkçe harf, plaka ve bilinen adlar da olur: "igdir", "07", "Antakya"). Tıklayarak ya da ok tuşları ve Enter ile seçiliyor. Listede olmayan yurt dışı şehirler internetten aranıyor.
 

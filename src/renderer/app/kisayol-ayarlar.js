@@ -325,6 +325,17 @@ function openFavorites() {
 }
 
 
+// ---------- Geri bildirim ----------
+// Tarayıcıda GitHub'ın "yeni issue" sayfası açılır (uygulama içi pencere değil: GitHub girişi gömülü
+// tarayıcıda sorun çıkarır). Adres main süreçteki sabitten gelir; yalnız sürüm ve Windows sürümü ön dolu.
+async function sendFeedback() {
+  try { await window.desk.feedback(); }
+  catch {
+    const info = await window.desk.info();
+    alertBox(t('Geri bildirim'), t('Tarayıcı açılamadı. Adresi elle açabilirsin: {url}', { url: info.repo + '/issues/new' }));
+  }
+}
+
 // ---------- Ayarlar ----------
 // Ayarlar ve Hakkında tek pencerede, iki sekme.
 async function openSettings(tab = 'settings') {
@@ -373,6 +384,7 @@ async function openSettings(tab = 'settings') {
         info.repo ? h('div', { class: 'al' }, h('span', { textContent: '⌥' }), h('a', { href: '#', textContent: info.repo.replace(/^https:\/\//, ''), onclick: (e) => { e.preventDefault(); openLink(info.repo); } })) : null),
       h('div', { class: 'fav-add' },
         h('button', { class: 'primary', textContent: t('Güncellemeleri denetle'), onclick: () => checkUpdate(true) }),
+        h('button', { textContent: '💬 ' + t('Geri bildirim gönder'), title: t('Hata ya da öneriyi GitHub\'da bildir (tarayıcıda açılır)'), onclick: sendFeedback }),
         h('button', { textContent: t('Veri klasörü'), onclick: () => window.desk.open(info.dataDir) })));
 
     // Yenilikler: yalnızca kurulu sürümün notu (CHANGELOG.md'den, internetsiz); bulunamazsa en üstteki bölüm.
