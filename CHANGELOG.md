@@ -3,6 +3,11 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.4.5 · 2026-11-01
+
+**Düzeltilen**
+- Güncelleme yarıda kaldığında uygulama bir daha açılmıyor, masaüstü kısayolu kayboluyor ve hiçbir bilgi verilmiyordu. Artık güncelleme başlamadan önce tüm pencereler ve yardımcı süreçler kapatılıp gerçekten kapandığı ölçülüyor; uygulama kapandıktan sonra kurulum bir sebeple çökerse (antivirüs, kilitli dosya, beklenmeyen hata) ayrı bir bekçi süreç Desk Helper'ı yeniden açıyor. Sonraki açılışta sürüm değişmemişse "Güncelleme tamamlanamadı" penceresi çıkıyor, elle kurulum bağlantısı veriliyor ve eksik masaüstü / Başlat menüsü kısayolları yeniden oluşturuluyor. Güncelleme adımları veri klasöründeki `update.log` dosyasına yazılıyor (sürüm, adres, hata; kişisel bilgi yok).
+
 ## 0.4.4 · 2026-11-02
 
 **Yeni**

@@ -5,6 +5,7 @@ const shots = require('./shots');
 const motion = require('./motion');
 const widgets = require('./widgets');
 const boxes = require('./boxes');
+const update = require('./update');
 const FEEDBACK = require('../shared/feedback');
 // Web panellerindeki service worker bildirimleri sayfaya yönlendirilir (tıklama Desk Helper'a ulaşsın; sw-preload.js).
 app.on('session-created', (ses) => { try { ses.registerPreloadScript({ type: 'service-worker', filePath: path.join(__dirname, '..', 'preload', 'sw-preload.js') }); } catch (err) { console.warn('sw preload', err?.message); } }); // fotoğraf görüntüleyici: hareketli fotoğraflardaki gömülü video
@@ -286,6 +287,7 @@ ipcMain.handle('feedback:open', async () => {
 // klasöre sessizce kurulur ve yeniden açılır (aynı exe ve kısayollar). Kaynak: package.json > build.publish.
 // Test için DESK_UPDATE_URL ile (latest.yml içeren) başka bir adres verilebilir.
 let updater = null;
+let sonHedef = null; // bilinen en yeni sürüm (güncelleme işaretine yazılır)
 function getUpdater() {
   if (updater) return updater;
   const eu = require('electron-updater');
@@ -293,9 +295,12 @@ function getUpdater() {
   const autoUpdater = process.env.DESK_UPDATE_URL ? new eu.NsisUpdater({ provider: 'generic', url: process.env.DESK_UPDATE_URL }) : eu.autoUpdater;
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
-  autoUpdater.logger = null;
+  autoUpdater.logger = update.logger; // <veri klasörü>/update.log: başarısız güncellemenin nedeni sonradan okunabilsin
   if (process.env.DESK_UPDATE_URL) autoUpdater.forceDevUpdateConfig = true;
   autoUpdater.on('download-progress', (p) => win?.webContents.send('upd:progress', Math.round(p.percent || 0)));
+  autoUpdater.on('error', (e) => update.log('error', 'güncelleyici hatası: ' + (e?.message || e)));
+  autoUpdater.on('update-available', (i) => { sonHedef = i?.version || sonHedef; });
+  autoUpdater.on('update-downloaded', (i) => { sonHedef = i?.version || sonHedef; update.log('info', 'güncelleme indirildi: ' + (sonHedef || '?')); });
   updater = autoUpdater;
   return updater;
 }
@@ -308,13 +313,30 @@ ipcMain.handle('upd:check', async () => {
     const r = await getUpdater().checkForUpdates();
     const v = r?.updateInfo?.version;
     if (!v || !r.isUpdateAvailable) return { latest: true, version: app.getVersion() };
+    sonHedef = v;
     return { available: true, version: v, current: app.getVersion(), notes: notesText(r.updateInfo.releaseNotes), date: r.updateInfo.releaseDate };
-  } catch (e) { return { error: String(e?.message || e).split('\n')[0] }; }
+  } catch (e) { update.log('error', 'güncelleme denetimi: ' + (e?.message || e)); return { error: String(e?.message || e).split('\n')[0] }; }
 });
 ipcMain.handle('upd:download', async () => {
-  try { await getUpdater().downloadUpdate(); return true; } catch (e) { return { error: String(e?.message || e).split('\n')[0] }; }
+  try { await getUpdater().downloadUpdate(); return true; } catch (e) { update.log('error', 'indirme: ' + (e?.message || e)); return { error: String(e?.message || e).split('\n')[0] }; }
 });
-ipcMain.handle('upd:install', () => { setImmediate(() => getUpdater().quitAndInstall(true, true)); return true; });
+// Güncelleme öncesi kapanış: masaüstü bileşenleri, panel pencereleri ve yardımcı süreçler kapatılır; ana pencere
+// de kapanınca uygulama kendiliğinden çıkmasın diye bayrak (çıkışı kurulum akışı yapar).
+let guncellemeSuruyor = false;
+function kapatYardimcilar() {
+  guncellemeSuruyor = true;
+  try { widgets.closeAll(); } catch {}
+  try { boxes.closeAll(); } catch {}
+  try { docker?.closeAll(); } catch {}
+  try { if (win && !win.isDestroyed()) fs.writeFileSync(boundsPath(), JSON.stringify(win.getBounds())); } catch {}
+  for (const w of BrowserWindow.getAllWindows()) { try { if (!w.isDestroyed()) w.destroy(); } catch {} }
+}
+// Kurulum: önce tüm pencere/yardımcı süreçler kapanır (ölçülerek), işaret yazılır, bekçi başlar, sonra kurulum.
+ipcMain.handle('upd:install', async () => {
+  const ok = await update.install({ getUpdater, temizle: kapatYardimcilar, hedef: () => sonHedef });
+  if (!ok) app.quit();
+  return ok;
+});
 
 ipcMain.handle('widget:theme', () => themeOf());
 ipcMain.handle('settings:apply', (_e, s) => { applySettings(s); return true; });
@@ -798,6 +820,12 @@ else {
     win.webContents.send('app:already-running');
     console.log('[desk] second-instance: mevcut pencere öne getirildi');
   });
-  app.whenReady().then(() => { motion.cleanup(); createWindow(); });
+  app.whenReady().then(() => {
+    motion.cleanup();
+    createWindow();
+    // Önceki açılış güncellemeyle kapandıysa: sürüm değiştiyse sessizce biter, değişmediyse kullanıcıya haber verir
+    // ve eksik kısayolları yeniden oluşturur (bkz. src/main/update.js).
+    try { update.startup(); } catch (e) { update.log('warn', 'açılış toparlanması: ' + (e?.message || e)); }
+  });
 }
-app.on('window-all-closed', () => app.quit());
+app.on('window-all-closed', () => { if (!guncellemeSuruyor) app.quit(); });
