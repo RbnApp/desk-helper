@@ -5,6 +5,7 @@ Sıradaki sürüm: **0.4.4** (sürüm kuralı: X.Y.Z, her basamak 0–9; bkz. VE
 
 ## Sıradaki sürüm (0.4.4) için
 
+- Masaüstü kutu/sistem paneli kartının gölgesi kaldırıldı: pencere iç boşluğu (6/8px) gölgeye yetmiyor, kırpılan gölge kart dışında alpha ≤78 kirli pus bırakıyordu; şimdi kart dışı tam şeffaf (DAPP-15).
 - Yayın: depo github.com/RbnApp/desk-helper (herkese açık; 2026-10-19'da RbnCore kişisel hesabından kuruluşa taşındı,
   kuruluşun adı önce Rbnbilisim, sonra RbnApp oldu; eski adresler yönlendiriyor). MIT lisanslı. Güncelleme kaynağı
   package.json > build.publish. Release otomatik (0.3.7'den beri): .github/workflows/release.yml, main'e sürümü değişen

@@ -4,9 +4,8 @@ body.wd { display: block; padding: 8px; box-sizing: border-box; color: var(--tex
   --acc-text: color-mix(in srgb, var(--accent) 70%, var(--text)); --hover: color-mix(in srgb, var(--text) 9%, transparent);
   --tint: color-mix(in srgb, var(--text) 5%, transparent); --rule: color-mix(in srgb, var(--text) 9%, transparent); }
 .wd #card { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden;
-  background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--line);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, .45); }
-body.wd.light #card { box-shadow: 0 8px 28px rgba(0, 0, 0, .18); }
+  background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--line); }
+/* Gölge YOK: pencere şeffaf ve iç boşluğu (kutu 6px, sistem 8px) gölgeye yetmez; kırpılan gölge kartın dışında sert kenarlı kirli pus bırakıyordu (DAPP-15). Kart kenarlıkla ayrışır. */
 
 /* Başlık: saat */
 .wd #head { position: relative; padding: 14px 16px 10px; display: grid; grid-template-columns: 1fr auto; row-gap: 2px; flex: none; }
