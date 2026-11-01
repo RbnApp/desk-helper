@@ -4,7 +4,7 @@ WhatsApp, Telegram, Instagram, X ve YouTube'u, kendi sekmeli tarayıcısını, n
 favori programlarını tek pencerede toplayan Windows masaüstü uygulaması: tarayıcı gibi sekmeler, istediğin gibi bölünüp
 boyutlandırılan paneller, tek bir bildirim merkezi.
 
-Sürüm: 0.3.7 · sürüm notları [CHANGELOG.md](CHANGELOG.md) · sürüm kuralı [VERSIONING.md](VERSIONING.md) ·
+Sürüm: 0.4.3 · sürüm notları [CHANGELOG.md](CHANGELOG.md) · sürüm kuralı [VERSIONING.md](VERSIONING.md) ·
 iletişim info@rbnbilisim.com.tr
 
 ## Kurulum
@@ -119,11 +119,15 @@ Node.js gerekli. Bu klasörde:
 Yayın: her sürümün `DeskHelper-Setup-<sürüm>.exe`, `.blockmap` ve `latest.yml` dosyaları GitHub Release'e yüklenir;
 uygulama güncellemeyi buradan bulur (package.json > build.publish).
 
-Dosyalar: `src\main.js` (pencere, dosya sistemi, ayarlar), `src\native.js` (gerçek program
-pencerelerini panele yerleştirme, Win32), `src\preload.js` (köprü), `src\app.js` (arayüz),
-`src\i18n.js` (İngilizce metinler), `src\style.css`, `build\icon.ico` (logo), `scripts\bump.js` (sürüm).
+Klasör yapısı (`src\`, dosyanın çalıştığı sürece göre):
+- `src\main\` — ana süreç: `main.js` (pencere, dosya sistemi, ayarlar), `native.js` (gerçek program pencereleri, Win32), `widgets.js` + `boxes.js` (masaüstü bileşenleri), `sysinfo.js`, `shots.js`, `adblock.js`, `passwords.js`, `motion.js`
+- `src\preload\` — köprüler: `preload.js`, `webview-preload.js`, `sw-preload.js`, `shot-preload.js`, `widget-preload.js`
+- `src\renderer\` — arayüz: `index.html`, `app\` (app.js'in parçaları: `cekirdek.js` → `baslat.js`, index.html'deki sırayla yüklenir), `annotate.js`, `yt-player.html`, `shot.html`, `logo.png`, `vendor\`
+- `src\widgets\` — bileşen pencereleri: `widget-sys.*`, `widget-box.*`, `widget.css`, `widget-theme.js`
+- `src\shared\` — iki ya da daha çok süreçte kullanılanlar: `style.css`, `i18n.js`, `menu.js`, `modal.js`, `tr-cities.js`
+- `build\icon.ico` (uygulama simgesi), `scripts\bump.js` (sürüm), `scripts\duman.js` (duman testi)
 
 ## Geliştirici notu: pencere (modal) motoru
 Uygulamadaki bütün açılır pencereler (onaylar, formlar, çerez temizleme, şifreler, Favoriler, Ayarlar, alt çubuk…)
-tek motordan açılır: `src/modal.js`; bütün sağ tık ve açılır menüler de tek bileşenden: `src/menu.js` (`PopMenu.open`, stil: `.pm-*`) (`Modal.open / form / confirm / alert / choose`). Görünüm `style.css` içindeki
+tek motordan açılır: `src/shared/modal.js`; bütün sağ tık ve açılır menüler de tek bileşenden: `src/shared/menu.js` (`PopMenu.open`, stil: `.pm-*`) (`Modal.open / form / confirm / alert / choose`). Görünüm `style.css` içindeki
 "Modal motoru" bölümündedir (`.mdl-*`). Tasarım ya da klavye davranışı (Enter, Esc, Tab) değişecekse yalnızca bu iki yer değişir.
