@@ -488,8 +488,8 @@ body.tab-dragging, body.tab-dragging * { cursor: grabbing !important; user-selec
   background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; gap: 10px; pointer-events: none; z-index: 1;
   opacity: 0; visibility: hidden; }
 .md-pp i { width: 8px; height: 28px; border-radius: 2px; background: #fff; }
-.md-pp.on { opacity: 1; visibility: visible; animation: md-pp-in .18s ease-out; }
-.md-pp.out { visibility: visible; animation: md-pp-out .5s ease-out forwards; }
+.md-pp.on { opacity: 1; visibility: inherit; animation: md-pp-in .18s ease-out; } /* 'visible' gizli sekmenin içinden taşıyordu (bkz. .br-views webview.on) */
+.md-pp.out { visibility: inherit; animation: md-pp-out .5s ease-out forwards; }
 @keyframes md-pp-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
 @keyframes md-pp-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(1.5); visibility: hidden; } }
 .md-stage.audio .md-pp { display: none; }
