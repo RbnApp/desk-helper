@@ -39,6 +39,10 @@
     { id: 'web.zoomOut', accelerator: 'Ctrl+-', scope: 'panel', label: 'Uzaklaştır', enabled: true },
     { id: 'web.zoomReset', accelerator: 'Ctrl+0', scope: 'panel', label: 'Normal boyut', enabled: true },
     { id: 'web.source', accelerator: 'Ctrl+U', scope: 'panel', label: 'Sayfa kaynağını görüntüle', enabled: true },
+    // Chrome ile aynı yenileme: F5 (files.refresh kaydı, panel odağındaki sayfa) ve Ctrl+R normal yeniden yükleme;
+    // Ctrl+Shift+R önbelleği atlayarak yeniden yükleme. Web panelinde main (before-input-event) karşılar.
+    { id: 'browser.reload', accelerator: 'Ctrl+R', scope: 'panel', label: 'Yenile', enabled: true },
+    { id: 'browser.hardReload', accelerator: 'Ctrl+Shift+R', scope: 'panel', label: 'Önbelleksiz yeniden yükle', enabled: true },
     { id: 'browser.history', accelerator: 'Ctrl+H', scope: 'panel', label: 'Geçmiş', enabled: true },
     { id: 'notes.save', accelerator: 'Ctrl+S', scope: 'panel', label: 'Notu kaydet', enabled: true },
     { id: 'files.newFolder', accelerator: 'Ctrl+Shift+N', scope: 'panel', label: 'Yeni klasör', enabled: true },

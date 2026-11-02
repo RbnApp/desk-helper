@@ -113,6 +113,7 @@ window.I18N_EN = {
   "Sistem paneli (masaüstünde)": "System panel (on the desktop)",
   'Kaynak': 'Source',
   'Sayfa kaynağını görüntüle': 'View page source',
+  'Önbelleksiz yeniden yükle': 'Reload ignoring cache',
   'Henüz geçmiş yok.': 'No history yet.',
   'Eşleşen kayıt yok.': 'No matches.',
   'Geçmişten kaldır': 'Remove from history',

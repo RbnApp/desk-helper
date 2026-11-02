@@ -156,6 +156,8 @@ söyler; görüntü 📷 düğmesinden de alınabilir.
 | `Ctrl+-` | Uzaklaştır | Zoom out | İlgili panel · Focused panel |
 | `Ctrl+0` | Normal boyut | Actual size | İlgili panel · Focused panel |
 | `Ctrl+U` | Sayfa kaynağını görüntüle | View page source | İlgili panel · Focused panel |
+| `Ctrl+R` | Yenile | Reload | İlgili panel · Focused panel |
+| `Ctrl+Shift+R` | Önbelleksiz yeniden yükle | Reload ignoring cache | İlgili panel · Focused panel |
 | `Ctrl+H` | Geçmiş | History | İlgili panel · Focused panel |
 | `Ctrl+S` | Notu kaydet | Save note | İlgili panel · Focused panel |
 | `Ctrl+Shift+N` | Yeni klasör | New folder | İlgili panel · Focused panel |

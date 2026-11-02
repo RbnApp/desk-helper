@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, nativeTheme, session, clipboard, net, webContents, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, screen, dialog, session, clipboard, net, webContents, protocol } = require('electron');
 const path = require('path');
 const native = require('./native');
 const shots = require('./shots');
@@ -48,7 +48,10 @@ function applySettings(s) {
   widgets.setTheme(th); boxes.setTheme(th);
   if (!win) return;
   win.setAlwaysOnTop(!!settings.alwaysOnTop);
-  nativeTheme.themeSource = settings.theme === 'light' ? 'light' : 'dark';
+  // Uygulamanın açık/koyu teması YALNIZ kendi CSS'inde (state.settings.theme) uygulanır. nativeTheme.themeSource
+  // 'dark' yapılmıyor: o ayar TÜM web sayfalarına prefers-color-scheme: dark bildirir ve sitelerin kendi renk
+  // tercihine müdahale eder (DAPP-47: AdminKit renk teması kaydedilince sayfada uygulanmıyordu, Chrome'da uygulanıyordu;
+  // Chrome sistem tercihini söyler, Windows bu makinede açık). Pencere çerçevesi/dahili denetimler Chrome gibi Windows'u izler.
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: !!settings.startWithWindows });
 }
 
@@ -130,10 +133,14 @@ app.on('web-contents-created', (_e, wc) => {
   // Web sayfasının içindeyken tuşlar Desk Helper'a ulaşmaz: sayfa kaynağı ve yakınlaştırma burada yakalanır.
   // Tuşlar tek tablodan (src/shared/shortcuts.js) eşleşir.
   const ZOOM_DIR = { 'web.zoomIn': 'in', 'web.zoomOut': 'out', 'web.zoomReset': 'reset' };
+  // Yenileme (Chrome ile aynı): F5 / Ctrl+R normal yeniden yükleme, Ctrl+Shift+R önbelleği atlayan yeniden yükleme.
+  // F5 tablodaki tek "Yenile" kaydıdır (files.refresh); bir web panelinde odağındaki sayfayı yeniler.
+  const RELOAD = { 'files.refresh': false, 'browser.reload': false, 'browser.hardReload': true };
   if (wc.getType() === 'webview') wc.on('before-input-event', (ev, i) => {
     const id = shortcuts.match(i, 'panel');
     if (id === 'web.source') { ev.preventDefault(); win?.webContents.send('web:viewsource', wc.id); }
     else if (ZOOM_DIR[id]) { ev.preventDefault(); win?.webContents.send('web:zoom', wc.id, ZOOM_DIR[id]); }
+    else if (id in RELOAD) { ev.preventDefault(); if (RELOAD[id]) wc.reloadIgnoringCache(); else wc.reload(); }
   });
   // Ctrl + fare tekerleği (Electron kendisi yakınlaştırmaz, yalnızca haber verir).
   // Bir tekerlek olayı için Chromium bazen iki kez haber veriyor: 40 ms içindeki ikincisi sayılmaz.

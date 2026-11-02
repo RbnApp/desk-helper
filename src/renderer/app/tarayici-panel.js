@@ -44,7 +44,7 @@ function buildBrowser(p) {
   const strip = h('div', { class: 'br-tabs' });
   const back = h('button', { title: t('Geri'), textContent: '←' });
   const fwd = h('button', { title: t('İleri'), textContent: '→' });
-  const reload = h('button', { title: t('Yenile'), textContent: '⟳' });
+  const reload = h('button', { title: t('Yenile') + ' (' + Shortcuts.key('browser.reload') + ')', textContent: '⟳' });
   const addr = h('input', { class: 'br-addr', spellcheck: false, placeholder: t('Adres yaz veya ara') });
   const prof = h('button', { class: 'br-prof', title: t('Profil') });
   const star = h('button', { class: 'br-in br-star', textContent: '☆', title: t('Bu sayfayı yer imlerine ekle') });
@@ -425,9 +425,24 @@ function buildBrowser(p) {
   };
   p.hist = historyDrawer(p, () => L.profile, (url) => { const wv = cur(); if (wv) { wv.loadURL(url).catch(() => {}); wv.focus(); } });
   p.body.addEventListener('keydown', (e) => { if (Shortcuts.is(e, 'browser.history') && L.profile !== '__private') { e.preventDefault(); p.hist.toggle(); } });
+  // Yenileme Chrome ile aynı: Ctrl+R normal, Ctrl+Shift+R önbelleği atlayarak. Odak web sayfasındayken main süreç
+  // (before-input-event) karşılar; buradaki dinleyici araç çubuğu/adres çubuğu odağı için.
+  p.body.addEventListener('keydown', (e) => {
+    if (Shortcuts.is(e, 'browser.hardReload')) { e.preventDefault(); hardReload(); }
+    else if (Shortcuts.is(e, 'browser.reload')) { e.preventDefault(); try { cur().reload(); } catch {} }
+  });
 
+  const hardReload = () => { try { cur().reloadIgnoringCache(); } catch {} };
   back.onclick = () => { try { cur().goBack(); } catch {} };
   fwd.onclick = () => { try { cur().goForward(); } catch {} };
+  // Sağ tık: önbelleği atlayan yeniden yükleme (Chrome'daki Ctrl+Shift+R'nin menüdeki karşılığı).
+  reload.oncontextmenu = (e) => {
+    e.preventDefault();
+    contextMenu(e, p.body, [
+      { icon: '⟳', label: t('Yenile'), key: Shortcuts.key('browser.reload'), action: () => { try { cur().reload(); } catch {} } },
+      { icon: '⟳', label: t('Önbelleksiz yeniden yükle'), key: Shortcuts.key('browser.hardReload'), action: hardReload },
+    ], { align: 'right' });
+  };
   reload.onclick = () => { try { cur().reload(); } catch {} };
   addr.addEventListener('focus', () => addr.select());
   addr.addEventListener('keydown', (e) => {
