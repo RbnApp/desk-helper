@@ -3,6 +3,8 @@
 # Uygulamanın otomatik güncellemesi bu Release'teki latest.yml'e bakar. Release notu CHANGELOG.md'deki
 # "## X.Y.Z" bölümünden alınır. O sürümün Release'i zaten varsa hiçbir şey yapmaz.
 # Elle çalıştırmak için: Actions > Release > Run workflow.
+# winget: yeni Release'ten sonra microsoft/winget-pkgs'e RbnApp.DeskHelper güncelleme PR'ı açar. WINGET_TOKEN secret'ı
+# yoksa atlanır. Ayrıntı: winget/README.md.
 name: Release
 
 on:
@@ -21,6 +23,9 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      created: ${{ steps.create.outputs.created }}
     defaults:
       run:
         shell: bash
@@ -54,6 +59,7 @@ jobs:
         run: npx electron-builder --win nsis --publish never
 
       - name: Release oluştur
+        id: create
         if: steps.v.outputs.exists != 'true'
         run: |
           V=${{ steps.v.outputs.version }}
@@ -64,3 +70,22 @@ jobs:
             "dist/DeskHelper-Setup-$V.exe.blockmap" \
             dist/latest.yml \
             --title "Desk Helper $V" --notes-file notes.md --target "$GITHUB_SHA"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  winget:
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - name: winget-pkgs'e güncelleme PR'ı
+        if: env.WINGET_TOKEN != ''
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: RbnApp.DeskHelper
+          version: ${{ needs.release.outputs.version }}
+          release-tag: v${{ needs.release.outputs.version }}
+          installers-regex: '^DeskHelper-Setup-.*\.exe$'
+          token: ${{ secrets.WINGET_TOKEN }}
+          fork-user: RbnCore
