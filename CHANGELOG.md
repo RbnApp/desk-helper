@@ -3,6 +3,17 @@
 Sürüm kuralı: X.Y.Z, her basamak 0–9 (0.3.9 → 0.4.0, 0.9.9 → 1.0.0; 0.3.9'a kadar sıfırsız sayıldı). Her sürüm git'te `vX.Y.Z` etiketiyle işaretlenir.
 GitHub'da yayımlanınca sürüm notu olarak bu dosyadaki ilgili bölüm kullanılır; uygulama güncellemeyi sorarken bu notu gösterir.
 
+## 0.4.6 · 2026-11-06
+
+**Yeni**
+- Ayarlar penceresinde Kısayollar artık ayrı sekme: sıra Ayarlar · Kısayollar · Bellek · Yenilikler · Hakkında. Liste tek kısayol tablosundan türer (ad, tuş, kapsam, durum); küresel tuşların gerçek durumu (çalışıyor, alınamadı, yedek tuş) görünür.
+- Web panellerinde Chrome ile aynı yenileme: F5 / Ctrl+R normal, Ctrl+Shift+R önbelleksiz yeniden yükleme (panel ve sağ tık menüsünde de var).
+
+**Düzeltilen**
+- Siteye kaydedilen renk teması sayfada uygulanmıyordu. Sebep, uygulamanın kendi koyu temasını bütün web sayfalarına da bildirmesiydi; artık uygulama teması yalnız kendi arayüzünde kalıyor, siteler kendi renk tercihini kullanıyor.
+- Video duraklatılınca ortada çıkan yuvarlak duraklatma işareti başka sekmeye geçince de görünüyordu; artık gizli sekmede görünmüyor.
+- Hakkında sekmesinin içeriği pencerede dikey ve yatay ortalandı; Ayarlar penceresi beş sekmede de aynı boyutta açılıyor.
+
 ## 0.4.5 · 2026-11-01
 
 **Yeni**
